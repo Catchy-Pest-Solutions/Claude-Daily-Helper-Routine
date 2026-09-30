@@ -2,11 +2,12 @@
   "name": "daily-routine-cross-sell-check",
   "version": "1.0.0",
   "private": true,
-  "description": "Same-address cross-sell scheduling check step for the daily routine (Briostack + Slack)",
+  "description": "Daily routine steps for Catchy Pest Solutions: cross-sell check and call review (Briostack, ATS, Slack)",
   "main": "src/index.js",
   "scripts": {
-    "test": "node --test test/crossSellCheck.test.js",
-    "check": "node src/cli.js"
+    "test": "node --test test/crossSellCheck.test.js test/callReview.test.js",
+    "check": "node src/cli.js",
+    "call-review": "node src/callReview/run.js"
   },
   "engines": {
     "node": ">=20"
