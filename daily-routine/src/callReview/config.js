@@ -15,10 +15,9 @@ module.exports = {
   // Who gets the callback task. Steve leans new customers, Shelley current.
   assignee: { newCustomer: 103, currentCustomer: 102 },
 
-  // Briostack task type for callback tasks. The API only accepts existing
-  // type IDs and has no endpoint that lists them; set this once the
-  // callback type's ID is known. Tasks aren't created while it's null.
-  taskTypeId: null,
+  // Briostack task type for callback tasks ("Call"). The API only accepts
+  // existing type IDs; tasks aren't created if this is empty.
+  taskTypeId: 'CALL',
 
   // Slack user to tag in the owner's report so the self-DM notifies.
   ownerSlackId: 'U09LQDUPQTC',

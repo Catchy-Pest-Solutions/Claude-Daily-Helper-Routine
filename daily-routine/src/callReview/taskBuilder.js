@@ -5,8 +5,8 @@
 // - Caller pressed 2 (Existing Customers)  -> Shelley
 // - No menu choice: active Briostack customer -> Shelley, anyone else
 //   (no match, or a former customer) -> Steve, since it's a sales call.
-//   The Briostack API can't search customers by phone, so today every
-//   no-choice caller goes to Steve, who checks Briostack before calling.
+// Briostack matches on the customer's primary phone only, so "not found"
+// can still be a customer calling from another number.
 const cal = require('./calendar');
 const { formatPhone, OUTCOME_TEXT } = require('./callAnalysis');
 
@@ -17,7 +17,7 @@ function classifyCaller(entry, customer, lookedUp = true) {
   if (entry.callerTypeFromQueue === 'new') return { type: 'new', why: 'pressed 1 (New Customers)' };
   if (entry.callerTypeFromQueue === 'current') return { type: 'current', why: 'pressed 2 (Existing Customers)' };
   if (customer && customer.statusId === 'CUSTOMER_ACTIVE') return { type: 'current', why: 'phone number matches an active Briostack customer' };
-  if (customer) return { type: 'new', why: 'former customer (not active in Briostack)' };
+  if (customer) return { type: 'new', label: 'Former customer', why: 'former customer (not active in Briostack)' };
   return { type: 'new', why: lookedUp ? "phone number isn't in Briostack" : "didn't press 1 or 2, so treated as a possible new customer" };
 }
 
@@ -31,8 +31,9 @@ function describeMiss(m) {
 
 function customerLines(customer, lookedUp) {
   if (!lookedUp) return ["Briostack: not checked (the API can't search by phone). Search this number in Briostack before calling."];
-  if (!customer) return ['Briostack: no customer found for this number.'];
+  if (!customer) return ["Briostack: no customer has this as their primary phone (could still be a customer calling from another number)."];
   const lines = [`Briostack: customer #${customer.id} ${customer.name} (${statusText(customer.statusId)})`];
+  if (customer.otherMatches) lines.push(`(${customer.otherMatches} other Briostack account${customer.otherMatches > 1 ? 's use' : ' uses'} this number too.)`);
   if (customer.address) lines.push(`Address: ${customer.address}`);
   const active = (customer.services || []).filter((s) => s.statusId === 'CSC_ACTIVE');
   if (active.length) {
@@ -50,7 +51,11 @@ function customerLines(customer, lookedUp) {
 }
 
 function statusText(statusId) {
-  return { CUSTOMER_ACTIVE: 'active', CUSTOMER_CANCEL_OUT: 'cancelled' }[statusId] || statusId || 'unknown status';
+  return (
+    { CUSTOMER_ACTIVE: 'active', CUSTOMER_CANCEL_OUT: 'cancelled', CUSTOMER_COMPLETE: 'past customer, service completed' }[statusId] ||
+    statusId ||
+    'unknown status'
+  );
 }
 
 // entry: one needsCallback item from analyzeCalls. customer: Briostack
@@ -62,7 +67,7 @@ function buildTask(entry, customer, { config, today, checkedAtMs, lookedUp = tru
   const displayName =
     customer?.name ||
     (entry.callerName && !entry.callerNameIsPlace ? entry.callerName : `Unknown caller${entry.callerName ? ` (${entry.callerName})` : ''}`);
-  const label = who.type === 'new' ? 'NEW caller' : 'Current customer';
+  const label = who.label || (who.type === 'new' ? 'NEW caller' : 'Current customer');
 
   const title = `${who.type === 'new' ? 'PRIORITY - ' : ''}Call back (${label}): ${displayName} ${formatPhone(entry.phone)}`;
   const description = [

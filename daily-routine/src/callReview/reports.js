@@ -84,7 +84,7 @@ function ideas(stats, missed) {
 }
 
 // Owner's DM: how the run went plus the business picture.
-function ownerReport({ window: w, analysis, tasks, texts, apiUsage, problems, weekly, doubleCallMisses = [], config }) {
+function ownerReport({ window: w, analysis, tasks, alreadyOpen = [], texts, apiUsage, problems, weekly, doubleCallMisses = [], config }) {
   const nameOf = (ext) => config.staff[ext]?.name || `ext ${ext}`;
   const s = analysis.stats;
   const L = [];
@@ -129,6 +129,7 @@ function ownerReport({ window: w, analysis, tasks, texts, apiUsage, problems, we
   for (const t of tasks) byPerson[t.assigneeName] = (byPerson[t.assigneeName] || 0) + 1;
   L.push(`• 📝 Still owed a callback: ${plural(tasks.length, 'caller')}${tasks.length ? ` (${Object.entries(byPerson).map(([n, c]) => `${n} ${c}`).join(', ')})` : ''}`);
   for (const t of tasks) L.push(`   ◦ ${t.callerType === 'new' ? '🆕' : '👥'} ${t.displayName} ${formatPhone(t.phone)} → ${t.assigneeName}`);
+  if (alreadyOpen.length) L.push(`• 📂 ${plural(alreadyOpen.length, 'caller')} already had an open callback task, so no new one was made`);
   const checked = analysis.missedCalls.filter((m) => m.handled?.doubleCall && m.callerType !== 'current');
   if (checked.length) {
     L.push(`• 🔁 Double-call method: ${checked.length - doubleCallMisses.length} of ${checked.length} unanswered callbacks to new/unknown callers got the second call`);

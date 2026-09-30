@@ -165,7 +165,9 @@ test('task routing: menu choice first, then Briostack status', () => {
   assert.equal(buildTask(entry({ callerTypeFromQueue: 'new' }), { id: 1, statusId: 'CUSTOMER_ACTIVE', name: 'X' }, opts).assigneeName, 'Steve');
   assert.equal(buildTask(entry({ callerTypeFromQueue: 'current' }), null, opts).assigneeName, 'Shelley');
   assert.equal(buildTask(entry(), { id: 1, statusId: 'CUSTOMER_ACTIVE', name: 'Jane Doe' }, opts).assigneeName, 'Shelley');
-  assert.equal(buildTask(entry(), { id: 1, statusId: 'CUSTOMER_CANCEL_OUT', name: 'Jane Doe' }, opts).assigneeName, 'Steve');
+  const former = buildTask(entry(), { id: 1, statusId: 'CUSTOMER_CANCEL_OUT', name: 'Jane Doe' }, opts);
+  assert.equal(former.assigneeName, 'Steve');
+  assert.match(former.title, /\(Former customer\)/);
   const unknown = buildTask(entry(), null, opts);
   assert.equal(unknown.assigneeName, 'Steve');
   assert.equal(unknown.customerId, null);
@@ -228,8 +230,9 @@ test('runner: builds tasks and messages, creating tasks through Briostack', asyn
   }));
   const ats = { searchCalls: async () => legs, searchInboundTexts: async () => [], searchOutboundTexts: async () => [], requestCount: () => 3 };
   const created = [];
-  config.taskTypeId = 'CALL_BACK_TEST';
   const brio = {
+    listOpenTasks: async () => [],
+    findCustomerByPhone: async () => null,
     createTask: async (t) => {
       created.push(t);
       return 'T1';
@@ -237,7 +240,6 @@ test('runner: builds tasks and messages, creating tasks through Briostack', asyn
     requestCount: () => 2,
   };
   const r = await runCallReview({ nowMs: Date.parse('2026-09-30T16:05:00Z'), ats, brio });
-  config.taskTypeId = null;
   assert.equal(r.status, 'ok');
   assert.equal(created.length, 1);
   assert.equal(created[0].assigneeName, 'Steve');
@@ -260,6 +262,43 @@ test('briostack client sends only the fields the API accepts', async () => {
   assert.equal(sent[0].url, 'https://x/rest/v1/tasks');
   assert.deepEqual(sent[0].body, { title: 't', taskTypeId: 'T', statusId: 'ORDER_REQMNT_CREATED', description: 'd', startDate: 's', dueDate: 'u', employeeId: '16635' });
 
-  const noType = createBriostackCallbackClient({ baseUrl: 'https://x/rest/v1', apiKey: 'k', config, fetchImpl, pauseMs: 0 });
+  const noType = createBriostackCallbackClient({ baseUrl: 'https://x/rest/v1', apiKey: 'k', config: { ...config, taskTypeId: null }, fetchImpl, pauseMs: 0 });
   await assert.rejects(noType.createTask({ assigneeExt: 103 }), /no callback task type/);
+});
+
+test('runner: skips callers with an open task, links matched customers', async () => {
+  const onDay = (legs) => legs.map((l) => ({ ...l, start_time: l.start_time.replace(D, '2026-09-30'), end_time: l.end_time.replace(D, '2026-09-30') }));
+  const legs = onDay([...menuHangup('a', '09:30', '8285550301'), ...menuHangup('b', '09:40', '8285550302')]);
+  const ats = { searchCalls: async () => legs, searchInboundTexts: async () => [], searchOutboundTexts: async () => [], requestCount: () => 3 };
+  const created = [];
+  const brio = {
+    listOpenTasks: async () => [{ title: 'PRIORITY - Call back (NEW caller): Someone (828) 555-0301' }],
+    findCustomerByPhone: async () => ({ id: '17321', name: 'Kenny Edwards', statusId: 'CUSTOMER_ACTIVE', services: [] }),
+    createTask: async (t) => {
+      created.push(t);
+      return 'T2';
+    },
+    requestCount: () => 3,
+  };
+  const r = await runCallReview({ nowMs: Date.parse('2026-09-30T16:05:00Z'), ats, brio });
+  assert.deepEqual(r.alreadyOpen, ['8285550301']);
+  assert.equal(created.length, 1);
+  assert.equal(created[0].customerId, '17321');
+  assert.equal(created[0].assigneeName, 'Shelley'); // active customer, no menu choice
+  assert.match(r.ownerMessage, /already had an open callback task/);
+});
+
+test('briostack phone lookup uses the filter expression', async () => {
+  const { createBriostackCallbackClient } = require('../src/callReview/briostack');
+  const urls = [];
+  const fetchImpl = async (url) => {
+    urls.push(url);
+    const body = url.includes('/services') ? [] : [{ customerId: '17321', firstName: 'Kenny', lastName: 'Edwards', statusId: 'CUSTOMER_ACTIVE', primaryAddress: { address: '631 Ave', city: 'Asheville' } }];
+    return { ok: true, status: 200, text: async () => JSON.stringify(body) };
+  };
+  const brio = createBriostackCallbackClient({ baseUrl: 'https://x/rest/v1/', apiKey: 'k', config, fetchImpl, pauseMs: 0 });
+  const c = await brio.findCustomerByPhone('8287755793');
+  assert.equal(decodeURIComponent(urls[0]), 'https://x/rest/v1/customers?filter=primaryPhone.number="+18287755793"');
+  assert.equal(c.name, 'Kenny Edwards');
+  assert.equal(c.address, '631 Ave, Asheville');
 });

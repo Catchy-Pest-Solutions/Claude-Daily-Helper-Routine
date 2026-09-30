@@ -8,9 +8,6 @@
 //   --dry-run   look everything up but don't create Briostack tasks
 //   --now=ISO   pretend the run happens at this instant (for testing)
 //
-// Callers can't be matched to Briostack customers (the API has no phone
-// search), so tasks aren't linked to a customer yet.
-//
 // Prints one JSON object:
 //   { status: "ok" | "skipped" | "error", window, ownerMessage,
 //     officeOnlyMessage, tasks, apiUsage, problems }
@@ -28,7 +25,7 @@ const config = require('./config');
 const cal = require('./calendar');
 const { createAtsClient } = require('./atsClient');
 const { createBriostackCallbackClient } = require('./briostack');
-const { analyzeCalls, dailyTotals } = require('./callAnalysis');
+const { analyzeCalls, dailyTotals, formatPhone } = require('./callAnalysis');
 const { buildTask } = require('./taskBuilder');
 const reports = require('./reports');
 
@@ -71,10 +68,31 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
     step = 'Briostack';
     const canCreate = Boolean(brio && config.taskTypeId && !dryRun);
     const tasks = [];
+    const alreadyOpen = [];
+    let openTitles = [];
+    if (brio) {
+      try {
+        openTitles = (await brio.listOpenTasks()).map((t) => String(t.title || ''));
+      } catch (err) {
+        problems.push(`Couldn't check Briostack for open tasks, so duplicates are possible: ${err.message}`);
+      }
+    }
     for (const entry of analysis.needsCallback) {
-      // The Briostack API has no phone search, so callers can't be matched
-      // to a customer; the task tells the office to look the number up.
-      const task = buildTask(entry, null, { config, today: window.today, checkedAtMs: nowMs, lookedUp: false });
+      if (openTitles.some((t) => t.includes(formatPhone(entry.phone)))) {
+        alreadyOpen.push(entry);
+        continue;
+      }
+      let customer = null;
+      let lookedUp = false;
+      if (brio) {
+        try {
+          customer = await brio.findCustomerByPhone(entry.phone);
+          lookedUp = true;
+        } catch (err) {
+          problems.push(`Briostack lookup failed for ${formatPhone(entry.phone)}: ${err.message}`);
+        }
+      }
+      const task = buildTask(entry, customer, { config, today: window.today, checkedAtMs: nowMs, lookedUp });
       task.summary = reports.missSummary(entry);
       if (canCreate) {
         try {
@@ -113,7 +131,8 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
       apiUsage,
       problems,
       officeOnlyMessage: reports.officeOnlyMessage({ tasks, doubleCallMisses, checkedAtMs: nowMs, config }),
-      ownerMessage: reports.ownerReport({ window, analysis, tasks, texts, apiUsage, problems, weekly, doubleCallMisses, config }),
+      alreadyOpen: alreadyOpen.map((e) => e.phone),
+      ownerMessage: reports.ownerReport({ window, analysis, tasks, alreadyOpen, texts, apiUsage, problems, weekly, doubleCallMisses, config }),
     };
   } catch (err) {
     return {
