@@ -85,3 +85,22 @@ These were unknowns going in; all confirmed against the real Briostack API
   and `12506` (today's real completed appointments) — correctly found and
   excluded an out-of-window service and correctly flagged the
   `nextAppointmentDate` vs `recommendedDate` conflict on real data.
+
+# Daily call review
+
+Weekday noon routine: pulls the ATS call log since noon on the previous
+business day, finds missed inbound calls nobody has returned, creates a
+Briostack callback task for each caller, and builds two Slack messages (the
+#office-only callback list and the owner's daily call report).
+
+- Run: `node src/callReview/run.js [--dry-run] [--now=ISO]`
+- Routine instructions to paste: `CALL_REVIEW_ROUTINE_PROMPT.md`
+- Office setup (extensions, lunches, queues, who gets which task):
+  `src/callReview/config.js`
+- Needs `ATS_USERNAME`, `ATS_PASSWORD` and `BRIOSTACK_API_KEY` in the
+  environment.
+
+How ATS data maps to "missed" is documented at the top of
+`src/callReview/callAnalysis.js`. Briostack phone lookup and task creation
+are still being verified against the live API (see
+`src/callReview/briostack.js`).
