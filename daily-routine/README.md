@@ -101,6 +101,7 @@ Briostack callback task for each caller, and builds two Slack messages (the
   environment.
 
 How ATS data maps to "missed" is documented at the top of
-`src/callReview/callAnalysis.js`. Briostack phone lookup and task creation
-are still being verified against the live API (see
-`src/callReview/briostack.js`).
+`src/callReview/callAnalysis.js`. What the Briostack API does and doesn't
+support (no phone search; which task fields it accepts) is documented at
+the top of `src/callReview/briostack.js`. Tasks aren't created until
+`taskTypeId` is set in `config.js`.

@@ -7,7 +7,8 @@
 //   or 2 adds legs with callee_name "191" (New) or "190" (Existing) and
 //   "Call-Queue". A leg to "<ext>wp" or "X<ext>" means an agent picked up.
 // - Unanswered queue calls ring ~15s twice, then go to a "VMail" leg (the
-//   voicemail box) or a "SpeakAccount" leg.
+//   voicemail box) or a "SpeakAccount" leg (the hold line callers wait on
+//   when both lines are busy).
 // - "No digit" on the menu leg means the caller never pressed 1 or 2.
 // - Outbound: first leg's caller_id is an office extension (101/102/103).
 const cal = require('./calendar');
@@ -146,7 +147,7 @@ function classifyCall(call, config) {
 
 const OUTCOME_TEXT = {
   voicemail: 'went to voicemail',
-  overflow_hangup: 'rang out in the queue, hung up at the after-queue message',
+  overflow_hangup: 'hung up on hold while the lines were busy',
   queue_hangup: 'hung up while waiting in the queue',
   menu_hangup: 'hung up at the phone menu (never pressed 1 or 2)',
 };
@@ -266,6 +267,7 @@ function analyzeCalls(legs, { startMs, endMs, nowMs }, config, { outboundTexts =
       .filter(Boolean)
       .sort((a, b) => a.ms - b.ms)[0];
     m.handled = first ? { ...first, delaySec: Math.round((first.ms - m.startMs) / 1000) } : null;
+    if (m.handled?.kind === 'callback') m.handled.doubleCall = doubleCallCheck(outbound, m.phone, m.handled.ms, config.doubleCall);
   }
 
   // One entry per phone number still owed a call back.
@@ -287,6 +289,18 @@ function analyzeCalls(legs, { startMs, endMs, nowMs }, config, { outboundTexts =
   }));
 
   return { calls: all, inbound, outbound, missedCalls, needsCallback, stats: computeStats({ all, inbound, outbound, missedCalls, startMs, endMs }, config) };
+}
+
+// Did the callback follow the double-call method? A first call shorter
+// than unansweredUnderSec counts as not picked up; it then needs a second
+// call within secondCallWithinSec. Returns null when the first call
+// connected (nothing to check).
+function doubleCallCheck(outbound, phone, firstMs, rule) {
+  const calls = outbound.filter((o) => o.phone === phone && o.startMs >= firstMs).sort((a, b) => a.startMs - b.startMs);
+  const [first, second] = calls;
+  if (!first || first.talkSec >= rule.unansweredUnderSec) return null;
+  const followed = Boolean(second && (second.startMs - first.startMs) / 1000 <= rule.secondCallWithinSec);
+  return { followed, agent: first.agent, gapSec: second ? Math.round((second.startMs - first.startMs) / 1000) : null };
 }
 
 // First successful ATS text to the caller after the miss. /sms-outbound

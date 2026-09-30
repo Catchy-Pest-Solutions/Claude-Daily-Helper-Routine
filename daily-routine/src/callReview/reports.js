@@ -26,15 +26,26 @@ function hourLabel(h) {
 
 // #office-only: the list of callbacks, kept alongside the Briostack tasks
 // until the tasks have proven themselves.
-function officeOnlyMessage({ tasks, checkedAtMs }) {
-  if (!tasks.length) return null;
-  const lines = [`📞 *Missed calls that still need a callback* (checked ${cal.formatDay(checkedAtMs)} ${cal.formatTime(checkedAtMs)})`];
+function officeOnlyMessage({ tasks, doubleCallMisses = [], checkedAtMs, config }) {
+  if (!tasks.length && !doubleCallMisses.length) return null;
+  const lines = [];
+  if (tasks.length) lines.push(`📞 *Missed calls that still need a callback* (checked ${cal.formatDay(checkedAtMs)} ${cal.formatTime(checkedAtMs)})`);
   for (const t of tasks) {
     const flag = t.callerType === 'new' ? '🆕 ' : '';
     const status = t.created ? '📝 task created' : t.error ? '⚠️ task not created' : '📝 task pending';
     lines.push(`• ${flag}*${t.displayName}* — ${formatPhone(t.phone)} — ${t.summary} → *${t.assigneeName}* (${status})`);
   }
-  lines.push('_If someone already called from a cell phone, just close the task._');
+  if (tasks.length) lines.push('_If someone already called from a cell phone, just close the task._');
+  if (doubleCallMisses.length) {
+    if (lines.length) lines.push('');
+    lines.push('🔁 *Double-call reminder*');
+    for (const m of doubleCallMisses) {
+      lines.push(`• ${config.staff[m.handled.doubleCall.agent]?.name || 'Someone'} called back ${m.callerName || formatPhone(m.phone)} once and didn't try again right away.`);
+    }
+    lines.push(
+      "When a new customer doesn't pick up: hang up without a voicemail, call again 30-60 seconds later, and leave the voicemail on the second call. They don't have our number saved, so the second call gets answered much more often.",
+    );
+  }
   return lines.join('\n');
 }
 
@@ -73,11 +84,11 @@ function ideas(stats, missed) {
 }
 
 // Owner's DM: how the run went plus the business picture.
-function ownerReport({ window: w, analysis, tasks, texts, apiUsage, problems, weekly, config }) {
+function ownerReport({ window: w, analysis, tasks, texts, apiUsage, problems, weekly, doubleCallMisses = [], config }) {
   const nameOf = (ext) => config.staff[ext]?.name || `ext ${ext}`;
   const s = analysis.stats;
   const L = [];
-  L.push(`📊 *Daily Call Report* — ${windowLabel(w)}`);
+  L.push(`<@${config.ownerSlackId}> 📊 *Daily Call Report* — ${windowLabel(w)}`);
   L.push('');
 
   const created = tasks.filter((t) => t.created).length;
@@ -118,6 +129,11 @@ function ownerReport({ window: w, analysis, tasks, texts, apiUsage, problems, we
   for (const t of tasks) byPerson[t.assigneeName] = (byPerson[t.assigneeName] || 0) + 1;
   L.push(`• 📝 Still owed a callback: ${plural(tasks.length, 'caller')}${tasks.length ? ` (${Object.entries(byPerson).map(([n, c]) => `${n} ${c}`).join(', ')})` : ''}`);
   for (const t of tasks) L.push(`   ◦ ${t.callerType === 'new' ? '🆕' : '👥'} ${t.displayName} ${formatPhone(t.phone)} → ${t.assigneeName}`);
+  const checked = analysis.missedCalls.filter((m) => m.handled?.doubleCall && m.callerType !== 'current');
+  if (checked.length) {
+    L.push(`• 🔁 Double-call method: ${checked.length - doubleCallMisses.length} of ${checked.length} unanswered callbacks to new/unknown callers got the second call`);
+    for (const m of doubleCallMisses) L.push(`   ◦ ⚠️ ${nameOf(m.handled.doubleCall.agent)} called ${m.callerName || formatPhone(m.phone)} only once (office reminded in #office-only)`);
+  }
   L.push('');
 
   L.push('👩‍💼 *Team*');
@@ -166,9 +182,9 @@ function ownerReport({ window: w, analysis, tasks, texts, apiUsage, problems, we
   return L.join('\n');
 }
 
-function failureReport({ step, error, window: w }) {
+function failureReport({ step, error, window: w, config }) {
   return [
-    '⚠️ *Daily call review didn’t run successfully*',
+    `${config?.ownerSlackId ? `<@${config.ownerSlackId}> ` : ''}⚠️ *Daily call review didn’t run successfully*`,
     `• Step: ${step}`,
     `• Error: ${error}`,
     w && !w.skip ? `• Window: ${windowLabel(w)}` : null,

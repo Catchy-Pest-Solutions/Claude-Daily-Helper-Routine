@@ -7,13 +7,25 @@ module.exports = {
   // Office extensions. Daniel (101) doesn't take calls, but his outbound
   // calls still count as a callback.
   staff: {
-    101: { name: 'Daniel', takesCalls: false },
-    102: { name: 'Shelley', takesCalls: true, lunch: ['15:30', '16:30'] },
-    103: { name: 'Steve', takesCalls: true, lunch: ['13:00', '14:00'] },
+    101: { name: 'Daniel', takesCalls: false, briostackEmployeeId: '12883' },
+    102: { name: 'Shelley', takesCalls: true, lunch: ['15:30', '16:30'], briostackEmployeeId: '16195' },
+    103: { name: 'Steve', takesCalls: true, lunch: ['13:00', '14:00'], briostackEmployeeId: '16635' },
   },
 
   // Who gets the callback task. Steve leans new customers, Shelley current.
   assignee: { newCustomer: 103, currentCustomer: 102 },
+
+  // Briostack task type for callback tasks. The API only accepts existing
+  // type IDs and has no endpoint that lists them; set this once the
+  // callback type's ID is known. Tasks aren't created while it's null.
+  taskTypeId: null,
+
+  // Slack user to tag in the owner's report so the self-DM notifies.
+  ownerSlackId: 'U09LQDUPQTC',
+
+  // Double-call method for new-customer callbacks: if the first call isn't
+  // picked up, call again 30-60s later and leave a voicemail on the second.
+  doubleCall: { unansweredUnderSec: 20, secondCallWithinSec: 180 },
 
   // ATS queues, as they appear in /search callee_name. The phone tree sends
   // "press 1" to New Customers and "press 2" to Existing Customers.

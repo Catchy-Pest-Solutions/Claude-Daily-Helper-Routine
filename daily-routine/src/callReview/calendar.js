@@ -143,6 +143,25 @@ function runWindow(nowMs, { anchor = '12:00' } = {}) {
   return { skip: false, today, startDate, startMs: easternToMs(startDate, anchor), endMs };
 }
 
+// ms -> ISO timestamp with the Eastern offset, e.g.
+// 2026-09-30T17:00:00.000-04:00 (the format Briostack task dates take).
+function easternIso(ms) {
+  const e = toEastern(ms);
+  const [y, mo, d] = e.date.split('-').map(Number);
+  const offsetMin = Math.round((Date.UTC(y, mo - 1, d, e.hour, e.minute) - Math.floor(ms / 60000) * 60000) / 60000);
+  const sign = offsetMin < 0 ? '-' : '+';
+  const abs = Math.abs(offsetMin);
+  const pad = (n) => String(n).padStart(2, '0');
+  const sec = new Date(ms).getUTCSeconds();
+  return `${e.date}T${pad(e.hour)}:${pad(e.minute)}:${pad(sec)}.000${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;
+}
+
+function nextBusinessDay(dateStr) {
+  let d = addDays(dateStr, 1);
+  while (!isBusinessDay(d)) d = addDays(d, 1);
+  return d;
+}
+
 function formatTime(ms) {
   return new Date(ms).toLocaleTimeString('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' });
 }
@@ -172,7 +191,9 @@ module.exports = {
   holidayName,
   isBusinessDay,
   previousBusinessDay,
+  nextBusinessDay,
   runWindow,
+  easternIso,
   formatTime,
   formatDay,
   formatDuration,

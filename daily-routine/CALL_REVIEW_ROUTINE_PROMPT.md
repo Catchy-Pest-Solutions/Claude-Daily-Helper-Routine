@@ -47,14 +47,15 @@ messages, files or commits.
 2. Act on `status`:
 
    - **`skipped`** (weekend or holiday): stop. Send nothing.
-   - **`error`**: send `ownerMessage` to Daniel as a Slack DM (channel ID
-     `U09LQDUPQTC`), then send a push notification that starts with
+   - **`error`**: send `ownerMessage` (it starts with an @-mention of Daniel)
+     to Daniel as a Slack DM (channel ID `U09LQDUPQTC`), then send a push notification that starts with
      "Call review failed:" plus the `step` and `error`. Stop.
    - **`ok`**: continue to step 3.
 
 3. If `officeOnlyMessage` isn't null, post it to #office-only
-   (`C09LNB93MQW`) exactly as written. If it's null, nobody is owed a
-   callback, so post nothing there.
+   (`C09LNB93MQW`) exactly as written. It lists callers still owed a
+   callback and, when needed, a double-call reminder. If it's null, post
+   nothing there.
 
 4. Read `ownerMessage` and the `tasks` list. If you spot something useful
    the script didn't say (for example, the same caller missed several days
@@ -63,6 +64,8 @@ messages, files or commits.
    script's numbers exactly as they are.
 
 5. Send `ownerMessage` to Daniel as a Slack DM (channel ID `U09LQDUPQTC`).
+   It already starts with an @-mention of Daniel so the DM notifies him;
+   keep that mention.
 
 6. If `problems` isn't empty, or any task has an `error`, also send a push
    notification that starts with "Call review needs a look:" and names the

@@ -8,6 +8,9 @@
 //   --dry-run   look everything up but don't create Briostack tasks
 //   --now=ISO   pretend the run happens at this instant (for testing)
 //
+// Callers can't be matched to Briostack customers (the API has no phone
+// search), so tasks aren't linked to a customer yet.
+//
 // Prints one JSON object:
 //   { status: "ok" | "skipped" | "error", window, ownerMessage,
 //     officeOnlyMessage, tasks, apiUsage, problems }
@@ -66,33 +69,31 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
     const analysis = analyzeCalls(legs, { ...window, nowMs }, config, { outboundTexts });
 
     step = 'Briostack';
+    const canCreate = Boolean(brio && config.taskTypeId && !dryRun);
     const tasks = [];
     for (const entry of analysis.needsCallback) {
-      let customer = null;
-      let lookedUp = false;
-      if (brio) {
-        try {
-          customer = await brio.findCustomerByPhone(entry.phone);
-          lookedUp = true;
-        } catch (err) {
-          problems.push(`Briostack lookup failed for ${entry.phone}: ${err.message}`);
-        }
-      }
-      const task = buildTask(entry, customer, { config, today: window.today, checkedAtMs: nowMs, lookedUp });
+      // The Briostack API has no phone search, so callers can't be matched
+      // to a customer; the task tells the office to look the number up.
+      const task = buildTask(entry, null, { config, today: window.today, checkedAtMs: nowMs, lookedUp: false });
       task.summary = reports.missSummary(entry);
-      if (brio && !dryRun) {
+      if (canCreate) {
         try {
           task.briostackTaskId = await brio.createTask(task);
           task.created = true;
         } catch (err) {
           task.error = err.message;
-          problems.push(`Couldn't create the task for ${task.displayName || task.phone}: ${err.message}`);
+          problems.push(`Couldn't create the task for ${task.displayName} ${task.phone}: ${err.message}`);
         }
       }
       tasks.push(task);
     }
-    if (!brio) problems.push('Briostack isn\'t connected (BRIOSTACK_API_KEY missing), so no tasks were created and callers weren\'t looked up.');
+    if (!brio) problems.push("Briostack isn't connected (BRIOSTACK_API_KEY missing), so no tasks were created.");
+    else if (!config.taskTypeId) problems.push('No callback task type is set in config.js yet, so no Briostack tasks were created.');
     if (dryRun) problems.push('Dry run: tasks were built but not created in Briostack.');
+
+    const doubleCallMisses = analysis.missedCalls.filter(
+      (m) => m.handled?.doubleCall && !m.handled.doubleCall.followed && m.callerType !== 'current',
+    );
 
     step = 'weekly trend';
     let weekly = null;
@@ -111,8 +112,8 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
       tasks,
       apiUsage,
       problems,
-      officeOnlyMessage: reports.officeOnlyMessage({ tasks, checkedAtMs: nowMs }),
-      ownerMessage: reports.ownerReport({ window, analysis, tasks, texts, apiUsage, problems, weekly, config }),
+      officeOnlyMessage: reports.officeOnlyMessage({ tasks, doubleCallMisses, checkedAtMs: nowMs, config }),
+      ownerMessage: reports.ownerReport({ window, analysis, tasks, texts, apiUsage, problems, weekly, doubleCallMisses, config }),
     };
   } catch (err) {
     return {
@@ -120,7 +121,7 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
       window,
       step,
       error: err.message,
-      ownerMessage: reports.failureReport({ step, error: err.message, window }),
+      ownerMessage: reports.failureReport({ step, error: err.message, window, config }),
       officeOnlyMessage: null,
     };
   }
@@ -168,7 +169,7 @@ async function main() {
 if (require.main === module) {
   main().catch((err) => {
     process.stdout.write(
-      JSON.stringify({ status: 'error', step: 'startup', error: err.message, ownerMessage: reports.failureReport({ step: 'startup', error: err.message }) }, null, 2) + '\n',
+      JSON.stringify({ status: 'error', step: 'startup', error: err.message, ownerMessage: reports.failureReport({ step: 'startup', error: err.message, config }) }, null, 2) + '\n',
     );
   });
 }

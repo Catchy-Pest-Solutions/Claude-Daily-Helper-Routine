@@ -1,14 +1,18 @@
-// Briostack calls the call review makes: find a customer by phone, pull a
-// little context for the task, and create the callback task.
-//
-// Verified against the live API: X-Api-Key auth, GET /customers/{id},
-// /customers/{id}/services, /customers/{id}/appointments. Bursts return
-// {"message":"Too Many Requests"}, so calls go one at a time with a pause
-// and a retry.
-//
-// NOT YET VERIFIED (waiting on a live test): the phone-lookup query and the
-// task-create endpoint/fields. Until they are, findCustomerByPhone returns
-// null and createTask throws, so the run still reports every caller.
+// Briostack calls the call review makes. Confirmed against the live API:
+// - Auth: X-Api-Key header. Bursts return {"message":"Too Many Requests"},
+//   so calls go one at a time with a pause and a retry.
+// - No phone search. GET /customers ignores every filter (phone,
+//   phoneNumber, primaryPhone, q, search, ...) and /customers/search,
+//   /lookup, /find, /parties and /contacts don't exist. So callers can't be
+//   matched to a customer through the API.
+// - POST /tasks rejects unknown properties. Accepted: title, taskTypeId,
+//   statusId, description, employeeId (assignee's employee ID), partyId
+//   (customer ID), startDate, dueDate (full ISO timestamps with offset).
+//   There's no priority field. Open tasks use statusId ORDER_REQMNT_CREATED.
+//   taskTypeId must be an existing type (e.g. APPOINTMENT_REVIEW,
+//   BAD_EMAIL); there's no endpoint that lists them.
+
+const OPEN_STATUS = 'ORDER_REQMNT_CREATED';
 
 function createBriostackCallbackClient({ baseUrl, apiKey, config, fetchImpl = fetch, pauseMs = 1500 }) {
   const base = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
@@ -23,7 +27,7 @@ function createBriostackCallbackClient({ baseUrl, apiKey, config, fetchImpl = fe
       });
       requests++;
       const text = await res.text();
-      await new Promise((r) => setTimeout(r, pauseMs));
+      if (pauseMs) await new Promise((r) => setTimeout(r, pauseMs));
       if (text.includes('Too Many Requests')) {
         await new Promise((r) => setTimeout(r, pauseMs * (attempt + 2)));
         continue;
@@ -34,30 +38,25 @@ function createBriostackCallbackClient({ baseUrl, apiKey, config, fetchImpl = fe
     throw new Error(`Briostack ${method} ${path} kept returning Too Many Requests`);
   }
 
-  async function customerContext(id) {
-    const c = await call('GET', `customers/${id}`);
-    const services = await call('GET', `customers/${id}/services`).catch(() => []);
-    const a = c.primaryAddress || {};
-    return {
-      id,
-      name: [c.firstName, c.lastName].filter(Boolean).join(' ') || c.companyName || `Customer ${id}`,
-      statusId: c.statusId,
-      address: [a.addressLine1 || a.street, a.city].filter(Boolean).join(', ') || null,
-      amountDue: c.amountDue,
-      daysPastDue: c.daysPastDue,
-      services: Array.isArray(services) ? services : services?.items || [],
+  // Returns the new task's ID.
+  async function createTask(task) {
+    if (!config.taskTypeId) throw new Error('no callback task type set (config.taskTypeId)');
+    const employeeId = config.staff[task.assigneeExt]?.briostackEmployeeId;
+    const body = {
+      title: task.title,
+      taskTypeId: config.taskTypeId,
+      statusId: OPEN_STATUS,
+      description: task.description,
+      startDate: task.startDate,
+      dueDate: task.dueDate,
+      ...(employeeId ? { employeeId } : {}),
+      ...(task.customerId ? { partyId: String(task.customerId) } : {}),
     };
+    const created = await call('POST', 'tasks', body);
+    return created.taskId;
   }
 
-  async function findCustomerByPhone(/* phone10 */) {
-    return null;
-  }
-
-  async function createTask(/* task */) {
-    throw new Error('task creation not set up yet');
-  }
-
-  return { findCustomerByPhone, customerContext, createTask, requestCount: () => requests, config };
+  return { createTask, requestCount: () => requests };
 }
 
-module.exports = { createBriostackCallbackClient };
+module.exports = { createBriostackCallbackClient, OPEN_STATUS };

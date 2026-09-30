@@ -168,10 +168,34 @@ test('task routing: menu choice first, then Briostack status', () => {
   assert.equal(buildTask(entry(), { id: 1, statusId: 'CUSTOMER_CANCEL_OUT', name: 'Jane Doe' }, opts).assigneeName, 'Steve');
   const unknown = buildTask(entry(), null, opts);
   assert.equal(unknown.assigneeName, 'Steve');
-  assert.equal(unknown.priority, 'high');
   assert.equal(unknown.customerId, null);
-  assert.match(unknown.title, /^Call back \(NEW caller\): Jane Doe \(828\) 555-0100$/);
+  assert.match(unknown.title, /^PRIORITY - Call back \(NEW caller\): Jane Doe \(828\) 555-0100$/);
+  assert.equal(unknown.dueDate, '2026-09-30T17:00:00.000-04:00');
+  assert.match(unknown.description, /double call/);
+  const current = buildTask(entry({ callerTypeFromQueue: 'current' }), null, opts);
+  assert.equal(current.dueDate, '2026-10-01T17:00:00.000-04:00');
+  assert.doesNotMatch(current.description, /double call/);
   assert.match(buildTask(entry({ callerName: 'Leicester NC', callerNameIsPlace: true }), null, opts).title, /Unknown caller \(Leicester NC\)/);
+});
+
+test('double-call check on unanswered callbacks', () => {
+  const w = windowFor('2026-09-30T16:05:00Z');
+  w.startMs = cal.easternToMs(D, '00:00');
+  const legs = [
+    ...voicemail('v1', '09:00', '8285550201', '191'),
+    ...outbound('o1', '09:10', 103, '8285550201', 4), // no answer...
+    ...outbound('o2', '09:11', 103, '8285550201', 40), // ...second call a minute later
+    ...voicemail('v2', '09:20', '8285550202', '191'),
+    ...outbound('o3', '09:30', 103, '8285550202', 5), // one short call, nothing after
+    ...voicemail('v3', '09:40', '8285550203', '191'),
+    ...outbound('o4', '09:45', 102, '8285550203', 300), // connected
+  ];
+  const r = analyzeCalls(legs, w, config);
+  const byId = Object.fromEntries(r.missedCalls.map((m) => [m.id, m.handled.doubleCall]));
+  assert.equal(byId.v1.followed, true);
+  assert.equal(byId.v2.followed, false);
+  assert.equal(byId.v2.agent, 103);
+  assert.equal(byId.v3, null);
 });
 
 test('busy score stays within 1-10', () => {
@@ -204,8 +228,8 @@ test('runner: builds tasks and messages, creating tasks through Briostack', asyn
   }));
   const ats = { searchCalls: async () => legs, searchInboundTexts: async () => [], searchOutboundTexts: async () => [], requestCount: () => 3 };
   const created = [];
+  config.taskTypeId = 'CALL_BACK_TEST';
   const brio = {
-    findCustomerByPhone: async () => null,
     createTask: async (t) => {
       created.push(t);
       return 'T1';
@@ -213,10 +237,29 @@ test('runner: builds tasks and messages, creating tasks through Briostack', asyn
     requestCount: () => 2,
   };
   const r = await runCallReview({ nowMs: Date.parse('2026-09-30T16:05:00Z'), ats, brio });
+  config.taskTypeId = null;
   assert.equal(r.status, 'ok');
   assert.equal(created.length, 1);
   assert.equal(created[0].assigneeName, 'Steve');
   assert.equal(r.tasks[0].created, true);
   assert.match(r.officeOnlyMessage, /task created/);
   assert.match(r.ownerMessage, /ran cleanly/);
+  assert.match(r.ownerMessage, /^<@U09LQDUPQTC>/);
+});
+
+test('briostack client sends only the fields the API accepts', async () => {
+  const { createBriostackCallbackClient } = require('../src/callReview/briostack');
+  const sent = [];
+  const fetchImpl = async (url, opts) => {
+    sent.push({ url, ...opts, body: JSON.parse(opts.body) });
+    return { ok: true, status: 201, text: async () => JSON.stringify({ taskId: '555' }) };
+  };
+  const brio = createBriostackCallbackClient({ baseUrl: 'https://x/rest/v1', apiKey: 'k', config: { ...config, taskTypeId: 'T' }, fetchImpl, pauseMs: 0 });
+  const id = await brio.createTask({ title: 't', description: 'd', startDate: 's', dueDate: 'u', assigneeExt: 103, customerId: null });
+  assert.equal(id, '555');
+  assert.equal(sent[0].url, 'https://x/rest/v1/tasks');
+  assert.deepEqual(sent[0].body, { title: 't', taskTypeId: 'T', statusId: 'ORDER_REQMNT_CREATED', description: 'd', startDate: 's', dueDate: 'u', employeeId: '16635' });
+
+  const noType = createBriostackCallbackClient({ baseUrl: 'https://x/rest/v1', apiKey: 'k', config, fetchImpl, pauseMs: 0 });
+  await assert.rejects(noType.createTask({ assigneeExt: 103 }), /no callback task type/);
 });
