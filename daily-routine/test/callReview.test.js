@@ -302,3 +302,30 @@ test('briostack phone lookup uses the filter expression', async () => {
   assert.equal(c.name, 'Kenny Edwards');
   assert.equal(c.address, '631 Ave, Asheville');
 });
+
+test('briostack falls back to caller-ID name + secondary phone', async () => {
+  const { createBriostackCallbackClient, searchableName } = require('../src/callReview/briostack');
+  assert.deepEqual(searchableName('Kenneth Edward'), { first: 'Kenneth', last: 'Edward' });
+  assert.deepEqual(searchableName('J Johnson'), { first: null, last: 'Johnson' });
+  assert.equal(searchableName('Madonna'), null);
+  assert.deepEqual(searchableName('O"Brien Smith"'), { first: 'OBrien', last: 'Smith' }); // quotes can't reach the filter
+
+  const many = Array.from({ length: 10 }, (_, i) => ({ customerId: String(100 + i), lastName: 'Edwards' }));
+  const urls = [];
+  const fetchImpl = async (url) => {
+    const u = decodeURIComponent(url);
+    urls.push(u);
+    let body = [];
+    if (u.includes('primaryPhone.number')) body = [];
+    else if (u.includes('firstName like')) body = [{ customerId: '18240' }];
+    else if (u.includes('lastName like')) body = many;
+    else if (u.endsWith('/customers/18240')) body = { customerId: '18240', firstName: 'Joseph & Emily', lastName: 'Edwards', statusId: 'CUSTOMER_ACTIVE', secondaryPhone: { number: '+18282429649' } };
+    return { ok: true, status: 200, text: async () => JSON.stringify(body) };
+  };
+  const brio = createBriostackCallbackClient({ baseUrl: 'https://x/rest/v1/', apiKey: 'k', config, fetchImpl, pauseMs: 0 });
+  const c = await brio.findCustomerByPhone('8282429649', 'Emily Edwards');
+  assert.equal(c.id, '18240');
+  assert.equal(c.matchedOn, 'secondary phone');
+  assert.ok(urls.some((u) => u.includes('lastName like "Edwards%" and firstName like "%Emily%"')));
+  assert.equal(await brio.findCustomerByPhone('8282429649', null), null); // no name -> primary only
+});
