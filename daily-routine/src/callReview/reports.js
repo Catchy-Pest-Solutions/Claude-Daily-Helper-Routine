@@ -35,7 +35,6 @@ function officeOnlyMessage({ tasks, doubleCallMisses = [], checkedAtMs, config }
     const status = t.created ? '📝 task created' : t.error ? '⚠️ task not created' : '📝 task pending';
     lines.push(`• ${flag}*${t.displayName}* — ${formatPhone(t.phone)} — ${t.summary} → *${t.assigneeName}* (${status})`);
   }
-  if (tasks.length) lines.push('_If someone already called from a cell phone, just close the task._');
   if (doubleCallMisses.length) {
     if (lines.length) lines.push('');
     lines.push('🔁 *Double-call reminder*');
