@@ -86,7 +86,7 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
       let lookedUp = false;
       if (brio) {
         try {
-          customer = await brio.findCustomerByPhone(entry.phone);
+          customer = await brio.findCustomerByPhone(entry.phone, entry.callerNameIsPlace ? null : entry.callerName);
           lookedUp = true;
         } catch (err) {
           problems.push(`Briostack lookup failed for ${formatPhone(entry.phone)}: ${err.message}`);

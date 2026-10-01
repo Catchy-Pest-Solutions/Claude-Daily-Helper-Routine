@@ -5,8 +5,9 @@
 // - Caller pressed 2 (Existing Customers)  -> Shelley
 // - No menu choice: active Briostack customer -> Shelley, anyone else
 //   (no match, or a former customer) -> Steve, since it's a sales call.
-// Briostack matches on the customer's primary phone only, so "not found"
-// can still be a customer calling from another number.
+// Briostack is searched by primary phone, then by caller-ID name and
+// secondary phone, so "not found" can still be a customer calling from a
+// third number or with no name on caller ID.
 const cal = require('./calendar');
 const { formatPhone, OUTCOME_TEXT } = require('./callAnalysis');
 
@@ -31,8 +32,10 @@ function describeMiss(m) {
 
 function customerLines(customer, lookedUp) {
   if (!lookedUp) return ["Briostack: not checked (the API can't search by phone). Search this number in Briostack before calling."];
-  if (!customer) return ["Briostack: no customer has this as their primary phone (could still be a customer calling from another number)."];
-  const lines = [`Briostack: customer #${customer.id} ${customer.name} (${statusText(customer.statusId)})`];
+  if (!customer) return ["Briostack: no customer found with this phone number (could still be a customer calling from another number). Search Briostack before calling."];
+  const lines = [
+    `Briostack: customer #${customer.id} ${customer.name} (${statusText(customer.statusId)})${customer.matchedOn === 'secondary phone' ? ', matched on their secondary phone' : ''}`,
+  ];
   if (customer.otherMatches) lines.push(`(${customer.otherMatches} other Briostack account${customer.otherMatches > 1 ? 's use' : ' uses'} this number too.)`);
   if (customer.address) lines.push(`Address: ${customer.address}`);
   const active = (customer.services || []).filter((s) => s.statusId === 'CSC_ACTIVE');
