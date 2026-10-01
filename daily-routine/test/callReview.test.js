@@ -308,7 +308,7 @@ test('briostack falls back to caller-ID name + secondary phone', async () => {
   assert.deepEqual(searchableName('Kenneth Edward'), { first: 'Kenneth', last: 'Edward' });
   assert.deepEqual(searchableName('J Johnson'), { first: null, last: 'Johnson' });
   assert.equal(searchableName('Madonna'), null);
-  assert.equal(searchableName('O"Brien Smith"'), null); // quotes stripped -> single token
+  assert.deepEqual(searchableName('O"Brien Smith"'), { first: 'OBrien', last: 'Smith' }); // quotes can't reach the filter
 
   const many = Array.from({ length: 10 }, (_, i) => ({ customerId: String(100 + i), lastName: 'Edwards' }));
   const urls = [];
