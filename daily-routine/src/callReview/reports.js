@@ -24,19 +24,26 @@ function hourLabel(h) {
   return `${h - 12} PM`;
 }
 
-// #office-only: the list of callbacks, kept alongside the Briostack tasks
-// until the tasks have proven themselves.
-function officeOnlyMessage({ tasks, doubleCallMisses = [], checkedAtMs, config }) {
-  if (!tasks.length && !doubleCallMisses.length) return null;
-  const lines = [];
-  if (tasks.length) lines.push(`📞 *Missed calls that still need a callback* (checked ${cal.formatDay(checkedAtMs)} ${cal.formatTime(checkedAtMs)})`);
-  for (const t of tasks) {
-    const flag = t.callerType === 'new' ? '🆕 ' : '';
-    const status = t.created ? '📝 task created' : t.error ? '⚠️ task not created' : '📝 task pending';
-    lines.push(`• ${flag}*${t.displayName}* — ${formatPhone(t.phone)} — ${t.summary} → *${t.assigneeName}* (${status})`);
+// #office-only: callbacks still owed, then a short recap of the window and
+// how each person's day went.
+function officeOnlyMessage({ window: w, analysis, tasks, doubleCallMisses = [], likelyRobocalls = [], checkedAtMs, config }) {
+  const s = analysis.stats;
+  const lines = [`📊 *Daily call recap* — ${windowLabel(w)}`, '_Each recap covers noon to noon: from noon on the last business day to noon today._', ''];
+
+  if (tasks.length) {
+    lines.push(`📞 *Missed calls that still need a callback* (checked ${cal.formatDay(checkedAtMs)} ${cal.formatTime(checkedAtMs)})`);
+    for (const t of tasks) {
+      const flag = t.callerType === 'new' ? '🆕 ' : '';
+      const status = t.created ? '📝 task created' : t.error ? '⚠️ task not created' : '📝 task pending';
+      lines.push(`• ${flag}*${t.displayName}* — ${formatPhone(t.phone)} — ${t.summary} → *${t.assigneeName}* (${status})`);
+    }
+  } else {
+    lines.push('📞 *Missed calls that still need a callback:* none. Every missed call has been returned. 🎉');
   }
+  if (likelyRobocalls.length) lines.push(`• 🤖 ${plural(likelyRobocalls.length, 'likely robocall')} skipped (town-only caller ID, silent at the menu), no callback needed`);
+
   if (doubleCallMisses.length) {
-    if (lines.length) lines.push('');
+    lines.push('');
     lines.push('🔁 *Double-call reminder*');
     for (const m of doubleCallMisses) {
       lines.push(`• ${config.staff[m.handled.doubleCall.agent]?.name || 'Someone'} called back ${m.callerName || formatPhone(m.phone)} once and didn't try again right away.`);
@@ -45,7 +52,33 @@ function officeOnlyMessage({ tasks, doubleCallMisses = [], checkedAtMs, config }
       "When a new customer doesn't pick up: hang up without a voicemail, call again 30-60 seconds later, and leave the voicemail on the second call. They don't have our number saved, so the second call gets answered much more often.",
     );
   }
+
+  lines.push('');
+  lines.push('☎️ *How the phones went*');
+  lines.push(`• ${plural(s.inboundTotal, 'inbound call')} · ✅ ${s.answered} answered (${pct(s.answered, s.inboundTotal)}) · ❌ ${s.missed} missed (${s.missedByPeriod.closed} while closed)`);
+  lines.push(`• 📤 ${plural(s.outboundTotal, 'outbound call')} · ⏱️ median time to answer ${s.medianWaitSec != null ? cal.formatDuration(s.medianWaitSec) : '—'} _(includes the phone menu)_`);
+  if (s.handledCount) lines.push(`• 🔁 ${s.handledCount} missed calls already returned · median callback ${cal.formatDuration(s.medianCallbackSec)}`);
+  const busiest = Object.entries(s.hourly)
+    .filter(([k]) => k !== 'closedDay')
+    .sort((a, b) => b[1].total - a[1].total)[0];
+  if (busiest) lines.push(`• 🕐 Busiest hour: ${hourLabel(Number(busiest[0]))} (${plural(busiest[1].total, 'call')}, ${busiest[1].missed} missed)`);
+
+  lines.push('');
+  lines.push('👩‍💼 *Team*');
+  lines.push(...teamLines(s));
   return lines.join('\n');
+}
+
+function teamLines(s) {
+  const out = [];
+  for (const a of Object.values(s.agents)) {
+    if (!a.takesCalls) continue;
+    out.push(
+      `• *${a.name}* — ${busyEmoji(a.busyScore)} busy ${a.busyScore ?? '—'}/10 · ${a.inboundAnswered} answered · ${a.outbound} outbound · ${cal.formatDuration(a.talkSec)} on the phone`,
+    );
+  }
+  out.push('_Busy score: share of office hours on the phone plus calls per hour._');
+  return out;
 }
 
 function ideas(stats, missed, robocallCalls = 0) {
@@ -148,13 +181,7 @@ function ownerReport({ window: w, analysis, tasks, alreadyOpen = [], likelyRoboc
   L.push('');
 
   L.push('👩‍💼 *Team*');
-  for (const a of Object.values(s.agents)) {
-    if (!a.takesCalls) continue;
-    L.push(
-      `• *${a.name}* — ${busyEmoji(a.busyScore)} busy ${a.busyScore ?? '—'}/10 · ${a.inboundAnswered} answered · ${a.outbound} outbound · ${cal.formatDuration(a.talkSec)} on the phone`,
-    );
-  }
-  L.push('_Busy score: share of office hours on the phone plus calls per hour._');
+  L.push(...teamLines(s));
   L.push('');
 
   L.push('🕐 *Inbound calls by hour*');

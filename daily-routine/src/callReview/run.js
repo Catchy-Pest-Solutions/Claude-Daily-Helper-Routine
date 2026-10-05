@@ -11,8 +11,8 @@
 // Prints one JSON object:
 //   { status: "ok" | "skipped" | "error", window, ownerMessage,
 //     officeOnlyMessage, tasks, likelyRobocalls, apiUsage, problems }
-// The routine DMs ownerMessage to Daniel and posts officeOnlyMessage (when
-// non-null) to #office-only.
+// The routine DMs ownerMessage to Daniel and posts officeOnlyMessage to
+// #office-only (null only when the run failed).
 const path = require('node:path');
 
 try {
@@ -137,7 +137,7 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
       tasks,
       apiUsage,
       problems,
-      officeOnlyMessage: reports.officeOnlyMessage({ tasks, doubleCallMisses, checkedAtMs: nowMs, config }),
+      officeOnlyMessage: reports.officeOnlyMessage({ window, analysis, tasks, doubleCallMisses, likelyRobocalls: robocalls, checkedAtMs: nowMs, config }),
       alreadyOpen: alreadyOpen.map((e) => e.phone),
       likelyRobocalls: robocalls,
       ownerMessage: reports.ownerReport({ window, analysis, tasks, alreadyOpen, likelyRobocalls: robocalls, texts, apiUsage, problems, weekly, doubleCallMisses, config }),

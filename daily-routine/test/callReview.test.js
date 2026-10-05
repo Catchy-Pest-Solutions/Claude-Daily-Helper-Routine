@@ -364,3 +364,20 @@ test('runner: town-only callers silent ~1 minute at the menu are likely robocall
   assert.equal(r2.likelyRobocalls.length, 0);
   assert.ok(r2.tasks.some((t) => t.phone === '8645550401'));
 });
+
+test('office message: recap and team stats even with no callbacks owed', async () => {
+  const legs = answered('a', '09:05', '8285550501', 102).map((l) => ({ ...l, start_time: l.start_time.replace(D, '2026-09-30'), end_time: l.end_time.replace(D, '2026-09-30') }));
+  const ats = { searchCalls: async () => legs, searchInboundTexts: async () => [], searchOutboundTexts: async () => [], requestCount: () => 1 };
+  const brio = { listOpenTasks: async () => [], findCustomerByPhone: async () => null, createTask: async () => 'T', requestCount: () => 1 };
+  const r = await runCallReview({ nowMs: Date.parse('2026-09-30T16:05:00Z'), ats, brio });
+  const m = r.officeOnlyMessage;
+  assert.match(m, /^📊 \*Daily call recap\* — Tue, Sep 29 12:00 PM → Wed, Sep 30 12:00 PM/);
+  assert.match(m, /noon to noon/);
+  assert.match(m, /still need a callback:\* none/);
+  assert.match(m, /1 inbound call · ✅ 1 answered \(100%\)/);
+  assert.match(m, /median time to answer/);
+  assert.match(m, /Busiest hour: 9 AM \(1 call, 0 missed\)/);
+  assert.match(m, /\*Shelley\* — .* busy \d+\/10 · 1 answered · 0 outbound/);
+  assert.match(m, /\*Steve\* — /);
+  assert.doesNotMatch(m, /Daniel/);
+});
