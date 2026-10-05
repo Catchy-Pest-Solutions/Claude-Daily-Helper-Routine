@@ -70,16 +70,16 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
     const tasks = [];
     const alreadyOpen = [];
     const likelyRobocalls = [];
-    let openTitles = [];
+    let openTasks = null;
     if (brio) {
       try {
-        openTitles = (await brio.listOpenTasks()).map((t) => String(t.title || ''));
+        openTasks = await brio.listOpenTasks();
       } catch (err) {
         problems.push(`Couldn't check Briostack for open tasks, so duplicates are possible: ${err.message}`);
       }
     }
     for (const entry of analysis.needsCallback) {
-      if (openTitles.some((t) => t.includes(formatPhone(entry.phone)))) {
+      if ((openTasks || []).some((t) => String(t.title || '').includes(formatPhone(entry.phone)))) {
         alreadyOpen.push(entry);
         continue;
       }
@@ -100,6 +100,7 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
       }
       const task = buildTask(entry, customer, { config, today: window.today, checkedAtMs: nowMs, lookedUp });
       task.summary = reports.missSummary(entry);
+      task.shortSummary = reports.missSummary(entry, { short: true });
       if (canCreate) {
         try {
           task.briostackTaskId = await brio.createTask(task);
@@ -137,7 +138,7 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
       tasks,
       apiUsage,
       problems,
-      officeOnlyMessage: reports.officeOnlyMessage({ window, analysis, tasks, doubleCallMisses, likelyRobocalls: robocalls, checkedAtMs: nowMs, config }),
+      officeOnlyMessage: reports.officeOnlyMessage({ window, analysis, tasks, doubleCallMisses, likelyRobocalls: robocalls, earlierOpen: earlierCallbackTasks(openTasks, nowMs), config }),
       alreadyOpen: alreadyOpen.map((e) => e.phone),
       likelyRobocalls: robocalls,
       ownerMessage: reports.ownerReport({ window, analysis, tasks, alreadyOpen, likelyRobocalls: robocalls, texts, apiUsage, problems, weekly, doubleCallMisses, config }),
@@ -152,6 +153,27 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
       officeOnlyMessage: null,
     };
   }
+}
+
+// Callback tasks from earlier runs still open in Briostack, per person.
+// Fetched before today's tasks were made, so none of today's are counted.
+// Field names follow what POST /tasks accepts (employeeId, dueDate); a task
+// without them still counts, under "Unassigned" and not overdue.
+function earlierCallbackTasks(openTasks, nowMs) {
+  if (!openTasks) return null;
+  const nameOf = Object.fromEntries(Object.values(config.staff).map((s) => [String(s.briostackEmployeeId), s.name]));
+  const byPerson = {};
+  let total = 0;
+  for (const t of openTasks) {
+    if (!/Call back \(/.test(String(t.title || ''))) continue;
+    const name = nameOf[String(t.employeeId ?? t.employee?.employeeId ?? '')] || 'Unassigned';
+    byPerson[name] = byPerson[name] || { open: 0, overdue: 0 };
+    byPerson[name].open++;
+    const due = Date.parse(t.dueDate || '');
+    if (Number.isFinite(due) && due < nowMs) byPerson[name].overdue++;
+    total++;
+  }
+  return { total, byPerson };
 }
 
 // Monday's run (or the day after a Monday holiday) carries the weekly trend.
@@ -201,4 +223,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { runCallReview, isFirstRunOfWeek };
+module.exports = { runCallReview, isFirstRunOfWeek, earlierCallbackTasks };

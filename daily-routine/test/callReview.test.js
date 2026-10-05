@@ -244,7 +244,7 @@ test('runner: builds tasks and messages, creating tasks through Briostack', asyn
   assert.equal(created.length, 1);
   assert.equal(created[0].assigneeName, 'Steve');
   assert.equal(r.tasks[0].created, true);
-  assert.match(r.officeOnlyMessage, /task created/);
+  assert.match(r.officeOnlyMessage, /Still need a callback\*\n• 🆕 .*\(828\) 555-0102 — missed Wed, Sep 30 9:30 AM, went to voicemail → \*Steve\*$/m);
   assert.match(r.ownerMessage, /ran cleanly/);
   assert.match(r.ownerMessage, /^<@U09LQDUPQTC>/);
 });
@@ -365,19 +365,38 @@ test('runner: town-only callers silent ~1 minute at the menu are likely robocall
   assert.ok(r2.tasks.some((t) => t.phone === '8645550401'));
 });
 
-test('office message: recap and team stats even with no callbacks owed', async () => {
-  const legs = answered('a', '09:05', '8285550501', 102).map((l) => ({ ...l, start_time: l.start_time.replace(D, '2026-09-30'), end_time: l.end_time.replace(D, '2026-09-30') }));
+test('office message: short recap, team stats, earlier open tasks and within-the-hour callbacks', async () => {
+  const onDay = (legs) => legs.map((l) => ({ ...l, start_time: l.start_time.replace(D, '2026-09-30'), end_time: l.end_time.replace(D, '2026-09-30') }));
+  const legs = onDay([
+    ...answered('a', '09:05', '8285550501', 102),
+    ...voicemail('v1', '09:20', '8285550502'),
+    ...outbound('o1', '09:40', 102, '8285550502'), // back in 20 min
+    ...voicemail('v2', '09:30', '8285550503'),
+    ...outbound('o2', '11:00', 103, '8285550503'), // back in 90 min
+  ]);
   const ats = { searchCalls: async () => legs, searchInboundTexts: async () => [], searchOutboundTexts: async () => [], requestCount: () => 1 };
-  const brio = { listOpenTasks: async () => [], findCustomerByPhone: async () => null, createTask: async () => 'T', requestCount: () => 1 };
+  const open = [
+    { title: 'PRIORITY - Call back (NEW caller): A (828) 555-0901', employeeId: '16635', dueDate: '2026-09-29T17:00:00.000-04:00' },
+    { title: 'PRIORITY - Call back (NEW caller): B (828) 555-0902', employeeId: '16635', dueDate: '2026-10-01T17:00:00.000-04:00' },
+    { title: 'Call back (Current customer): C (828) 555-0903', employeeId: '16195', dueDate: '2026-10-01T17:00:00.000-04:00' },
+    { title: 'Bid follow-up: D', employeeId: '16635' }, // not a callback task
+  ];
+  const brio = { listOpenTasks: async () => open, findCustomerByPhone: async () => null, createTask: async () => 'T', requestCount: () => 1 };
   const r = await runCallReview({ nowMs: Date.parse('2026-09-30T16:05:00Z'), ats, brio });
   const m = r.officeOnlyMessage;
-  assert.match(m, /^📊 \*Daily call recap\* — Tue, Sep 29 12:00 PM → Wed, Sep 30 12:00 PM/);
-  assert.match(m, /noon to noon/);
-  assert.match(m, /still need a callback:\* none/);
-  assert.match(m, /1 inbound call · ✅ 1 answered \(100%\)/);
-  assert.match(m, /median time to answer/);
-  assert.match(m, /Busiest hour: 9 AM \(1 call, 0 missed\)/);
-  assert.match(m, /\*Shelley\* — .* busy \d+\/10 · 1 answered · 0 outbound/);
+  assert.match(m, /^📊 \*Daily call recap\* — Tue, Sep 29 12:00 PM → Wed, Sep 30 12:00 PM _\(noon to noon\)_/);
+  assert.match(m, /Still need a callback:\* none 🎉/);
+  assert.match(m, /📂 Still open from earlier days: Steve 2 \(1 overdue\) · Shelley 1$/m);
+  assert.match(m, /• 3 calls in · 1 answered \(33%\) · 2 calls out/);
+  assert.match(m, /median to answer · 🕐 busiest 9 AM \(3 calls\)/);
+  assert.match(m, /⚡ 1 of 2 office-hours misses called back within an hour/);
+  assert.match(m, /\*Shelley\* — .* busy \d+\/10 · 1 answered · 1 out · /);
   assert.match(m, /\*Steve\* — /);
-  assert.doesNotMatch(m, /Daniel/);
+  assert.match(m, /Daniel gets the full report/);
+  assert.ok(m.split('\n').length <= 16, m);
+
+  // Tasks without assignee fields: total only.
+  const { earlierCallbackTasks } = require('../src/callReview/run');
+  assert.deepEqual(earlierCallbackTasks([{ title: 'Call back (NEW caller): X' }], 0), { total: 1, byPerson: { Unassigned: { open: 1, overdue: 0 } } });
+  assert.equal(earlierCallbackTasks(null, 0), null);
 });
