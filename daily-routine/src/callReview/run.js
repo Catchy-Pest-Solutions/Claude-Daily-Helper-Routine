@@ -10,7 +10,7 @@
 //
 // Prints one JSON object:
 //   { status: "ok" | "skipped" | "error", window, ownerMessage,
-//     officeOnlyMessage, tasks, apiUsage, problems }
+//     officeOnlyMessage, tasks, likelyRobocalls, apiUsage, problems }
 // The routine DMs ownerMessage to Daniel and posts officeOnlyMessage (when
 // non-null) to #office-only.
 const path = require('node:path');
@@ -69,6 +69,7 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
     const canCreate = Boolean(brio && config.taskTypeId && !dryRun);
     const tasks = [];
     const alreadyOpen = [];
+    const likelyRobocalls = [];
     let openTitles = [];
     if (brio) {
       try {
@@ -91,6 +92,11 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
         } catch (err) {
           problems.push(`Briostack lookup failed for ${formatPhone(entry.phone)}: ${err.message}`);
         }
+      }
+      // Only skip the task once Briostack confirms it isn't a customer.
+      if (entry.robocallPattern && lookedUp && !customer) {
+        likelyRobocalls.push(entry);
+        continue;
       }
       const task = buildTask(entry, customer, { config, today: window.today, checkedAtMs: nowMs, lookedUp });
       task.summary = reports.missSummary(entry);
@@ -124,6 +130,7 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
     }
 
     const apiUsage = { ats: ats.requestCount(), briostack: brio ? brio.requestCount() : 0 };
+    const robocalls = likelyRobocalls.map((e) => ({ phone: e.phone, callerName: e.callerName, calls: e.misses.length, summary: reports.missSummary(e) }));
     return {
       status: 'ok',
       window: { ...window, label: reports.windowLabel(window) },
@@ -132,7 +139,8 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
       problems,
       officeOnlyMessage: reports.officeOnlyMessage({ tasks, doubleCallMisses, checkedAtMs: nowMs, config }),
       alreadyOpen: alreadyOpen.map((e) => e.phone),
-      ownerMessage: reports.ownerReport({ window, analysis, tasks, alreadyOpen, texts, apiUsage, problems, weekly, doubleCallMisses, config }),
+      likelyRobocalls: robocalls,
+      ownerMessage: reports.ownerReport({ window, analysis, tasks, alreadyOpen, likelyRobocalls: robocalls, texts, apiUsage, problems, weekly, doubleCallMisses, config }),
     };
   } catch (err) {
     return {

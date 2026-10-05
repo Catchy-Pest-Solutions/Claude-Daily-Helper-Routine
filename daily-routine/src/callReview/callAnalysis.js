@@ -283,12 +283,30 @@ function analyzeCalls(legs, { startMs, endMs, nowMs }, config, { outboundTexts =
     callerTypeFromQueue: misses.map((x) => x.callerType).find(Boolean) || null,
     queues: [...new Set(misses.map((x) => x.queue).filter(Boolean))],
     leftVoicemail: misses.some((x) => x.outcome === 'voicemail'),
+    robocallPattern: robocallPattern(all.filter((c) => c.direction === 'inbound' && c.phone === phone), config.robocall),
     misses,
     firstMs: misses[0].startMs,
     lastMs: misses[misses.length - 1].startMs,
   }));
 
   return { calls: all, inbound, outbound, missedCalls, needsCallback, stats: computeStats({ all, inbound, outbound, missedCalls, startMs, endMs }, config) };
+}
+
+// Every call from the number (in everything pulled for this run) was a
+// silent ~1 minute at the phone menu with only a town on caller ID. A real
+// person usually presses a key, hangs up sooner, leaves a voicemail or has
+// a name on caller ID; any one of those calls clears the number.
+function robocallPattern(calls, rule) {
+  if (!rule || !calls.length) return false;
+  return calls.every(
+    (c) =>
+      !c.answered &&
+      c.outcome === 'menu_hangup' &&
+      c.callerName &&
+      c.callerNameIsPlace &&
+      c.totalSec >= rule.menuSecMin &&
+      c.totalSec <= rule.menuSecMax,
+  );
 }
 
 // Did the callback follow the double-call method? A first call shorter

@@ -48,7 +48,7 @@ function officeOnlyMessage({ tasks, doubleCallMisses = [], checkedAtMs, config }
   return lines.join('\n');
 }
 
-function ideas(stats, missed) {
+function ideas(stats, missed, robocallCalls = 0) {
   const out = [];
   if (stats.medianRingBeforeVoicemailSec && stats.medianRingBeforeVoicemailSec <= 45) {
     out.push(
@@ -60,9 +60,11 @@ function ideas(stats, missed) {
       `${stats.missedWhileSomeoneFree} calls were missed during office hours while at least one person wasn't on another call. Worth checking that both queues ring both desks and that nobody is logged out of the queue.`,
     );
   }
-  const menu = stats.missedByOutcome.menu_hangup || 0;
+  const menu = (stats.missedByOutcome.menu_hangup || 0) - robocallCalls;
   if (menu >= 3) {
-    out.push(`${menu} callers hung up at the phone menu before pressing 1 or 2. A shorter greeting, with the menu options first, could keep more of them on the line.`);
+    out.push(
+      `${menu} callers hung up at the phone menu before pressing 1 or 2${robocallCalls ? ` (not counting ${plural(robocallCalls, 'likely robocall')})` : ''}. A shorter greeting, with the menu options first, could keep more of them on the line.`,
+    );
   }
   if (stats.missedByPeriod.lunch >= 1) {
     out.push(`${plural(stats.missedByPeriod.lunch, 'call')} missed during a lunch break. During lunch, the other person's phone should ring for both queues.`);
@@ -83,7 +85,7 @@ function ideas(stats, missed) {
 }
 
 // Owner's DM: how the run went plus the business picture.
-function ownerReport({ window: w, analysis, tasks, alreadyOpen = [], texts, apiUsage, problems, weekly, doubleCallMisses = [], config }) {
+function ownerReport({ window: w, analysis, tasks, alreadyOpen = [], likelyRobocalls = [], texts, apiUsage, problems, weekly, doubleCallMisses = [], config }) {
   const nameOf = (ext) => config.staff[ext]?.name || `ext ${ext}`;
   const s = analysis.stats;
   const L = [];
@@ -110,7 +112,10 @@ function ownerReport({ window: w, analysis, tasks, alreadyOpen = [], texts, apiU
   L.push(`❌ *Missed calls (${s.missed})*`);
   L.push(`• 🏢 Office open: ${s.missedByPeriod.open} · 🍔 Lunch: ${s.missedByPeriod.lunch} · 🌙 Closed: ${s.missedByPeriod.closed}`);
   const o = s.missedByOutcome;
-  L.push(`• 📼 Voicemail: ${o.voicemail || 0} · 📵 Hung up at menu: ${o.menu_hangup || 0} · ⏳ Hung up in queue: ${(o.queue_hangup || 0) + (o.overflow_hangup || 0)}`);
+  const robocallCalls = likelyRobocalls.reduce((n, r) => n + r.calls, 0);
+  L.push(
+    `• 📼 Voicemail: ${o.voicemail || 0} · 📵 Hung up at menu: ${o.menu_hangup || 0}${robocallCalls ? ` (${robocallCalls} likely robocalls)` : ''} · ⏳ Hung up in queue: ${(o.queue_hangup || 0) + (o.overflow_hangup || 0)}`,
+  );
   L.push('');
 
   L.push('🔁 *Callbacks*');
@@ -129,6 +134,12 @@ function ownerReport({ window: w, analysis, tasks, alreadyOpen = [], texts, apiU
   L.push(`• 📝 Still owed a callback: ${plural(tasks.length, 'caller')}${tasks.length ? ` (${Object.entries(byPerson).map(([n, c]) => `${n} ${c}`).join(', ')})` : ''}`);
   for (const t of tasks) L.push(`   ◦ ${t.callerType === 'new' ? '🆕' : '👥'} ${t.displayName} ${formatPhone(t.phone)} → ${t.assigneeName}`);
   if (alreadyOpen.length) L.push(`• 📂 ${plural(alreadyOpen.length, 'caller')} already had an open callback task, so no new one was made`);
+  if (likelyRobocalls.length) {
+    L.push(
+      `• 🤖 Likely robocalls, no callback task: ${likelyRobocalls.length} _(caller ID only a town, about a minute silent at the menu, not in Briostack)_`,
+    );
+    for (const r of likelyRobocalls) L.push(`   ◦ ${r.callerName} ${formatPhone(r.phone)} — ${r.summary.replace(/, hung up at the phone menu.*$/, '')}`);
+  }
   const checked = analysis.missedCalls.filter((m) => m.handled?.doubleCall && m.callerType !== 'current');
   if (checked.length) {
     L.push(`• 🔁 Double-call method: ${checked.length - doubleCallMisses.length} of ${checked.length} unanswered callbacks to new/unknown callers got the second call`);
@@ -161,7 +172,7 @@ function ownerReport({ window: w, analysis, tasks, alreadyOpen = [], texts, apiU
     for (const r of s.repeatCallers) L.push(`• ${r.name || 'Unknown'} ${formatPhone(r.phone)} — ${r.count} calls`);
   }
 
-  const tips = ideas(s, analysis.missedCalls);
+  const tips = ideas(s, analysis.missedCalls, robocallCalls);
   if (tips.length) {
     L.push('');
     L.push('💡 *Ideas to answer more calls*');
