@@ -99,6 +99,10 @@ Briostack callback task for each caller, and builds two Slack messages (the
   `src/callReview/config.js`
 - Needs `ATS_USERNAME`, `ATS_PASSWORD` and `BRIOSTACK_API_KEY` in the
   environment.
+- Likely robocalls (caller ID only a town, every call about a minute silent
+  at the phone menu, number not in Briostack) get no callback task; they're
+  listed in the owner's report instead. Tune or turn off with `robocall` in
+  `config.js`.
 
 How ATS data maps to "missed" is documented at the top of
 `src/callReview/callAnalysis.js`. What the Briostack API does and doesn't

@@ -329,3 +329,38 @@ test('briostack falls back to caller-ID name + secondary phone', async () => {
   assert.ok(urls.some((u) => u.includes('lastName like "Edwards%" and firstName like "%Emily%"')));
   assert.equal(await brio.findCustomerByPhone('8282429649', null), null); // no name -> primary only
 });
+
+test('runner: town-only callers silent ~1 minute at the menu are likely robocalls, not tasks', async () => {
+  const onDay = (legs) => legs.map((l) => ({ ...l, start_time: l.start_time.replace(D, '2026-09-30'), end_time: l.end_time.replace(D, '2026-09-30') }));
+  const silent = (id, at, phone, name, sec = 60) => [leg(id, D, at, { caller_id: phone, caller_name: name, exit_name: 'No digit', total_duration: sec })];
+  const legs = onDay([
+    ...silent('r1', '09:00', '8645550401', 'ANDERSON SC'), // robocall
+    ...silent('r2', '09:05', '8645550402', 'ANDERSON SC'), // ...but Briostack knows the number
+    ...silent('r3', '09:10', '8285550403', 'LEOS WINE BAR'), // a name, not a town
+    ...silent('r4', '09:15', '8285550404', 'MARSHALL NC', 34), // hung up sooner
+    ...silent('r5', '09:20', '8285550405', 'SYLVA NC'), // silent once...
+    ...voicemail('r6', '09:25', '8285550405', '191').map((l) => ({ ...l, caller_name: 'SYLVA NC' })), // ...then left a voicemail
+  ]);
+  const ats = { searchCalls: async () => legs, searchInboundTexts: async () => [], searchOutboundTexts: async () => [], requestCount: () => 3 };
+  const brio = {
+    listOpenTasks: async () => [],
+    findCustomerByPhone: async (phone) => (phone === '8645550402' ? { id: '1', name: 'Pat Known', statusId: 'CUSTOMER_ACTIVE', services: [] } : null),
+    createTask: async () => 'T',
+    requestCount: () => 1,
+  };
+  const r = await runCallReview({ nowMs: Date.parse('2026-09-30T16:05:00Z'), ats, brio });
+  assert.equal(r.status, 'ok', r.error);
+  assert.deepEqual(r.likelyRobocalls.map((x) => x.phone), ['8645550401']);
+  assert.deepEqual(r.tasks.map((t) => t.phone).sort(), ['8285550403', '8285550404', '8285550405', '8645550402']);
+  assert.doesNotMatch(r.officeOnlyMessage, /555-0401/);
+  assert.match(r.ownerMessage, /Likely robocalls, no callback task: 1/);
+  assert.match(r.ownerMessage, /Anderson SC \(864\) 555-0401 — missed Wed, Sep 30 9:00 AM/);
+  assert.match(r.ownerMessage, /Hung up at menu: 5 \(1 likely robocalls\)/);
+  assert.match(r.ownerMessage, /4 callers hung up at the phone menu before pressing 1 or 2 \(not counting 1 likely robocall\)/);
+
+  // Briostack down: no lookup, so the robocall still gets a task.
+  const down = { ...brio, findCustomerByPhone: async () => { throw new Error('503'); } };
+  const r2 = await runCallReview({ nowMs: Date.parse('2026-09-30T16:05:00Z'), ats, brio: down });
+  assert.equal(r2.likelyRobocalls.length, 0);
+  assert.ok(r2.tasks.some((t) => t.phone === '8645550401'));
+});
