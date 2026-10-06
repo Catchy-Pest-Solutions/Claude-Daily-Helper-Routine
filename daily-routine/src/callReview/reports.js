@@ -42,7 +42,12 @@ function officeOnlyMessage({ window: w, analysis, tasks, doubleCallMisses = [], 
     const text = people.length === 1 && people[0][0] === 'Unassigned' ? fmt(people[0][1]) : people.map(([n, x]) => `${n} ${fmt(x)}`).join(' · ');
     L.push(`📂 Still open from earlier days: ${text}`);
   }
-  if (likelyRobocalls.length) L.push(`_🤖 ${plural(likelyRobocalls.length, 'likely robocall')} skipped, no callback needed._`);
+  const robocallCalls = likelyRobocalls.reduce((n, r) => n + r.calls, 0);
+  L.push(
+    likelyRobocalls.length
+      ? `_🤖 Checked for robocalls: ${plural(likelyRobocalls.length, 'number')} (${plural(robocallCalls, 'call')}) ${likelyRobocalls.length === 1 ? "looked like a robocall and isn't" : "looked like robocalls and aren't"} on this list._`
+      : '_🤖 Checked for robocalls: none found._',
+  );
 
   if (doubleCallMisses.length) {
     L.push('');
@@ -61,10 +66,14 @@ function officeOnlyMessage({ window: w, analysis, tasks, doubleCallMisses = [], 
   );
   const fast = withinHour(analysis.missedCalls, likelyRobocalls);
   if (fast.total) L.push(`• ⚡ ${fast.fast} of ${fast.total} office-hours misses called back within an hour`);
+  if (s.callbackCount) {
+    L.push(`• ↩️ ${cal.formatDuration(s.avgCallbackOfficeSec)} average time to call back a missed call _(${plural(s.callbackCount, 'callback')}, office hours only)_`);
+  }
 
   L.push('');
   L.push('👩‍💼 *Team*');
   L.push(...teamLines(s, { short: true }));
+  L.push(`• *Office total* — ${busyEmoji(s.team.busyScore)} busy ${s.team.busyScore ?? '—'}/10 · ${cal.formatDuration(s.team.talkSec)} on the phone`);
   L.push('');
   L.push('_Daniel gets the full report every day. Ask him if you want more detail on any of it._');
   return L.join('\n');

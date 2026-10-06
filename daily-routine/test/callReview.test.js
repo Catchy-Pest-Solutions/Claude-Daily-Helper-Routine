@@ -146,6 +146,10 @@ test('classifies calls and only flags misses nobody returned', () => {
   assert.equal(r.stats.agents[102].inboundAnswered, 1);
   assert.equal(r.stats.agents[103].inboundAnswered, 1);
   assert.equal(r.stats.agents[102].outbound, 1);
+  // Only v1 was called back; 30 minutes inside office hours.
+  assert.equal(r.stats.callbackCount, 1);
+  assert.equal(r.stats.avgCallbackOfficeSec, 30 * 60);
+  assert.equal(r.stats.team.talkSec, r.stats.agents[102].talkSec + r.stats.agents[103].talkSec);
 });
 
 test('calls before the window start belong to the previous run', () => {
@@ -353,6 +357,7 @@ test('runner: town-only callers silent ~1 minute at the menu are likely robocall
   assert.deepEqual(r.likelyRobocalls.map((x) => x.phone), ['8645550401']);
   assert.deepEqual(r.tasks.map((t) => t.phone).sort(), ['8285550403', '8285550404', '8285550405', '8645550402']);
   assert.doesNotMatch(r.officeOnlyMessage, /555-0401/);
+  assert.match(r.officeOnlyMessage, /🤖 Checked for robocalls: 1 number \(1 call\) looked like a robocall and isn't on this list/);
   assert.match(r.ownerMessage, /Likely robocalls, no callback task: 1/);
   assert.match(r.ownerMessage, /Anderson SC \(864\) 555-0401 — missed Wed, Sep 30 9:00 AM/);
   assert.match(r.ownerMessage, /Hung up at menu: 5 \(1 likely robocalls\)/);
@@ -392,8 +397,11 @@ test('office message: short recap, team stats, earlier open tasks and within-the
   assert.match(m, /⚡ 1 of 2 office-hours misses called back within an hour/);
   assert.match(m, /\*Shelley\* — .* busy \d+\/10 · 1 answered · 1 out · /);
   assert.match(m, /\*Steve\* — /);
+  assert.match(m, /↩️ 55 min average time to call back a missed call _\(2 callbacks, office hours only\)_/);
+  assert.match(m, /\*Office total\* — .* busy \d+\/10 · .* on the phone$/m);
+  assert.match(m, /🤖 Checked for robocalls: none found/);
   assert.match(m, /Daniel gets the full report/);
-  assert.ok(m.split('\n').length <= 16, m);
+  assert.ok(m.split('\n').length <= 19, m);
 
   // Tasks without assignee fields: total only.
   const { earlierCallbackTasks } = require('../src/callReview/run');

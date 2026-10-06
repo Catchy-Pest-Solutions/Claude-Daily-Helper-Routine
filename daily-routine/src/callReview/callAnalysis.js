@@ -223,6 +223,19 @@ function availableMinutes(startMs, endMs, staffMember, config) {
   return total / 60000;
 }
 
+// Office-hours seconds (8-5 on business days, lunch included) between two
+// instants, so a callback to an after-hours miss only counts from opening.
+function officeSeconds(startMs, endMs, config) {
+  let total = 0;
+  const lastDate = cal.toEastern(endMs).date;
+  for (let d = cal.toEastern(startMs).date; d <= lastDate; d = cal.addDays(d, 1)) {
+    if (!cal.isBusinessDay(d)) continue;
+    const open = [cal.easternToMs(d, config.officeHours.start), cal.easternToMs(d, config.officeHours.end)];
+    total += overlap(open, [startMs, endMs]);
+  }
+  return Math.round(total / 1000);
+}
+
 function overlap([a1, b1], [a2, b2]) {
   return Math.max(0, Math.min(b1, b2) - Math.max(a1, a2));
 }
@@ -267,6 +280,7 @@ function analyzeCalls(legs, { startMs, endMs, nowMs }, config, { outboundTexts =
       .filter(Boolean)
       .sort((a, b) => a.ms - b.ms)[0];
     m.handled = first ? { ...first, delaySec: Math.round((first.ms - m.startMs) / 1000) } : null;
+    if (m.handled) m.handled.officeDelaySec = officeSeconds(m.startMs, m.handled.ms, config);
     if (m.handled?.kind === 'callback') m.handled.doubleCall = doubleCallCheck(outbound, m.phone, m.handled.ms, config.doubleCall);
   }
 
@@ -353,6 +367,8 @@ function computeStats({ all, inbound, outbound, missedCalls, startMs, endMs }, c
   const handled = missedCalls.filter((m) => m.handled);
   const callbackDelays = handled.map((m) => m.handled.delaySec);
 
+  const callbackOfficeDelays = handled.filter((m) => m.handled.kind === 'callback').map((m) => m.handled.officeDelaySec);
+
   const agents = {};
   const outboundInWindow = outbound.filter((c) => c.startMs >= startMs && c.startMs < endMs);
   for (const [ext, s] of Object.entries(config.staff)) {
@@ -371,6 +387,16 @@ function computeStats({ all, inbound, outbound, missedCalls, startMs, endMs }, c
       busyScore: s.takesCalls ? busyScore(talkSec, inb.length + out.length, availMin) : null,
     };
   }
+
+  const phoneStaff = Object.values(agents).filter((a) => a.takesCalls);
+  const team = {
+    talkSec: phoneStaff.reduce((n, a) => n + a.talkSec, 0),
+    busyScore: busyScore(
+      phoneStaff.reduce((n, a) => n + a.talkSec, 0),
+      phoneStaff.reduce((n, a) => n + a.inboundAnswered + a.outbound, 0),
+      phoneStaff.reduce((n, a) => n + a.availMin, 0),
+    ),
+  };
 
   const hourly = {};
   for (const c of inbound) {
@@ -403,7 +429,12 @@ function computeStats({ all, inbound, outbound, missedCalls, startMs, endMs }, c
     handledCount: handled.length,
     medianCallbackSec: median(callbackDelays),
     slowestCallbackSec: callbackDelays.length ? Math.max(...callbackDelays) : null,
+    avgCallbackOfficeSec: callbackOfficeDelays.length
+      ? Math.round(callbackOfficeDelays.reduce((n, x) => n + x, 0) / callbackOfficeDelays.length)
+      : null,
+    callbackCount: callbackOfficeDelays.length,
     agents,
+    team,
     hourly,
     repeatCallers,
     medianRingBeforeVoicemailSec: median(voicemailRing),
