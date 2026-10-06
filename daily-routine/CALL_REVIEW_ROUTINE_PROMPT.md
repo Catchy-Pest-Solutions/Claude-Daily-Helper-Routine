@@ -54,7 +54,8 @@ messages, files or commits.
 
 3. If `officeOnlyMessage` isn't null, post it to #office-only
    (`C09LNB93MQW`) exactly as written. It lists callers still owed a
-   callback and, when needed, a double-call reminder. If it's null, post
+   callback, a double-call reminder when needed, a short recap of the
+   noon-to-noon window and each person's phone stats. If it's null, post
    nothing there.
 
 4. Read `ownerMessage` and the `tasks` list. If you spot something useful

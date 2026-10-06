@@ -24,28 +24,70 @@ function hourLabel(h) {
   return `${h - 12} PM`;
 }
 
-// #office-only: the list of callbacks, kept alongside the Briostack tasks
-// until the tasks have proven themselves.
-function officeOnlyMessage({ tasks, doubleCallMisses = [], checkedAtMs, config }) {
-  if (!tasks.length && !doubleCallMisses.length) return null;
-  const lines = [];
-  if (tasks.length) lines.push(`📞 *Missed calls that still need a callback* (checked ${cal.formatDay(checkedAtMs)} ${cal.formatTime(checkedAtMs)})`);
+// #office-only: kept short on purpose. Callbacks owed first, then a few
+// numbers and each person's line. The full picture goes to Daniel.
+function officeOnlyMessage({ window: w, analysis, tasks, doubleCallMisses = [], likelyRobocalls = [], earlierOpen = null, config }) {
+  const s = analysis.stats;
+  const L = [`📊 *Daily call recap* — ${windowLabel(w)} _(noon to noon)_`, ''];
+
+  L.push(tasks.length ? '📞 *Still need a callback*' : '📞 *Still need a callback:* none 🎉');
   for (const t of tasks) {
     const flag = t.callerType === 'new' ? '🆕 ' : '';
-    const status = t.created ? '📝 task created' : t.error ? '⚠️ task not created' : '📝 task pending';
-    lines.push(`• ${flag}*${t.displayName}* — ${formatPhone(t.phone)} — ${t.summary} → *${t.assigneeName}* (${status})`);
+    L.push(`• ${flag}*${t.displayName}* ${formatPhone(t.phone)} — ${t.shortSummary || t.summary} → *${t.assigneeName}*${t.error ? ' ⚠️ no task made' : ''}`);
   }
+  if (earlierOpen?.total) {
+    const fmt = (x) => `${x.open}${x.overdue ? ` (${x.overdue} overdue)` : ''}`;
+    const people = Object.entries(earlierOpen.byPerson);
+    // No assignee info on the tasks: just the total.
+    const text = people.length === 1 && people[0][0] === 'Unassigned' ? fmt(people[0][1]) : people.map(([n, x]) => `${n} ${fmt(x)}`).join(' · ');
+    L.push(`📂 Still open from earlier days: ${text}`);
+  }
+  if (likelyRobocalls.length) L.push(`_🤖 ${plural(likelyRobocalls.length, 'likely robocall')} skipped, no callback needed._`);
+
   if (doubleCallMisses.length) {
-    if (lines.length) lines.push('');
-    lines.push('🔁 *Double-call reminder*');
-    for (const m of doubleCallMisses) {
-      lines.push(`• ${config.staff[m.handled.doubleCall.agent]?.name || 'Someone'} called back ${m.callerName || formatPhone(m.phone)} once and didn't try again right away.`);
-    }
-    lines.push(
-      "When a new customer doesn't pick up: hang up without a voicemail, call again 30-60 seconds later, and leave the voicemail on the second call. They don't have our number saved, so the second call gets answered much more often.",
+    L.push('');
+    const who = doubleCallMisses.map((m) => `${config.staff[m.handled.doubleCall.agent]?.name || 'Someone'} → ${m.callerName || formatPhone(m.phone)}`);
+    L.push(`🔁 *Double-call reminder:* ${who.join(', ')} got one call. No answer? Hang up, call again in 30-60s, leave the voicemail on the second call.`);
+  }
+
+  L.push('');
+  L.push('📈 *By the numbers*');
+  L.push(`• ${s.inboundTotal} calls in · ${s.answered} answered (${pct(s.answered, s.inboundTotal)}) · ${s.outboundTotal} calls out`);
+  const busiest = Object.entries(s.hourly)
+    .filter(([k]) => k !== 'closedDay')
+    .sort((x, y) => y[1].total - x[1].total)[0];
+  L.push(
+    `• ⏱️ ${s.medianWaitSec != null ? cal.formatDuration(s.medianWaitSec) : '—'} median to answer${busiest ? ` · 🕐 busiest ${hourLabel(Number(busiest[0]))} (${plural(busiest[1].total, 'call')})` : ''}`,
+  );
+  const fast = withinHour(analysis.missedCalls, likelyRobocalls);
+  if (fast.total) L.push(`• ⚡ ${fast.fast} of ${fast.total} office-hours misses called back within an hour`);
+
+  L.push('');
+  L.push('👩‍💼 *Team*');
+  L.push(...teamLines(s, { short: true }));
+  L.push('');
+  L.push('_Daniel gets the full report every day. Ask him if you want more detail on any of it._');
+  return L.join('\n');
+}
+
+// Missed calls during office hours (robocalls aside) and how many were
+// handled within an hour.
+function withinHour(missedCalls, likelyRobocalls = []) {
+  const robo = new Set(likelyRobocalls.map((r) => r.phone));
+  const misses = missedCalls.filter((m) => m.context.period !== 'closed' && !robo.has(m.phone));
+  return { total: misses.length, fast: misses.filter((m) => m.handled && m.handled.delaySec <= 3600).length };
+}
+
+function teamLines(s, { short = false } = {}) {
+  const out = [];
+  for (const a of Object.values(s.agents)) {
+    if (!a.takesCalls) continue;
+    out.push(
+      `• *${a.name}* — ${busyEmoji(a.busyScore)} busy ${a.busyScore ?? '—'}/10 · ${a.inboundAnswered} answered · ${a.outbound} ${short ? 'out' : 'outbound'} · ${cal.formatDuration(a.talkSec)} on the phone`,
     );
   }
-  return lines.join('\n');
+  if (!short) out.push('_Busy score: share of office hours on the phone plus calls per hour._');
+  return out;
 }
 
 function ideas(stats, missed, robocallCalls = 0) {
@@ -148,13 +190,7 @@ function ownerReport({ window: w, analysis, tasks, alreadyOpen = [], likelyRoboc
   L.push('');
 
   L.push('👩‍💼 *Team*');
-  for (const a of Object.values(s.agents)) {
-    if (!a.takesCalls) continue;
-    L.push(
-      `• *${a.name}* — ${busyEmoji(a.busyScore)} busy ${a.busyScore ?? '—'}/10 · ${a.inboundAnswered} answered · ${a.outbound} outbound · ${cal.formatDuration(a.talkSec)} on the phone`,
-    );
-  }
-  L.push('_Busy score: share of office hours on the phone plus calls per hour._');
+  L.push(...teamLines(s));
   L.push('');
 
   L.push('🕐 *Inbound calls by hour*');
@@ -205,10 +241,18 @@ function failureReport({ step, error, window: w, config }) {
     .join('\n');
 }
 
-function missSummary(entry) {
+const SHORT_OUTCOME = {
+  voicemail: 'went to voicemail',
+  overflow_hangup: 'hung up on hold',
+  queue_hangup: 'hung up in the queue',
+  menu_hangup: 'hung up at the menu',
+};
+
+function missSummary(entry, { short = false } = {}) {
   const first = entry.misses[0];
-  const count = entry.misses.length > 1 ? `${entry.misses.length} missed calls, first ` : 'missed ';
-  return `${count}${cal.formatDay(first.startMs)} ${cal.formatTime(first.startMs)}, ${OUTCOME_TEXT[first.outcome]}`;
+  const n = entry.misses.length;
+  const count = n > 1 ? (short ? `${n} missed, first ` : `${n} missed calls, first `) : 'missed ';
+  return `${count}${cal.formatDay(first.startMs)} ${cal.formatTime(first.startMs)}, ${(short ? SHORT_OUTCOME : OUTCOME_TEXT)[first.outcome]}`;
 }
 
 module.exports = { officeOnlyMessage, ownerReport, failureReport, missSummary, windowLabel };
