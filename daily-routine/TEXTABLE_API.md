@@ -42,7 +42,7 @@ JSON body:
 | `to` | Recipient in E.164 (`+18285551234`), or an array for a group text |
 | `from` | `+18282634804` |
 | `message` | Text of the message |
-| `media` | Optional. Array of public image URLs; makes it an MMS |
+| `media` | Optional. Array of public file links; sends a picture message (MMS). See "Attachments" below |
 | `sendAt` | Optional. Future UTC timestamp in ms; schedules the text |
 | `type: "note"` | Optional. Saves an internal note on the conversation. Nothing is sent |
 | `sendStatus: "sent"` | Optional. Logs a message that was sent some other way. Nothing is sent |
@@ -57,6 +57,68 @@ Responses:
 - `404`: problem with the user or contact
 - `451`: the customer opted out (texted STOP). Don't retry.
 - `500`: send failed
+
+## Attachments (pictures and PDFs)
+
+- Put direct links to the files in `media`. Textable downloads each file
+  and sends it with the text. There's no upload endpoint: the file has to
+  be online first, at a link anyone can open without logging in, and the
+  link has to return the file itself, not a web page showing it.
+- Verified on Daniel's phone: a JPG photo (82 KB, served as `image/jpeg`)
+  and a one-page PDF (17 KB, served as `application/pdf` from jsDelivr)
+  both arrived as sent.
+- Not tested: several files in one message (the API takes an array), full
+  size phone photos, and links that label a PDF as a generic file (GitHub
+  raw links do). Google Drive share links open a Drive page, not the file,
+  so they won't work in `media`; they're fine as a link in the message
+  text.
+- Phones and carriers differ. Pictures arrive almost everywhere; PDFs
+  worked on Daniel's phone but may not open on every customer's. Carriers
+  often cap a picture message at about 1 MB, so shrink photos first (about
+  1,200 px on the long side, ~200 KB each) and send at most 3 to 4 files
+  per message.
+
+## Sending quotes and technician photos
+
+Send two texts a few seconds apart:
+
+1. **What the tech found:** a short personal note plus the 2 or 3 clearest
+   photos.
+   > Hi [first name], this is [name] at Catchy Pest. Here's what [tech]
+   > found at your home today: [one line per problem].
+2. **The quote:** the price in the text itself, a picture of the one-page
+   quote, the quote PDF, and one clear ask.
+   > Taking care of all of it would be $[price], details attached. Reply
+   > YES and we'll get you on the schedule.
+
+Why this format:
+
+- Photos of their own house are the most persuasive part. Sent as
+  pictures, they show in the thread without tapping. Put only inside a
+  PDF, they're hidden until the customer opens it.
+- The price in the text and the quote picture mean the customer sees the
+  answer right away, even if the PDF doesn't open on their phone.
+- The PDF holds the full details and all photos with captions. It's what
+  the customer keeps and forwards to a spouse or landlord, so it should
+  repeat the photos.
+- "Reply YES" is the easiest way to accept on a phone. The reply comes back
+  to the number they know and lands in the ATS Texting inbox, so book it
+  promptly, and follow up in a day or two if there's no answer.
+- Two messages keep each one under the carrier size cap.
+
+Tech photos posted in Slack can be sent this way. The pieces:
+
+1. The tech posts the photos in Slack with the customer's name or
+   Briostack ID.
+2. Download them from Slack. Slack files are private, so this needs a
+   Slack token that can read files (`files:read`).
+3. Shrink each photo and upload it to public storage under a long random
+   file name, so the links can't be guessed. A Google Cloud Storage bucket
+   works well: its links return the file itself with the right file type.
+4. Look up the customer's cell number in Briostack, and turn the first
+   page of the quote PDF into a JPG for the quote picture.
+5. Post the drafted texts in Slack for the office to approve, then send
+   both through `POST /api/send`.
 
 ## Other endpoints this token can use
 
