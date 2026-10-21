@@ -114,7 +114,8 @@ function createAtsClient({ username, password, customerId, fetchImpl = fetch, pa
   // roughly 350 pages (about 35 seconds); a Monday walks back over the
   // weekend, so several times that. complete is false if maxPages ran out.
   async function searchTranscripts(startMs, { maxPages = 3000, parallel = 6 } = {}) {
-    let cursor = await latestTranscriptId();
+    const headId = await latestTranscriptId();
+    let cursor = headId;
     const ours = [];
     let pages = 0;
     let passedStart = false;
@@ -130,7 +131,22 @@ function createAtsClient({ username, password, customerId, fetchImpl = fetch, pa
     }
     const byId = new Map(ours.map((r) => [r.id, r]));
     const transcripts = [...byId.values()].filter((r) => parseAtsUtc(r.call_time) >= startMs).sort((a, b) => a.id - b.id);
-    return { transcripts, complete: passedStart || cursor <= 0, pages };
+    return { transcripts, complete: passedStart || cursor <= 0, pages, headId };
+  }
+
+  // Our transcripts that arrived after lastId, plus the new cursor. Between
+  // two checks a couple of minutes apart this is usually 2-3 requests.
+  async function transcriptsAfter(lastId, { maxPages = 200 } = {}) {
+    const ours = [];
+    let cursor = lastId;
+    for (let page = 0; page < maxPages; page++) {
+      const rows = await transcriptPage(cursor);
+      if (!rows.length) break;
+      cursor = rows[rows.length - 1].id;
+      ours.push(...rows.filter((r) => r.access !== false));
+      if (rows.length < FEED_PAGE) break;
+    }
+    return { transcripts: ours, cursor };
   }
 
   return {
@@ -138,6 +154,8 @@ function createAtsClient({ username, password, customerId, fetchImpl = fetch, pa
     searchInboundTexts: (s, e) => searchTexts('sms-inbound', s, e),
     searchOutboundTexts: (s, e) => searchTexts('sms-outbound', s, e),
     searchTranscripts,
+    transcriptsAfter,
+    latestTranscriptId,
     requestCount: () => requests,
   };
 }

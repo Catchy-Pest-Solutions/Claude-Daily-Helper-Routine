@@ -109,3 +109,10 @@ How ATS data maps to "missed" is documented at the top of
 support (no phone search; which task fields it accepts) is documented at
 the top of `src/callReview/briostack.js`. Tasks aren't created until
 `taskTypeId` is set in `config.js`.
+
+# New-customer follow-up
+
+When the office creates a customer in Briostack, a routine texts and emails
+them (a confirmation if they booked, a quote follow-up if not), signed by
+whoever took the call. Scripts, templates, the Apps Script relay and setup
+steps are in `lead-followup/` (start with `lead-followup/README.md`).

@@ -2,3 +2,12 @@ node_modules/
 .env
 *.log
 ats-transcripts-*.json
+# New-customer follow-up run files hold customer data; they live in /tmp
+lead.json
+plan.json
+quote.json
+payload.json
+transcript.txt
+prepare-state.json
+text-preview.txt
+email-preview.html

@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{subject}}</title>
+</head>
+<!-- Follow-up email, filled by send.js. Table layout and inline styles for email clients. -->
+<body style="margin:0; padding:0; background-color:#EEF1EE;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#EEF1EE;">
+  <tr>
+    <td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%; max-width:600px; background-color:#ffffff; border-top:6px solid #15BA0D; border-radius:6px;">
+        <tr>
+          <td style="padding:26px 32px 10px 32px;">
+            <img src="cid:{{logoCid}}" width="190" alt="Catchy Pest Solutions" style="display:block; width:190px; max-width:190px; height:auto; border:0;">
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:10px 32px 8px 32px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.55; color:#0E120E;">
+            {{#blocks}}
+            {{#text}}<p style="margin:0 0 16px 0;">{{{html}}}</p>{{/text}}
+            {{#card}}<p style="margin:4px 0 20px 0;"><img src="cid:{{cardCid}}" width="536" alt="Your quote" style="display:block; width:100%; max-width:536px; height:auto; border:1px solid #DDE3DD; border-radius:8px;"></p>{{/card}}
+            {{/blocks}}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid #DDE3DD; font-size:0; line-height:0;">&nbsp;</td></tr></table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 32px 24px 32px; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:1.6; color:#5C665D;">
+            <strong style="color:#0E120E;">{{company.name}}</strong><br>
+            {{company.address}}<br>
+            <a href="tel:{{officePhoneDigits}}" style="color:#0E120E; text-decoration:none;">{{officePhone}}</a> &middot;
+            <a href="https://{{company.website}}" style="color:#11960B; text-decoration:none;">{{company.website}}</a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
