@@ -65,6 +65,20 @@
   footer { margin-top: auto; padding-top: 9pt; border-top: 1pt solid #D5DCD5; display: flex; justify-content: space-between; gap: 16pt; font-size: 8.5pt; color: #5C665D; }
   footer .policy { font-weight: 700; color: #0E120E; }
   .spacer { flex: 1; min-height: 10pt; }
+  /* render.js adds .compact when the normal layout runs past one page. */
+  .compact .page { padding-top: 0.34in; padding-bottom: 0.3in; }
+  .compact header img { height: 0.68in; }
+  .compact .titlebar { margin-top: 10pt; }
+  .compact h1 { font-size: 22pt; }
+  .compact .customer { margin-top: 8pt; padding: 7pt 12pt; }
+  .compact .told { margin-top: 8pt; }
+  .compact .told p { font-size: 11pt; }
+  .compact .options { margin-top: 9pt; gap: 10pt; }
+  .compact .opt-body { padding: 7pt 11pt 2pt; }
+  .compact .field { margin-bottom: 4pt; }
+  .compact .field p, .compact li { font-size: 8.8pt; line-height: 1.32; }
+  .compact .opt-price { padding: 6pt 11pt 7pt; min-height: 64pt; }
+  .compact .next { margin-top: 9pt; padding: 8pt 14pt; }
 </style>
 </head>
 <body>

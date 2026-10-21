@@ -112,8 +112,16 @@ async function renderFiles(vm, outDir) {
     await card.close();
 
     const page = await chrome.open(quoteHtml, { width: 816, height: 1056 });
-    const pdf = await page.pdf();
-    const pages = pdfPageCount(pdf);
+    let pdf = await page.pdf();
+    let pages = pdfPageCount(pdf);
+    if (pages > 1) {
+      await page.evaluate(`document.body.classList.add('compact')`);
+      const compact = await page.pdf();
+      if (pdfPageCount(compact) < pages) {
+        pdf = compact;
+        pages = pdfPageCount(compact);
+      }
+    }
     if (pages > 2) throw new Error(`quote PDF is ${pages} pages; shorten the includes lists`);
     fs.writeFileSync(pdfPath, pdf);
     await page.close();
