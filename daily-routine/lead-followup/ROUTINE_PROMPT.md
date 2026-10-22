@@ -64,7 +64,7 @@ Write a text and an email following PLAYBOOK Section 8 (Booked). No prices, disc
 
 **Pick two options.**
 - **Option A** = the program the rep recommended, on the 12-month agreement. If the customer objected to a contract, use the no-annual-commitment version instead.
-- **Option B** = the $247 One Time Service whenever it's eligible (not termites, bed bugs or large wildlife), even if it didn't come up on the call. This is a good moment to mention it. When it isn't eligible, use the alternative that best answers their objection (PLAYBOOK Section 3):
+- **Option B** = the $247 One Time Service by default, even if it didn't come up on the call. It should be option B in most quotes. It's eligible for insects, mice and rats (wood rats included), and moles, voles and chipmunks. It's **not** eligible for termites, bed bugs, bats, or larger wildlife: squirrels, flying squirrels, raccoons, opossums, groundhogs, skunks and snakes. Pitch it as a way to get started: we recommend follow-up visits, and the $247 is always credited toward any plan they upgrade to. Skip it only when it isn't eligible or clearly doesn't fit the call (for example, the customer already said no to a one-time visit). Otherwise, use the alternative that best answers their objection (PLAYBOOK Section 3):
   - Contract objection: same program, no annual commitment (+$50).
   - Unsure whether exclusion is needed: Critter Control with vs. without exclusion.
   - Several pest categories: Catchy Club vs. the main program.
@@ -76,7 +76,7 @@ Write a text and an email following PLAYBOOK Section 8 (Booked). No prices, disc
 - Prices the rep didn't say (for example the One Time Service) come from KNOWLEDGE_BASE.md (Section 0 and the Section 16 cheat sheet).
 - The Briostack service price is only a cross-check. `services[].price` is already net of a discount entered on the service, and the office can record discounts in other places, so a difference alone isn't a problem. If you can't tell from the call what the rep quoted (garbled, or two different numbers) and Briostack doesn't settle it: Slack Daniel, stop.
 - **If the rep gave a discount on the call** (for example "let me take 10% off"), that is the customer's one discount: apply it to both options, rounded to whole dollars, with the rep's reason, and keep the undiscounted price as `wasPrice`. Add no other discount.
-- **10% off** only when price was their objection and the rep didn't already discount (KB 0.3). Apply it to both options, round to whole dollars, give a true reason, keep the original as `wasPrice`.
+- **10% off by default** (KB 0.3) when the rep didn't already discount. Apply it to both options, round to whole dollars, give a true reason that fits the call (our technicians are in your area this week, we have openings this week, or the seasonal discount), and keep the original as `wasPrice`. Leave it off only when it would read wrong, for example when the customer was clearly sold and only had a scheduling question.
 - Every price must be identical in the text, email, card and PDF. Billing is "every 4 weeks," never "monthly."
 
 **Custom-quote cases get no card or PDF:** bats (start with the $149 inspection), bed bugs ("starting at $889," final price confirmed by the team), termite homes over 5,000 sq. ft., Catchy Club homes outside 1,000–4,000 sq. ft., mosquito-only, and major structural exclusion. Write the text and email around the next step instead, and skip the render.
@@ -105,13 +105,13 @@ Write a text and an email following PLAYBOOK Section 8 (Booked). No prices, disc
   "closeDays": ["tomorrow", "Thursday"]
 }
 ```
-`discount` is `null` or `{"percent": 10, "reason": "Our technicians are in your area this week"}`. Then run:
+`discount` is usually `{"percent": 10, "reason": "Our technicians are in your area this week"}`, or `null` when there's no discount. Then run:
 ```
 node daily-routine/lead-followup/render.js --quote $S/quote.json --out $S
 ```
 It prints `cardPath`, `pdfPath`, `cardUrl` (picture link for the text) and `pdfUrl` (Drive link to the PDF).
 
-**Write the text and email** following PLAYBOOK Sections 2–8: one or two personal specifics, both options with prices, **one** tool for their objection, the either/or close using `schedule.closeDays`, and a one-word quick reply. You may add the `pdfUrl` at the end of the text as "Full details: [link]".
+**Write the text and email** following PLAYBOOK Sections 2–8: one or two personal specifics, both options with prices (and the 10% off with its reason), **one** tool for their objection, the either/or close using `schedule.closeDays`, and a one-word quick reply. You may add the `pdfUrl` at the end of the text as "Full details: [link]".
 
 ## Step 4. Check before sending
 
@@ -119,7 +119,7 @@ Fix anything that fails. If you can't fix it, Slack Daniel and stop.
 
 - Every fact traces to the call, Briostack or the knowledge base. Nothing invented.
 - Prices: correct, whole dollars, identical everywhere, "every 4 weeks."
-- At most one tool and one discount. No discount or pitch for booked customers.
+- One discount at most (the 10% or the rep's own discount, never both) plus at most one other tool. No discount or pitch for booked customers.
 - No banned words: safe, non-toxic, harmless, chemical-free, all-natural, "monthly" billing, guaranteed or automatic refund, fake urgency.
 - No video Briostack already sends this lead (PLAYBOOK Section 6).
 - Text length: 40–100 words unbooked, 25–70 booked. Unbooked ends with the either/or close and a quick reply.
@@ -148,6 +148,7 @@ It sends the text (Textable, from 828-263-4804, scheduled if `sendAt` is set) an
 
 - Text `opted_out` (the customer texted STOP before): normal. Never retry. Mention it in your summary.
 - Any other failure: Slack Daniel with what failed. Don't retry a send that may have gone through.
+- After a successful send, Slack Daniel a copy (Step 7).
 
 ## Step 6. Finish
 
@@ -155,4 +156,6 @@ End with one line: customer, booked/unbooked/skipped, what was sent, signed as, 
 
 ## Step 7. Slack messages to Daniel
 
-Send a direct message to Daniel (Slack user ID in `config.json`) with the Slack connector. Keep it to 2–3 lines: customer name, phone, Briostack ID, what happened, and that nothing was sent. Example: "New customer Karen Smith, (828) 555-0100, Briostack 12345: no matching call in ATS. Phone may be mistyped. Nothing sent."
+Send a direct message to Daniel (Slack user ID in `config.json`) with the Slack connector. - **Skipped or failed:** 2–3 lines: customer name, phone, Briostack ID, what happened, and that nothing was sent. Example: "New customer Karen Smith, (828) 555-0100, Briostack 12345: no matching call in ATS. Phone may be mistyped. Nothing sent."
+- **Commercial lead:** the information for an individual quote, no draft message: business and contact name, address, phone, email, Briostack ID, the pest problem and where, what the rep quoted or booked, and the next step promised on the call. End with "Nothing sent."
+- **Sent:** customer name, phone, Briostack ID, booked/unbooked, signed as, options and prices (and discount) if unbooked, whether the text was scheduled or opted out, then the text message itself as a quote.
