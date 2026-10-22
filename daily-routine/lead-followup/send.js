@@ -132,6 +132,36 @@ function logContent({ prefix, kind, plan, recipient, status, sentAtMs, sendAtMs,
   return lines.join('\n');
 }
 
+// Briostack's "Unknown" contact method isn't on the customer record; it shows
+// up as {contactMethodType: 'UNKNOWN'} on existing Communications entries.
+// Reuse that one when the customer already has it.
+async function findUnknownContactMethod(brio, customerId) {
+  try {
+    const comms = await brio.listCommunications(customerId);
+    for (const m of comms) {
+      const cm = (m.contactMethods || []).find((x) => x.contactMethodType === 'UNKNOWN' && x.contactMethodId);
+      if (cm) return String(cm.contactMethodId);
+    }
+  } catch {
+    // fall through: post without a contact method
+  }
+  return null;
+}
+
+// Log under "Unknown": the customer's UNKNOWN contact method if found,
+// otherwise no contact method at all. If Briostack rejects that, log under
+// the phone/email instead so the entry (which prepare.js uses to spot
+// already-sent customers) is never lost.
+async function createLogEntry(brio, customerId, body, unknownId, fallbackId, notes) {
+  try {
+    return await brio.createCommunication(customerId, unknownId ? { ...body, contactMethods: [{ contactMethodId: unknownId }] } : body);
+  } catch (err) {
+    if (!fallbackId || !(err.status >= 400 && err.status < 500)) throw err;
+    notes.push(`${body.communicationTypeId} logged under the customer's contact, not Unknown: ${err.status}`);
+    return brio.createCommunication(customerId, { ...body, contactMethods: [{ contactMethodId: String(fallbackId) }] });
+  }
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2), { values: ['plan'], flags: ['no-log', 'preview'] });
   if (!args.plan) throw new Error('usage: send.js --plan plan.json [--no-log] [--preview]');
@@ -211,23 +241,25 @@ async function main() {
       const phoneId = [customer.primaryPhone, customer.secondaryPhone].find((p) => p && textTo && normalizePhone(p.number) === normalizePhone(textTo))?.contactMethodId || customer.primaryPhone?.contactMethodId;
       const emailId = [customer.primaryEmail].find((e) => e && emailTo && String(e.address).trim().toLowerCase() === emailTo.toLowerCase())?.contactMethodId || customer.primaryEmail?.contactMethodId;
       const date = cal.easternIso(sentAtMs);
+      // Daniel wants these entries under the "Unknown" contact method, not the
+      // customer's phone or email.
+      const unknownId = await findUnknownContactMethod(brio, plan.customerId);
+      const log = (body, fallbackId) => createLogEntry(brio, plan.customerId, body, unknownId, fallbackId, notes);
       if (textTo) {
-        await brio.createCommunication(plan.customerId, {
+        await log({
           subject: `${prefix} Text`,
           content: logContent({ prefix, kind: 'Text', plan, recipient: formatPhone(normalizePhone(textTo)), status: result.text, sentAtMs, sendAtMs, body: text.body.trim() }),
           communicationTypeId: 'SMS',
           date,
-          contactMethods: [{ contactMethodId: String(phoneId || emailId) }],
-        });
+        }, phoneId || emailId);
       }
       if (emailTo) {
-        const entry = await brio.createCommunication(plan.customerId, {
+        const entry = await log({
           subject: `${prefix} Email`,
           content: logContent({ prefix, kind: 'Email', plan, recipient: emailTo, status: result.email, sentAtMs, body: email.bodyText.trim(), subject: email.subject.trim() }),
           communicationTypeId: 'EMAIL_COMMUNICATION',
           date,
-          contactMethods: [{ contactMethodId: String(emailId || phoneId) }],
-        });
+        }, emailId || phoneId);
         if (pdf && entry?.communicationId) {
           try {
             await brio.uploadDocument(plan.customerId, entry.communicationId, { filename: 'Catchy Pest Solutions - Your Quote.pdf', mimeType: 'application/pdf', data: pdf });
@@ -251,4 +283,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { emailBlocks, loadPlan, logContent, TEST_PREFIX, LIVE_PREFIX };
+module.exports = { emailBlocks, loadPlan, logContent, findUnknownContactMethod, createLogEntry, TEST_PREFIX, LIVE_PREFIX };
