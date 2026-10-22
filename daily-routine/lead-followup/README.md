@@ -194,12 +194,13 @@ session's agent proxy.
 
 `config.json` ships with `"testMode": true`: every text and email goes to
 `testPhone`/`testEmail` instead of the customer. To go live, set
-`"testMode": false` in `config.json` on `main` (a one-line PR). The routine
+`"testMode": false` in `config.json` on the default branch (`claude/session-tq4oq9`; a one-line PR). The routine
 is told never to change it. To pause sending, set it back to `true`.
 
 ## Setting up the routine
 
-1. Merge this branch into `main` (routines clone the default branch).
+1. Merge this branch into the repo's default branch, `claude/session-tq4oq9`
+   (routines clone the default branch; there is no `main`).
 2. At claude.ai/code/routines: **New task** -> set up manually.
    - **Prompt** (short, so the instructions live in the repo):
      ```
