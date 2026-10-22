@@ -275,5 +275,25 @@ POST https://catchypestsolutions.briostack.io/rest/v1/webhooks
   "events": ["<new-customer event>"], "retries": 2, "retryInterval": 3600 }
 ```
 
-Only `WHEVENT_LEAD_CREATE` and `WHEVENT_LEAD_CHANGE` are documented; the
-customer event name is confirmed when the webhook is created.
+**Live webhook (created Oct 21, 2026): ID `10000`**, name "AI follow-up
+relay", event `WHEVENT_CUSTOMER_CREATE`, `retries: 2`, `retryInterval: 3600`,
+URL = the relay's web app URL plus `?key=<RELAY_SECRET>`. Only the two LEAD
+events are documented, but Briostack validates event names (an unknown one
+returns 400 "incorrect data type ... events"), so `WHEVENT_CUSTOMER_CREATE` is
+a real event. To change it, `PATCH webhooks/10000` with the fields to change
+(204 = done); `GET webhooks/10000` shows it, including the key, so never print
+that response.
+
+## Checking the setup
+
+- **Relay:** open the web app URL in a browser: "Relay is up and configured."
+  A cloud session can't reach `script.google.com` (not on the environment's
+  allowlist), which doesn't matter for the real path.
+- **Routine pre-flight:** on the routine's page, **Run now** with the text
+  `{"event":"WHEVENT_CUSTOMER_CREATE","customerId":"19696"}`. 19696 is
+  Daniel's test customer and already has a TEST log entry, so a healthy run
+  clones the repo, runs prepare.js, gets `already_sent` and sends nothing
+  (passed Oct 21, 2026). Run now without text stops at Step 1 (no payload).
+- **End to end:** call the office from the test phone, have the office create
+  a customer with that number and a service, and watch for the TEST text and
+  email (about 5-20 minutes after the call in office hours).
