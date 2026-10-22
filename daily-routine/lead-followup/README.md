@@ -154,7 +154,11 @@ node daily-routine/lead-followup/send.js --plan $S/plan.json [--no-log] [--previ
   message, the summary line, the pdfUrl, signed as, and the time. The PDF is
   attached to the email entry (tested: Briostack stores it as a
   "Communication Attachment"). Entries are written even when a send failed,
-  so a retry run can't double-send.
+  so a retry run can't double-send. The contact method is "Unknown", not the
+  customer's phone or email (Daniel's call): send.js reuses the customer's
+  UNKNOWN contact method from an existing entry if there is one (it isn't on
+  the customer record), otherwise posts with no contact method. If Briostack
+  rejects that, it logs under the phone/email and says so in `log`.
 - **Test mode** (`"testMode": true`): the text goes to `testPhone` with
   `TEST for <name> <phone>:` on top, the email to `testEmail` with
   `[TEST for <name>]` before the subject, and each log entry starts with

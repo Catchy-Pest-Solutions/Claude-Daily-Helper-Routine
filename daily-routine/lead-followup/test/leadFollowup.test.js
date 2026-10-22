@@ -12,7 +12,7 @@ const { parseAtsCommunication } = require('../lib/briostack');
 const { renderString, escapeHtml } = require('../lib/template');
 const { buildMime } = require('../lib/google');
 const { viewModel, money } = require('../render');
-const { emailBlocks, logContent, TEST_PREFIX } = require('../send');
+const { emailBlocks, logContent, findUnknownContactMethod, createLogEntry, TEST_PREFIX } = require('../send');
 
 const et = (date, time) => cal.easternToMs(date, time);
 const NOT_BOOKED = ['Leads Marketing', 'Quote - Critter Control', 'Quote - Signature Pest', 'Quote - TermiteShield'];
@@ -275,4 +275,40 @@ test('relay: a 503 is queued and retried; a 401 is not retried and lets a resend
   assert.strictEqual(r2.triggers.length, 0);
   r2.sandbox.doPost({ parameter: { key: 'k' }, postData: { contents: '{"customerId":"2"}' } });
   assert.strictEqual(r2.fetched.length, 2);
+});
+
+test('log entries go under the Unknown contact method', async () => {
+  const posted = [];
+  const brio = {
+    listCommunications: async () => [
+      { contactMethods: [{ contactMethodId: '5', contactMethodType: 'EMAIL_ADDRESS' }] },
+      { contactMethods: [{ contactMethodId: '7', contactMethodType: 'UNKNOWN' }] },
+    ],
+    createCommunication: async (id, body) => { posted.push(body); return { communicationId: 'c1' }; },
+  };
+  const unknownId = await findUnknownContactMethod(brio, '9');
+  assert.strictEqual(unknownId, '7');
+  await createLogEntry(brio, '9', { subject: 's', communicationTypeId: 'SMS' }, unknownId, '1', []);
+  assert.deepStrictEqual(posted[0].contactMethods, [{ contactMethodId: '7' }]);
+
+  // No Unknown method yet: post without one.
+  assert.strictEqual(await findUnknownContactMethod({ listCommunications: async () => [] }, '9'), null);
+  await createLogEntry(brio, '9', { subject: 's', communicationTypeId: 'SMS' }, null, '1', []);
+  assert.strictEqual(posted[1].contactMethods, undefined);
+});
+
+test('log entry falls back to the phone/email when Briostack rejects Unknown', async () => {
+  const posted = [];
+  const notes = [];
+  const brio = {
+    createCommunication: async (id, body) => {
+      posted.push(body);
+      if (!body.contactMethods) throw Object.assign(new Error('bad'), { status: 400 });
+      return { communicationId: 'c2' };
+    },
+  };
+  const entry = await createLogEntry(brio, '9', { subject: 's', communicationTypeId: 'SMS' }, null, '1', notes);
+  assert.strictEqual(entry.communicationId, 'c2');
+  assert.deepStrictEqual(posted[1].contactMethods, [{ contactMethodId: '1' }]);
+  assert.match(notes[0], /not Unknown: 400/);
 });
