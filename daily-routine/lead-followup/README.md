@@ -192,10 +192,10 @@ session's agent proxy.
 
 ## Test mode
 
-`config.json` ships with `"testMode": true`: every text and email goes to
-`testPhone`/`testEmail` instead of the customer. To go live, set
-`"testMode": false` in `config.json` on the default branch (`claude/session-tq4oq9`; a one-line PR). The routine
-is told never to change it. To pause sending, set it back to `true`.
+Live since October 22, 2026 (`"testMode": false`). With `"testMode": true`,
+every text and email goes to `testPhone`/`testEmail` instead of the customer.
+To pause sending, set it back to `true` in `config.json` on the default branch
+(`claude/session-tq4oq9`; a one-line PR). The routine is told never to change it.
 
 ## Setting up the routine
 

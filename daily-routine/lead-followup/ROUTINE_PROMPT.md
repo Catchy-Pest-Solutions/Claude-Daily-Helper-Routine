@@ -64,7 +64,7 @@ Write a text and an email following PLAYBOOK Section 8 (Booked). No prices, disc
 
 **Pick two options.**
 - **Option A** = the program the rep recommended, on the 12-month agreement. If the customer objected to a contract, use the no-annual-commitment version instead.
-- **Option B** = the $247 One Time Service by default, even if it didn't come up on the call. It should be option B in most quotes. It's eligible for insects and for mice and rats (wood rats included). It's **not** eligible for termites, bed bugs, bats, or wildlife: squirrels, flying squirrels, chipmunks, raccoons, opossums, groundhogs, skunks, snakes, moles and voles. Skip it only when it isn't eligible or clearly doesn't fit the call (for example, the customer already said no to a one-time visit). Otherwise, use the alternative that best answers their objection (PLAYBOOK Section 3):
+- **Option B** = the $247 One Time Service by default, even if it didn't come up on the call. It should be option B in most quotes. It's eligible for insects, mice and rats (wood rats included), and moles, voles and chipmunks. It's **not** eligible for termites, bed bugs, bats, or larger wildlife: squirrels, flying squirrels, raccoons, opossums, groundhogs, skunks and snakes. Pitch it as a way to get started: we recommend follow-up visits, and the $247 is always credited toward any plan they upgrade to. Skip it only when it isn't eligible or clearly doesn't fit the call (for example, the customer already said no to a one-time visit). Otherwise, use the alternative that best answers their objection (PLAYBOOK Section 3):
   - Contract objection: same program, no annual commitment (+$50).
   - Unsure whether exclusion is needed: Critter Control with vs. without exclusion.
   - Several pest categories: Catchy Club vs. the main program.
@@ -148,6 +148,7 @@ It sends the text (Textable, from 828-263-4804, scheduled if `sendAt` is set) an
 
 - Text `opted_out` (the customer texted STOP before): normal. Never retry. Mention it in your summary.
 - Any other failure: Slack Daniel with what failed. Don't retry a send that may have gone through.
+- After a successful send, Slack Daniel a copy (Step 7).
 
 ## Step 6. Finish
 
@@ -155,4 +156,6 @@ End with one line: customer, booked/unbooked/skipped, what was sent, signed as, 
 
 ## Step 7. Slack messages to Daniel
 
-Send a direct message to Daniel (Slack user ID in `config.json`) with the Slack connector. Keep it to 2–3 lines: customer name, phone, Briostack ID, what happened, and that nothing was sent. Example: "New customer Karen Smith, (828) 555-0100, Briostack 12345: no matching call in ATS. Phone may be mistyped. Nothing sent."
+Send a direct message to Daniel (Slack user ID in `config.json`) with the Slack connector. - **Skipped or failed:** 2–3 lines: customer name, phone, Briostack ID, what happened, and that nothing was sent. Example: "New customer Karen Smith, (828) 555-0100, Briostack 12345: no matching call in ATS. Phone may be mistyped. Nothing sent."
+- **Commercial lead:** the information for an individual quote, no draft message: business and contact name, address, phone, email, Briostack ID, the pest problem and where, what the rep quoted or booked, and the next step promised on the call. End with "Nothing sent."
+- **Sent:** customer name, phone, Briostack ID, booked/unbooked, signed as, options and prices (and discount) if unbooked, whether the text was scheduled or opted out, then the text message itself as a quote.

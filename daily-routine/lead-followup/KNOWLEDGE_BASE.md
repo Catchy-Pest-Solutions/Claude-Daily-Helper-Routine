@@ -279,11 +279,11 @@ These are for a customer buying multiple distinct service categories. Start with
 - **$247** for one approximately **45-minute** targeted technician visit: inspect active problem area and treat the identified qualifying pest issue.
 - Covers **one or two eligible pest types/issues, provided they are within the SAME pest service category**. It is not blanket treatment across unrelated pest categories.
 - **No warranty, money-back guarantee, ongoing prevention, monitoring, or included follow-up visits.** If the problem returns, further service must be purchased.
-- No major exclusion work, large rodent bait-station program, wildlife trapping, termite systems, or full preventive barrier plan.
-- If upgraded to an ongoing qualifying protection plan **within 90 days**, the **full $247 can be credited toward the new service**.
+- No major exclusion work, large rodent bait-station program, larger-wildlife trapping, termite systems, or full preventive barrier plan.
+- If upgraded to any ongoing protection plan, the **full $247 is always credited toward the new service** (owner, October 22, 2026). Pitch it as a way to get started; we recommend follow-up visits.
 
 ## What is NOT eligible
-**Termites, bed bugs, bats and wildlife (squirrels, flying squirrels, chipmunks, raccoons, opossums, groundhogs, skunks, snakes, moles, voles)** are excluded. Mice and rats (wood rats included) are eligible. Other pest categories generally qualify for a focused one-time service, provided the one-/two-pest, same-category, limited-scope rules are satisfied. Unusual species, infestation severity, safety, and access are subject to team assessment.
+**Termites, bed bugs, bats and larger wildlife (squirrels, flying squirrels, raccoons, opossums, groundhogs, skunks, snakes)** are excluded. Mice, rats (wood rats included), moles, voles and chipmunks are eligible. Other pest categories generally qualify for a focused one-time service, provided the one-/two-pest, same-category, limited-scope rules are satisfied. Unusual species, infestation severity, safety, and access are subject to team assessment.
 
 ## When to present it
 - When the caller **explicitly asks** for one-time treatment or has no interest in a continuing plan.
@@ -391,7 +391,7 @@ All below are **USD**. Main-program initial prices cover **the first three month
 | Catchy Club outside size range | Custom | Custom | Confirm | Confirm |
 
 **Other key amounts:**
-- One Time Service: **$247**, one limited visit, no included warranty/follow-up.
+- One Time Service: **$247**, one limited visit, no included warranty/follow-up; always credited toward any plan they upgrade to.
 - New-customer Inspection/Consultation: **$149**, credited if qualifying service completed within **90 days**.
 - Bed bugs: **starts at $889**, team confirms final price; three visits; six-month warranty.
 - Bat remediation: **$149 inspection** credited toward a **custom remediation quote**.
