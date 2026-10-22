@@ -1,0 +1,41 @@
+{
+  "firstName": "Karen",
+  "customerName": "Karen Sample",
+  "serviceAddress": "123 Oak St, Asheville, NC 28803",
+  "preparedBy": "Steve",
+  "concern": "Mice in the pantry and kitchen, with a baby crawling around now",
+  "options": [
+    {
+      "name": "HomeShield - Critter Control",
+      "bestFor": "Getting rid of the mice and keeping them out",
+      "includes": [
+        "Daily visits for 7 business days to trap and remove the mice",
+        "Traps checked, cleaned, reset and reported every visit",
+        "Entry points sealed when needed",
+        "Repellent granules and tamper-resistant stations",
+        "Preventive visits about every 10 weeks after that"
+      ],
+      "schedule": "Daily visits for 7 business days, then a two-week follow-up",
+      "guarantee": "Free return visits as needed; money-back guarantee on annual plans",
+      "price": "$647",
+      "wasPrice": null,
+      "priceNote": "First 3 months included, then $49 every 4 weeks. 12-month agreement."
+    },
+    {
+      "name": "One Time Service",
+      "bestFor": "A quick, one-time treatment",
+      "includes": [
+        "One targeted visit, about 45 minutes",
+        "We inspect the problem areas and treat for the mice",
+        "What you pay goes toward a plan if you upgrade within 90 days"
+      ],
+      "schedule": "One visit",
+      "guarantee": "No warranty or follow-up visits",
+      "price": "$247",
+      "wasPrice": null,
+      "priceNote": "One visit, no warranty. Goes toward a plan within 90 days."
+    }
+  ],
+  "discount": null,
+  "closeDays": ["tomorrow", "Thursday"]
+}

@@ -2,12 +2,15 @@
   "name": "daily-routine-cross-sell-check",
   "version": "1.0.0",
   "private": true,
-  "description": "Daily routine steps for Catchy Pest Solutions: cross-sell check and call review (Briostack, ATS, Slack)",
+  "description": "Daily routine steps for Catchy Pest Solutions: cross-sell check, call review and new-customer follow-up (Briostack, ATS, Slack, Textable, Gmail)",
   "main": "src/index.js",
   "scripts": {
-    "test": "node --test test/crossSellCheck.test.js test/callReview.test.js",
+    "test": "node --test test/crossSellCheck.test.js test/callReview.test.js lead-followup/test/leadFollowup.test.js",
     "check": "node src/cli.js",
-    "call-review": "node src/callReview/run.js"
+    "call-review": "node src/callReview/run.js",
+    "lead-prepare": "node lead-followup/prepare.js",
+    "lead-render": "node lead-followup/render.js",
+    "lead-send": "node lead-followup/send.js"
   },
   "engines": {
     "node": ">=20"

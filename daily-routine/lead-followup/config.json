@@ -1,0 +1,28 @@
+{
+  "testMode": true,
+  "testPhone": "+12708737343",
+  "testEmail": "daniel.mcgee2@gmail.com",
+  "danielSlackUserId": "U09LQDUPQTC",
+  "textFrom": "+18282634804",
+  "officePhone": "(828) 263-4804",
+  "senderEmail": "office@catchypestsolutions.com",
+  "company": {
+    "name": "Catchy Pest Solutions",
+    "address": "1854 Hendersonville Rd, Suite A8, Asheville, NC",
+    "website": "catchypestsolutions.com"
+  },
+  "googleReviewsLink": "https://share.google/7g30TV1epBN0KUyE5",
+  "driveFolderId": "1V1FCdW2GQOkDEMZGXrzOcViSkCcQuW-V",
+  "notBookedCategories": [
+    "Leads Marketing",
+    "Quote - Critter Control",
+    "Quote - Signature Pest",
+    "Quote - TermiteShield"
+  ],
+  "timing": {
+    "checkEveryMinutes": 2,
+    "stopByMinutes": 9,
+    "noCallAfterMinutes": 10,
+    "callLookbackHours": 3
+  }
+}

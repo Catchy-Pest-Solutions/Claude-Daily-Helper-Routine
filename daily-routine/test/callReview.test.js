@@ -408,3 +408,61 @@ test('office message: short recap, team stats, earlier open tasks and within-the
   assert.deepEqual(earlierCallbackTasks([{ title: 'Call back (NEW caller): X' }], 0), { total: 1, byPerson: { Unassigned: { open: 1, overdue: 0 } } });
   assert.equal(earlierCallbackTasks(null, 0), null);
 });
+
+// Fake /sync-transcriptions feed: ids 1..top, `ours` maps id -> our row,
+// everyone else's rows are { id, access: false }.
+function transcriptFeed(top, ours) {
+  return async (url) => {
+    const json = async () => {
+      if (url.endsWith('/auth')) return { token: 't' };
+      const lastId = Number(new URL(url).searchParams.get('last_id'));
+      const rows = [];
+      for (let id = lastId + 1; id <= Math.min(lastId + 100, top); id++) rows.push(ours[id] || { id, access: false });
+      return rows;
+    };
+    return { ok: true, status: 200, json };
+  };
+}
+
+test('ats transcripts: walks back from the newest id until it passes the start', async () => {
+  const { createAtsClient } = require('../src/callReview/atsClient');
+  const top = 2345678;
+  const row = (id, cdr, utc) => ({ id, access: true, cust_id: 1299, cdr_id: cdr, call_time: utc, summary: 's', transcription: 't' });
+  const ours = {
+    [top - 50]: row(top - 50, 'c3', '2026-10-16 14:00:00'),
+    [top - 1000]: row(top - 1000, 'c2', '2026-10-16 12:30:00'),
+    [top - 3000]: row(top - 3000, 'c1', '2026-10-15 20:00:00'), // the day before: stop here
+    [top - 9000]: row(top - 9000, 'c0', '2026-10-15 13:00:00'),
+  };
+  const ats = createAtsClient({ username: 'u', password: 'p', customerId: 1299, fetchImpl: transcriptFeed(top, ours), pauseMs: 0 });
+  const startMs = cal.easternToMs('2026-10-16');
+  const r = await ats.searchTranscripts(startMs);
+  assert.deepEqual(r.transcripts.map((t) => t.cdr_id), ['c2', 'c3']);
+  assert.equal(r.complete, true);
+  assert.ok(r.pages <= 36, `walked ${r.pages} pages, past the day before`);
+
+  const capped = await createAtsClient({ username: 'u', password: 'p', customerId: 1299, fetchImpl: transcriptFeed(top, ours), pauseMs: 0 })
+    .searchTranscripts(startMs, { maxPages: 6 });
+  assert.equal(capped.complete, false);
+  assert.deepEqual(capped.transcripts.map((t) => t.cdr_id), ['c3']);
+});
+
+test('ats transcripts CLI: options and the saved call record', () => {
+  const { parseArgs, callRecord } = require('../src/atsTranscripts');
+  assert.deepEqual(parseArgs(['--date', '2026-10-16', '--phone', '(828) 555-0100', '--direction', 'inbound']), { date: '2026-10-16', phone: '(828) 555-0100', direction: 'inbound' });
+  assert.throws(() => parseArgs(['--phone', '12345']), /10-digit/);
+  assert.throws(() => parseArgs(['--direction', 'both']), /inbound or outbound/);
+  assert.throws(() => parseArgs(['--date']), /incomplete/);
+
+  const legs = answered('x1', '10:00', '8285550100', 102);
+  const [call] = analyzeCalls(legs, { startMs: cal.easternToMs(D), endMs: cal.easternToMs(D, '23:00'), nowMs: cal.easternToMs(D, '23:00') }, config).calls;
+  const rec = callRecord(call, { id: 7, call_time: '2026-09-29 14:00:00', summary: 'Asked about ants.', transcription: 'Speaker 0: Hi.' });
+  assert.equal(rec.callId, 'x1');
+  assert.equal(rec.direction, 'inbound');
+  assert.equal(rec.phone, '8285550100');
+  assert.equal(rec.staff, 'Shelley');
+  assert.equal(rec.answered, true);
+  assert.equal(rec.start, '2026-09-29T10:00:00.000-04:00');
+  assert.deepEqual(rec.transcript, { id: 7, callTimeUtc: '2026-09-29 14:00:00', summary: 'Asked about ants.', transcription: 'Speaker 0: Hi.' });
+  assert.equal(callRecord(call, undefined).transcript, null);
+});

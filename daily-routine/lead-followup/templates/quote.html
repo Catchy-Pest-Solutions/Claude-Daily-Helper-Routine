@@ -1,0 +1,158 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<!-- Quote PDF, US letter. Filled by render.js from quote.json. -->
+<style>
+  @page { size: 8.5in 11in; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 8.5in; }
+  body {
+    font-family: Arial, Helvetica, "Liberation Sans", sans-serif;
+    color: #0E120E;
+    font-size: 10pt;
+    line-height: 1.4;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page { width: 8.5in; min-height: 11in; padding: 0.42in 0.55in 0.36in; display: flex; flex-direction: column; }
+  .heavy { font-family: "Arial Black", "Arial Bold", Arial, Helvetica, "Liberation Sans", sans-serif; font-weight: 900; }
+
+  header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 11pt; border-bottom: 4pt solid #15BA0D; }
+  header img { height: 0.82in; display: block; }
+  .company { text-align: right; font-size: 9pt; line-height: 1.5; color: #3E473F; }
+  .company strong { display: block; font-size: 12pt; color: #0E120E; margin-bottom: 2pt; }
+
+  .titlebar { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 14pt; }
+  h1 { font-size: 26pt; line-height: 1; letter-spacing: -0.5pt; }
+  .tag { font-size: 8.5pt; font-weight: 700; letter-spacing: 1.5pt; text-transform: uppercase; color: #11960B; }
+
+  .customer { margin-top: 12pt; display: grid; grid-template-columns: 1.6fr 1fr; gap: 0 24pt; background: #EEF1EE; border-radius: 8pt; padding: 9pt 14pt; }
+  .customer .k { font-size: 7.5pt; font-weight: 700; letter-spacing: 1.2pt; text-transform: uppercase; color: #5C665D; }
+  .customer .v { font-size: 10.5pt; font-weight: 700; margin-bottom: 4pt; }
+  .customer .v.last { margin-bottom: 0; }
+
+  .told { margin-top: 11pt; border-left: 4pt solid #15BA0D; padding: 2pt 0 2pt 12pt; }
+  .told .k { font-size: 8pt; font-weight: 700; letter-spacing: 1.2pt; text-transform: uppercase; color: #5C665D; }
+  .told p { font-size: 12pt; margin-top: 2pt; }
+
+  .badge { display: inline-block; background: #15BA0D; color: #0E120E; font-weight: 700; font-size: 10.5pt; padding: 5pt 12pt; border-radius: 20pt; }
+
+  .options { margin-top: 11pt; display: grid; grid-template-columns: repeat({{optionCount}}, 1fr); gap: 14pt; }
+  .opt { border: 1pt solid #D5DCD5; border-radius: 9pt; overflow: hidden; display: flex; flex-direction: column; break-inside: avoid; }
+  .opt-head { background: #0E120E; color: #ffffff; padding: 8pt 13pt 9pt; }
+  .opt-head .label { font-size: 8pt; font-weight: 700; letter-spacing: 1.6pt; text-transform: uppercase; color: #15BA0D; }
+  .opt-head .name { font-size: 13pt; font-weight: 700; line-height: 1.2; margin-top: 2pt; }
+  .opt-body { padding: 9pt 13pt 4pt; flex: 1; }
+  .field { margin-bottom: 6pt; }
+  .field .k { font-size: 7.5pt; font-weight: 700; letter-spacing: 1.2pt; text-transform: uppercase; color: #5C665D; margin-bottom: 2pt; }
+  .field p { font-size: 9.5pt; }
+  ul { list-style: none; }
+  li { position: relative; padding-left: 13pt; font-size: 9.5pt; margin-bottom: 1.5pt; }
+  li::before { content: ""; position: absolute; left: 1pt; top: 4pt; width: 6pt; height: 6pt; border-radius: 1.5pt; background: #15BA0D; }
+  .single ul { columns: 2; column-gap: 18pt; }
+  .single li { break-inside: avoid; }
+  .opt-price { background: #EEF1EE; padding: 8pt 13pt 9pt; min-height: 72pt; }
+  .opt-price .was { font-size: 12pt; color: #6B756C; text-decoration: line-through; text-decoration-thickness: 1.5pt; margin-right: 6pt; }
+  .opt-price .price { font-size: 26pt; line-height: 1.05; letter-spacing: -0.5pt; }
+  .opt-price .note { font-size: 8.5pt; color: #3E473F; margin-top: 3pt; }
+
+  .next { margin-top: 12pt; display: flex; gap: 14pt; align-items: center; border: 1.5pt solid #15BA0D; background: #F2FBF1; border-radius: 9pt; padding: 10pt 16pt; break-inside: avoid; }
+  .next .k { font-size: 14pt; white-space: nowrap; }
+  .next p { font-size: 11pt; }
+  .next strong { white-space: nowrap; }
+
+  footer { margin-top: auto; padding-top: 9pt; border-top: 1pt solid #D5DCD5; display: flex; justify-content: space-between; gap: 16pt; font-size: 8.5pt; color: #5C665D; }
+  footer .policy { font-weight: 700; color: #0E120E; }
+  .spacer { flex: 1; min-height: 10pt; }
+  /* render.js adds .compact when the normal layout runs past one page. */
+  .compact .page { padding-top: 0.34in; padding-bottom: 0.3in; }
+  .compact header img { height: 0.68in; }
+  .compact .titlebar { margin-top: 10pt; }
+  .compact h1 { font-size: 22pt; }
+  .compact .customer { margin-top: 8pt; padding: 7pt 12pt; }
+  .compact .told { margin-top: 8pt; }
+  .compact .told p { font-size: 11pt; }
+  .compact .options { margin-top: 9pt; gap: 10pt; }
+  .compact .opt-body { padding: 7pt 11pt 2pt; }
+  .compact .field { margin-bottom: 4pt; }
+  .compact .field p, .compact li { font-size: 8.8pt; line-height: 1.32; }
+  .compact .opt-price { padding: 6pt 11pt 7pt; min-height: 68pt; }
+  .compact .next { margin-top: 9pt; padding: 8pt 14pt; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <img src="{{logoUrl}}" alt="Catchy Pest Solutions">
+    <div class="company">
+      <strong>{{company.name}}</strong>
+      {{company.address}}<br>
+      {{officePhone}} &middot; {{senderEmail}}<br>
+      {{company.website}}
+    </div>
+  </header>
+
+  <div class="titlebar">
+    <h1 class="heavy">Your Quote</h1>
+    {{#discountBadge}}<span class="badge">{{discountBadge}}</span>{{/discountBadge}}{{^discountBadge}}<span class="tag">{{optionCountText}}</span>{{/discountBadge}}
+  </div>
+
+  <div class="customer">
+    <div>
+      <div class="k">Prepared for</div>
+      <div class="v">{{customerName}}</div>
+      <div class="k">Service address</div>
+      <div class="v last">{{serviceAddress}}</div>
+    </div>
+    <div>
+      <div class="k">Date</div>
+      <div class="v">{{date}}</div>
+      <div class="k">Prepared by</div>
+      <div class="v last">{{preparedBy}}</div>
+    </div>
+  </div>
+
+  {{#concern}}
+  <div class="told">
+    <div class="k">What you told us</div>
+    <p>{{concern}}</p>
+  </div>
+  {{/concern}}
+
+  <div class="options {{layout}}">
+    {{#options}}
+    <div class="opt">
+      <div class="opt-head">
+        <div class="label">{{label}}</div>
+        <div class="name">{{name}}</div>
+      </div>
+      <div class="opt-body">
+        {{#bestFor}}<div class="field"><div class="k">Best for</div><p>{{bestFor}}</p></div>{{/bestFor}}
+        {{#includes.length}}
+        <div class="field"><div class="k">What's included</div><ul>{{#includes}}<li>{{.}}</li>{{/includes}}</ul></div>
+        {{/includes.length}}
+        {{#schedule}}<div class="field"><div class="k">Visit schedule</div><p>{{schedule}}</p></div>{{/schedule}}
+        {{#guarantee}}<div class="field"><div class="k">Guarantee</div><p>{{guarantee}}</p></div>{{/guarantee}}
+      </div>
+      <div class="opt-price">
+        <div>{{#wasPrice}}<span class="was">{{wasPrice}}</span>{{/wasPrice}}<span class="price heavy">{{price}}</span></div>
+        {{#priceNote}}<div class="note">{{priceNote}}</div>{{/priceNote}}
+      </div>
+    </div>
+    {{/options}}
+  </div>
+
+  <div class="next">
+    <div class="k heavy">Next step</div>
+    <p>Reply to our text with the day that works ({{closeDaysText}}), or call us at <strong>{{officePhone}}</strong>.</p>
+  </div>
+
+  <div class="spacer"></div>
+  <footer>
+    <span class="policy">No cancellation fees if you change your mind before your first service.</span>
+    <span>Quote prepared {{date}}</span>
+  </footer>
+</div>
+</body>
+</html>
