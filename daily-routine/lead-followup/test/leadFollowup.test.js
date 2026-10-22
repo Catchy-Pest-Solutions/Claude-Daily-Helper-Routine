@@ -81,7 +81,7 @@ test('services: quotes and Leads Marketing are not booked, names trimmed, scratc
 test('services: a real service is booked, with its appointment day and arrival window', () => {
   const services = [
     { serviceId: 1, serviceCategoryName: 'Leads Marketing', statusId: 'CSC_SCRATCH' },
-    { serviceId: 2, serviceCategoryName: 'Carolina TermiteShield', statusId: 'CSC_PENDING', initialAmount: 797, regularAmount: 29 },
+    { serviceId: 2, serviceCategoryName: 'Carolina TermiteShield', statusId: 'CSC_PENDING', initialAmount: 847, initialDiscount: 50, regularAmount: 29 },
   ];
   const appts = [
     { serviceId: 2, appointmentTypeName: 'Treatment', statusId: 'SVC_TICK_ACTIVE', appointmentDate: '2026-10-27', arrivalFrom: '11:00:00', arrivalThru: '13:00:00' },
@@ -89,7 +89,7 @@ test('services: a real service is booked, with its appointment day and arrival w
   const r = lead.servicesInfo(services, appts, NOT_BOOKED);
   assert.strictEqual(r.booked, true);
   assert.deepStrictEqual(r.services[0], {
-    category: 'Carolina TermiteShield', booked: true, status: 'CSC_PENDING', price: '$797', recurringPrice: '$29',
+    category: 'Carolina TermiteShield', booked: true, status: 'CSC_PENDING', price: '$797', discount: '$50', recurringPrice: '$29',
     appointmentDate: '2026-10-27', appointmentDay: 'Tuesday, Oct 27', timeWindow: '11 AM–1 PM', createdAt: null,
   });
   assert.strictEqual(lead.timeWindow({ arrivalFrom: '08:00:00', arrivalThru: '10:30:00' }), '8–10:30 AM');

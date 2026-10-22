@@ -82,11 +82,19 @@ function customerLabel(plan, customer) {
   return name || `customer ${plan.customerId}`;
 }
 
+// First of the names that's set, ignoring case (the environment has
+// Textable_Account_UID / Textable_Token).
+function envAny(...names) {
+  const wanted = names.map((n) => n.toLowerCase());
+  const key = Object.keys(process.env).find((k) => wanted.includes(k.toLowerCase()) && String(process.env[k]).trim());
+  return key ? String(process.env[key]).trim() : null;
+}
+
 async function sendText({ to, message, mediaUrl, sendAtMs, from }) {
   // Credentials from the environment, or (when they're stored as a network
   // secret for atscall-txb.textable.app) added by the agent proxy.
-  const uid = process.env.TEXTABLE_USER_ID || process.env.TEXTABLE_ACCOUNT_UID;
-  const token = process.env.TEXTABLE_API_TOKEN;
+  const uid = envAny('TEXTABLE_USER_ID', 'TEXTABLE_ACCOUNT_UID');
+  const token = envAny('TEXTABLE_API_TOKEN', 'TEXTABLE_TOKEN');
   const auth = uid && token ? { Authorization: `Bearer ${uid}:${token}` } : {};
   const body = { to, from, message, ...(mediaUrl ? { media: [mediaUrl] } : {}), ...(sendAtMs ? { sendAt: sendAtMs } : {}) };
   let res;
@@ -97,7 +105,7 @@ async function sendText({ to, message, mediaUrl, sendAtMs, from }) {
   }
   const j = await res.json().catch(() => ({}));
   if (res.status === 451) return 'opted_out';
-  if (res.status === 401 && !auth.Authorization) return 'failed: no Textable credentials (set TEXTABLE_USER_ID and TEXTABLE_API_TOKEN)';
+  if (res.status === 401 && !auth.Authorization) return 'failed: no Textable credentials (set TEXTABLE_ACCOUNT_UID and TEXTABLE_API_TOKEN)';
   if (res.ok && j.status === true) return sendAtMs ? 'scheduled' : 'sent';
   return `failed: Textable ${res.status} ${String(j.message || j.error || '').slice(0, 120)}`.trim();
 }

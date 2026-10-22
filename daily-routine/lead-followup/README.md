@@ -52,8 +52,11 @@ Prints exactly one line: `already_sent`, `no_call`, `no_contact`, `waiting`,
 3. Re-reads services and appointments (a real service has shown up 12 minutes
    after the record). Scratched/cancelled services are dropped, names
    trimmed. "Leads Marketing" and the three "Quote -" categories mean not
-   booked; anything else means booked. Quote services carry the rep's quoted
-   price (`regularAmount`); their "Place Holder" appointment is not a visit.
+   booked; anything else means booked. `price` is net of the service's
+   `initialDiscount` ($397 - $50 = $347). Quote services carry the rep's
+   quoted price (`regularAmount`); their "Place Holder" appointment is not a
+   visit. The routine quotes what the rep said on the call; Briostack's price
+   is a cross-check.
 4. Finds the ATS calls with the customer's number (inbound `caller_id` or
    outbound `callee_id`) from the start of that day and at least 3 hours
    before the record was created. Calls under 20 seconds of talk are
@@ -75,7 +78,7 @@ It writes `$S/lead.json` on every status:
 ```
 { status, run, checkedAt,
   customer: { id, firstName (null if blank), lastName, name, mobile (E.164), email, serviceAddress, createdAt },
-  services: [ { category, booked, status, price, recurringPrice, appointmentDate, appointmentDay, timeWindow, createdAt } ],
+  services: [ { category, booked, status, price, discount, recurringPrice, appointmentDate, appointmentDay, timeWindow, createdAt } ],
   booked,
   call: { staff, start, end, direction, talkSec, callId },
   calls: [ { callId, direction, start, end, talkSec, staff, transcriptFrom, summary } ],   // every call today, oldest first
@@ -175,7 +178,7 @@ Email: `sent`, `skipped (no address)` or `failed: ...`. Log: `logged`,
 | `BRIOSTACK_API_KEY` | prepare, send | Already set. Its user must be an admin to create the webhook |
 | `ATS_USERNAME`, `ATS_PASSWORD` | prepare | Already set |
 | `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` | render, send | Already set. office@'s token with `gmail.send` + `drive.file` scopes |
-| `TEXTABLE_USER_ID`, `TEXTABLE_API_TOKEN` | send | **Missing now.** `TEXTABLE_ACCOUNT_UID` also works in place of `TEXTABLE_USER_ID`. Or store them as a network secret for `atscall-txb.textable.app` (header `Authorization`, prefix `Bearer`, value `USER_ID:TOKEN`) |
+| `TEXTABLE_ACCOUNT_UID`, `TEXTABLE_API_TOKEN` | send | Set (as `Textable_Account_UID` / `Textable_Token`; names are matched ignoring case, and `TEXTABLE_USER_ID` / `TEXTABLE_TOKEN` also work). Or store them as a network secret for `atscall-txb.textable.app` (header `Authorization`, prefix `Bearer`, value `ACCOUNT_UID:TOKEN`) |
 | `CHROME_PATH` | render | Optional |
 
 The routine also needs the **Slack connector** (Step 7 messages Daniel).

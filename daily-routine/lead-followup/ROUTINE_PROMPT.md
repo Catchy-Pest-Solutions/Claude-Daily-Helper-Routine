@@ -63,22 +63,19 @@ Write a text and an email following PLAYBOOK Section 8 (Booked). No prices, disc
 ## Step 3b. UNBOOKED
 
 **Pick two options.**
-- **Option A** = what the rep recommended and quoted on the call.
-- **Option B** = the alternative that best answers their objection (PLAYBOOK Section 3):
+- **Option A** = the program the rep recommended, on the 12-month agreement. If the customer objected to a contract, use the no-annual-commitment version instead.
+- **Option B** = the $247 One Time Service whenever it's eligible (not termites, bed bugs or large wildlife), even if it didn't come up on the call. This is a good moment to mention it. When it isn't eligible, use the alternative that best answers their objection (PLAYBOOK Section 3):
   - Contract objection: same program, no annual commitment (+$50).
-  - Price objection or wants a quick fix: the $247 One Time Service if eligible (not termites, bed bugs or large wildlife); otherwise no-contract, or Critter without exclusion if exclusion is uncertain.
   - Unsure whether exclusion is needed: Critter Control with vs. without exclusion.
   - Several pest categories: Catchy Club vs. the main program.
-  - No clear objection: same program, annual vs. no annual commitment.
-- If the rep already laid out two options on the call, use those two.
+  - Otherwise: same program, annual vs. no annual commitment.
 - Use Briostack's service names (HomeShield - Signature Pest Control, HomeShield - Critter Control, Carolina TermiteShield, Catchy Club, One Time Service).
 
 **Prices.**
-- Standard prices come from KNOWLEDGE_BASE.md (Section 0 and the Section 16 cheat sheet).
-- Check what the rep quoted: the price on the customer's Briostack service and the price said on the call (fix speech-to-text slips like "$6.47" = $647).
-  - Matches a standard price: use it.
-  - Briostack and the call show the same non-standard price (the rep gave a custom price): use it for Option A and add no discount.
-  - Briostack and the call disagree and you can't tell which is right: Slack Daniel, stop.
+- **Build the quote from the prices the rep said on the call** (fix speech-to-text slips like "$6.47" = $647). A non-standard price the rep gave is a custom price: use it.
+- Prices the rep didn't say (for example the One Time Service) come from KNOWLEDGE_BASE.md (Section 0 and the Section 16 cheat sheet).
+- The Briostack service price is only a cross-check. `services[].price` is already net of a discount entered on the service, and the office can record discounts in other places, so a difference alone isn't a problem. If you can't tell from the call what the rep quoted (garbled, or two different numbers) and Briostack doesn't settle it: Slack Daniel, stop.
+- **If the rep gave a discount on the call** (for example "let me take 10% off"), that is the customer's one discount: apply it to both options, rounded to whole dollars, with the rep's reason, and keep the undiscounted price as `wasPrice`. Add no other discount.
 - **10% off** only when price was their objection and the rep didn't already discount (KB 0.3). Apply it to both options, round to whole dollars, give a true reason, keep the original as `wasPrice`.
 - Every price must be identical in the text, email, card and PDF. Billing is "every 4 weeks," never "monthly."
 

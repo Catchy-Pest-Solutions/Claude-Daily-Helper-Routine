@@ -140,8 +140,10 @@ function servicesInfo(services, appointments, notBookedCategories) {
       category,
       booked: !isQuote,
       status: s.statusId,
-      // Initial price; "Quote -" services hold the quoted price in regularAmount.
-      price: money(Number(s.initialAmount) > 0 ? s.initialAmount : isQuote ? s.regularAmount || quoted : quoted),
+      // Initial price net of the service's discount (e.g. $397 - $50 = $347);
+      // "Quote -" services hold the quoted price in regularAmount.
+      price: money(Number(s.initialAmount) > 0 ? s.initialAmount - (Number(s.initialDiscount) || 0) : isQuote ? s.regularAmount || quoted : quoted),
+      discount: money(s.initialDiscount),
       recurringPrice: isQuote ? null : money(s.regularAmount),
       appointmentDate: next?.appointmentDate || null,
       appointmentDay: next?.appointmentDate ? dayLabel(next.appointmentDate) : null,
