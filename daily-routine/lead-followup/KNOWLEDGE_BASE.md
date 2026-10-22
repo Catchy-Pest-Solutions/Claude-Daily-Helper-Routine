@@ -11,7 +11,7 @@
 
 1. **Who gets messages.** Every new customer whose call can be matched gets one text and one email. **Booked:** a short personal confirmation only (no discount, no quote, no sales pitch). **Unbooked:** the sales follow-up described in this guide and in PLAYBOOK.md.
 2. **Who it's from.** Messages are signed by the office person who took the call (Steve, Shelley or Daniel), from Catchy Pest Solutions. That person really did speak with the customer, so "thanks for calling" and "great talking with you" are fine. Never claim anyone inspected the home unless the call says so. Never mention AI, transcripts or recordings. Never call Daniel the owner.
-3. **Discounts.** The $50 annual discount is already built into the 12-month price ($347 vs $397 etc.). It is NOT an extra offer. The only extra discount: **10% off**, offered only when price was the customer's objection. It can apply to any option (annual, no-contract, one-time). Always give a true reason: our technicians are in your area this week, we have openings this week, or a seasonal (fall/winter/spring/summer) discount. **One discount per customer, never stacked, never for booked customers, never on top of a discount the rep already gave on the call.**
+3. **Discounts.** The $50 annual discount is already built into the 12-month price ($347 vs $397 etc.). It is NOT an extra offer. The only extra discount: **10% off**, offered to unbooked customers by default (owner's call: give it more times than not), unless the rep already gave a discount on the call. It can apply to any option (annual, no-contract, one-time). Always give a true reason: our technicians are in your area this week, we have openings this week, or a seasonal (fall/winter/spring/summer) discount. **One discount per customer, never stacked, never for booked customers, never on top of a discount the rep already gave on the call.**
 4. **Whole dollars only.** Round every price to whole dollars (10% off $347 = $312; 10% off $247 = $222; 10% off $647 = $582).
 5. **Nothing else is offered.** No waived initial fees, no payment plans, no free add-ons. (A free pest inspection during a paid visit exists but is not mentioned.)
 6. **Guarantees.** Satisfaction guarantee (recurring plans): free return visits between scheduled services as needed until the pest is handled. **Money-back guarantee: annual plans only.** If the pest the customer called about isn't successfully removed after the first three months of service, they're eligible for a partial or full refund, pending manager approval. Never promise an automatic or full refund. One Time Service has no warranty. Warranties stay active through ongoing preventive treatments.
@@ -283,7 +283,7 @@ These are for a customer buying multiple distinct service categories. Start with
 - If upgraded to an ongoing qualifying protection plan **within 90 days**, the **full $247 can be credited toward the new service**.
 
 ## What is NOT eligible
-**Termites, bed bugs, and large wildlife (such as raccoons or groundhogs)** are excluded. Other pest categories generally qualify for a focused one-time service, provided the one-/two-pest, same-category, limited-scope rules are satisfied. Unusual species, infestation severity, safety, and access are subject to team assessment.
+**Termites, bed bugs, bats and wildlife (squirrels, flying squirrels, chipmunks, raccoons, opossums, groundhogs, skunks, snakes, moles, voles)** are excluded. Mice and rats (wood rats included) are eligible. Other pest categories generally qualify for a focused one-time service, provided the one-/two-pest, same-category, limited-scope rules are satisfied. Unusual species, infestation severity, safety, and access are subject to team assessment.
 
 ## When to present it
 - When the caller **explicitly asks** for one-time treatment or has no interest in a continuing plan.
@@ -433,7 +433,7 @@ These are **patterns** to adapt from the transcript, not messages to send word-f
 
 ## 17.1 Common sales objections
 
-- **“Too expensive”:** Explain what the initial three months cover. If qualified, discuss the $247 One Time Service for eligible limited problems, and offer the Section 0.3 10% discount with a true reason. No other special discounts.
+- **“Too expensive”:** Explain what the initial three months cover. If qualified, discuss the $247 One Time Service for eligible limited problems. The Section 0.3 10% discount is already in the quote by default. No other special discounts.
 - **“I don't want a contract”:** Explain **no-annual-commitment initial package = $50 higher**, then regular maintenance from month four can continue without 12-month lock-in. This is often the simplest close.
 - **“I need to ask my spouse”:** Summarize the single most relevant package and offer a short written recap or invite a question. Avoid pressure.
 - **“I want to think about it”:** Mirror the actual unresolved issue from the call; provide the missing detail and one easy next step.
@@ -453,7 +453,7 @@ These are **patterns** to adapt from the transcript, not messages to send word-f
 - Do NOT use the **2027** stand-alone mosquito-only prices as though they are approved for other seasons/years.
 - Do NOT quote standard Critter Control prices for **bats**; schedule the $149 inspection/custom quote.
 - Do NOT quote a fixed bed bug job for $889; say **starting at $889** and final price confirmed by team.
-- Do NOT recommend $247 One Time Service for **termite, bed bug, or large-wildlife** jobs, or promise it treats unrelated categories simultaneously.
+- Do NOT recommend $247 One Time Service for **termite, bed bug, bat or wildlife** jobs (mice and rats are fine), or promise it treats unrelated categories simultaneously.
 - Do NOT promise every TermiteShield customer an unconditional termite damage warranty, a particular cap, or prior-damage reimbursement before eligibility is confirmed.
 - Do NOT assume pre-construction/commercial termite pricing from a corrupted price table; route for custom pricing.
 - Do NOT quote the flat Catchy Club initial price outside **1,000–4,000 sq. ft.**, or TermiteShield flat residential price above **5,000 sq. ft.**
