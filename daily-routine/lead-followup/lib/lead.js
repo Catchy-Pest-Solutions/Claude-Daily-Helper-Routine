@@ -2,6 +2,7 @@
 // ATS call is the customer's, and how lead.json looks. No I/O here.
 const cal = require('../../src/callReview/calendar');
 const { normalizePhone, OUTCOME_TEXT } = require('../../src/callReview/callAnalysis');
+const { htmlToText } = require('./voicemail');
 
 const LOG_PREFIX = '[AI FOLLOW-UP';
 const SCRATCHED = new Set(['CSC_SCRATCH', 'CSC_CANCELLED', 'CSC_CANCELED']);
@@ -195,6 +196,23 @@ function staffName(ext, config) {
   return ext ? config.staff[ext]?.name || null : null;
 }
 
+// Who signs (Daniel, Oct 27): the person on the main call; when there's
+// none, whoever called them back, else whose voicemail box they left a
+// message in, else whoever at the office created the record. Only office
+// staff sign. Returns { name, reason } or null. A short outbound main call
+// can be a voicemail greeting, so it reads "called them", not "talked".
+function pickSigner({ main, mainStaff, calls = [], voicemails = [], createdBy }, config) {
+  if (mainStaff) return { name: mainStaff, reason: main?.direction === 'outbound' ? 'called them (main call)' : 'took their call (main call)' };
+  const latest = (list) => [...list].sort((a, b) => b.at - a.at)[0];
+  const callback = latest(calls.filter((c) => c.direction === 'outbound' && staffName(c.agent, config)).map((c) => ({ at: c.startMs, name: staffName(c.agent, config) })));
+  if (callback) return { name: callback.name, reason: 'called them back' };
+  const box = latest(voicemails.filter((v) => staffName(v.mailboxExt, config)).map((v) => ({ at: v.at, name: staffName(v.mailboxExt, config) })));
+  if (box) return { name: box.name, reason: 'their voicemail went to this mailbox' };
+  const office = new Set(Object.values(config.staff).map((x) => x.name));
+  if (createdBy?.person && office.has(createdBy.name)) return { name: createdBy.name, reason: 'created the record' };
+  return null;
+}
+
 // What happened on a call, in plain words. Outbound talk time includes the
 // ring, so a short one means nobody picked up.
 function callOutcome(c, config) {
@@ -219,6 +237,15 @@ function callSummary(c, config, transcript) {
     transcriptFrom: transcript?.source || null,
     summary: transcript?.summary || null,
   };
+}
+
+// A Communications entry's content as plain text. Emails sent from
+// Briostack carry the whole HTML page after an "Email Body" line.
+function noteText(content, max = 1500) {
+  const raw = String(content || '').replace(/\r\n/g, '\n');
+  const at = raw.search(/<!DOCTYPE|<html/i);
+  const text = at >= 0 ? `${raw.slice(0, at).trim()}\n${htmlToText(raw.slice(at))}` : raw;
+  return text.replace(/[ \t]+\n/g, '\n').trim().slice(0, max);
 }
 
 const stamp = (ms) => `${cal.formatDay(ms)} ${cal.formatTime(ms)}`;
@@ -262,7 +289,9 @@ module.exports = {
   pickMainCall,
   historyStart,
   callOutcome,
+  pickSigner,
   callSummary,
   historyText,
+  noteText,
   staffName,
 };

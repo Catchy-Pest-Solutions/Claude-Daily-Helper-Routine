@@ -9,6 +9,8 @@ Facts and prices live in KNOWLEDGE_BASE.md (Section 0 wins). This file is about 
 
 Close the lead. All our services are under $1,000, so these are low-ticket and very closable. The message should feel like the person who took the call picked up their phone a few minutes later and texted the customer themselves. It continues the conversation; it does not start a new one.
 
+When nobody has really talked with them yet, or the quote isn't clear, the goal is smaller: a short, honest note that gets them to reply or call back (Section 8, Note).
+
 Briostack already runs a separate, blanket nurture sequence (company videos, reviews, tips, offers) to unbooked leads, starting about 10 minutes after the record is created. Our message is the personal layer. Don't repeat what Briostack sends (see Section 6).
 
 ---
@@ -152,6 +154,22 @@ A friendly person at the office, texting from their phone.
 - Thanks + one specific; the date (and time window only if Briostack has it); what to expect at the first visit (one or two lines, e.g. techs wear shoe covers inside, removal usually takes a few visits); the program video; "reply or text (828) 263-4804 with any questions."
 - No prices, discounts or sales pitch.
 
+### Note — text (20–60 words, no picture)
+
+For someone nobody has really talked with yet, a quote that can't be priced from the call, or an unbooked commercial property. Say what really happened, what they need if you know it, ask about two days, and invite a reply. No prices, discounts or video.
+
+> Hi Kim, it's Steve from Catchy Pest. I got your voicemail about the rodents and just tried calling you back, sorry I missed you. Would tomorrow or Thursday work to get someone out? Text me here or call (828) 263-4804 and we'll get you taken care of.
+
+> Hi, it's Shelley from Catchy Pest. Thanks for reaching out to us this morning. Would Wednesday or Thursday work to get someone out to take a look? Text me here with what's going on, or call (828) 263-4804.
+
+### Note — email
+
+- Subject: "Sorry I missed you, Kim" or "Following up on your call."
+- Paragraph 1: what happened and what they need, if known.
+- Paragraph 2: the two days (unless it's commercial or they may have booked) + "Just reply to this email or text me at (828) 263-4804."
+- Signature: "[Rep]\nCatchy Pest Solutions\n(828) 263-4804"
+- No prices, discounts, card or PDF.
+
 ---
 
 ## 9. Never
@@ -160,6 +178,8 @@ A friendly person at the office, texting from their phone.
 - Write "every 4 weeks" for billing (say "$49 a month", KB 0.16). Say "safe," "non-toxic," "harmless." Promise a full or automatic refund.
 - Use fake urgency ("only one spot left," "offer ends today").
 - Mention AI, transcripts, recordings, "my notes" or the system.
+- Claim a conversation that didn't happen ("great talking with you") in a note.
+- Say "my direct line": texts come from the shared office number. Say "text me here."
 - Offer more than one discount, or any discount to a booked customer.
 - Use more than one tool per message (the 10% discount doesn't count as one).
 - Write long. If it reads like a brochure, cut it in half.

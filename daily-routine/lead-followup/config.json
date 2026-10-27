@@ -3,6 +3,7 @@
   "testPhone": "+12708737343",
   "testEmail": "daniel.mcgee2@gmail.com",
   "danielSlackUserId": "U09LQDUPQTC",
+  "slackUserIds": { "Daniel": "U09LQDUPQTC", "Shelley": "U09NPRFAENS", "Steve": "U09NNDKSB4M" },
   "textFrom": "+18282634804",
   "officePhone": "(828) 263-4804",
   "senderEmail": "office@catchypestsolutions.com",
