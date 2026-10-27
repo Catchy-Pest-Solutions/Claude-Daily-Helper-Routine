@@ -38,7 +38,7 @@ It works for up to 9 minutes (checking every 2 minutes), writes `$S/lead.json`, 
 | `ready` | Continue. |
 | `error: ...` | Slack Daniel with the error, stop. |
 
-`lead.json` contains: `customer` (id, firstName, lastName, mobile, email, serviceAddress), `services` (category, price, appointmentDate, timeWindow; scratched services removed, names trimmed), `booked` (true/false), `call` (staff, start, end, direction), `transcript` (summary, and `path` to the full text), and `schedule` (`textSendAt`: null to send now, or the next business morning; `closeDays`: the two days to offer, e.g. "tomorrow" and "Thursday").
+`lead.json` contains: `customer` (id, firstName, lastName, mobile, email, serviceAddress), `services` (category, price, appointmentDate, timeWindow; scratched services removed, names trimmed), `booked` (true/false), `call` (staff, start, end, direction), `transcript` (summary, and `path` to the full text), `createdBy` (who created the record: `name`, and `person` false for automatic website/Google leads), and `schedule` (`textSendAt`: null to send now, which is almost always; 8 AM the next morning only for an automatic lead that came in overnight; `closeDays`: the two days to offer, e.g. "tomorrow" and "Thursday").
 
 ## Step 2. Read the call and decide
 
@@ -76,8 +76,8 @@ Write a text and an email following PLAYBOOK Section 8 (Booked). No prices, disc
 - Prices the rep didn't say (for example the One Time Service) come from KNOWLEDGE_BASE.md (Section 0 and the Section 16 cheat sheet).
 - The Briostack service price is only a cross-check. `services[].price` is already net of a discount entered on the service, and the office can record discounts in other places, so a difference alone isn't a problem. If you can't tell from the call what the rep quoted (garbled, or two different numbers) and Briostack doesn't settle it: Slack Daniel, stop.
 - **If the rep gave a discount on the call** (for example "let me take 10% off"), that is the customer's one discount: apply it to both options, rounded to whole dollars, with the rep's reason, and keep the undiscounted price as `wasPrice`. Add no other discount.
-- **10% off by default** (KB 0.3) when the rep didn't already discount. Apply it to both options, round to whole dollars, give a true reason that fits the call (our technicians are in your area this week, we have openings this week, or the seasonal discount), and keep the original as `wasPrice`. Leave it off only when it would read wrong, for example when the customer was clearly sold and only had a scheduling question.
-- Every price must be identical in the text, email, card and PDF. Billing is "every 4 weeks," never "monthly."
+- **10% off by default** (KB 0.3) when the rep didn't already discount. Apply it to both options, round to whole dollars, and keep the original as `wasPrice`. The reason is a plain, personal statement that we have a tech in their neighborhood on the two days you're offering (KB 0.3), e.g. "I've actually got a tech just down the road from you Thursday and Friday, so I can take 10% off." A seasonal discount also works. Leave it off only when it would read wrong, for example when the customer was clearly sold and only had a scheduling question.
+- Every price must be identical in the text, email, card and PDF. Describe the ongoing charge as monthly ("then $49 a month", KB 0.16), never "every 4 weeks."
 
 **Custom-quote cases get no card or PDF:** bats (start with the $149 inspection), bed bugs ("starting at $889," final price confirmed by the team), termite homes over 5,000 sq. ft., Catchy Club homes outside 1,000–4,000 sq. ft., mosquito-only, and major structural exclusion. Write the text and email around the next step instead, and skip the render.
 
@@ -98,14 +98,14 @@ Write a text and an email following PLAYBOOK Section 8 (Booked). No prices, disc
       "guarantee": "Free return visits as needed; money-back guarantee on annual plans",
       "price": "$647",
       "wasPrice": null,
-      "priceNote": "First 3 months included, then $49 every 4 weeks. 12-month agreement."
+      "priceNote": "First 3 months included, then $49 a month. 12-month agreement."
     }
   ],
   "discount": null,
   "closeDays": ["tomorrow", "Thursday"]
 }
 ```
-`discount` is usually `{"percent": 10, "reason": "Our technicians are in your area this week"}`, or `null` when there's no discount. Then run:
+`discount` is usually `{"percent": 10, "reason": "Tech in your neighborhood Thu & Fri"}` (keep it this short; it goes on the card's badge), or `null` when there's no discount. In `includes`, describe coverage as included and treated, e.g. "Covers and treats 30+ pests, including carpenter bees and stink bugs", never "if you need us to" (KB 0.17). Then run:
 ```
 node daily-routine/lead-followup/render.js --quote $S/quote.json --out $S
 ```
@@ -118,9 +118,9 @@ It prints `cardPath`, `pdfPath`, `cardUrl` (picture link for the text) and `pdfU
 Fix anything that fails. If you can't fix it, Slack Daniel and stop.
 
 - Every fact traces to the call, Briostack or the knowledge base. Nothing invented.
-- Prices: correct, whole dollars, identical everywhere, "every 4 weeks."
+- Prices: correct, whole dollars, identical everywhere, ongoing charge as "a month."
 - One discount at most (the 10% or the rep's own discount, never both) plus at most one other tool. No discount or pitch for booked customers.
-- No banned words: safe, non-toxic, harmless, chemical-free, all-natural, "monthly" billing, guaranteed or automatic refund, fake urgency.
+- No banned words: safe, non-toxic, harmless, chemical-free, all-natural, "every 4 weeks", guaranteed or automatic refund, fake urgency.
 - No video Briostack already sends this lead (PLAYBOOK Section 6).
 - Text length: 40–100 words unbooked, 25–70 booked. Unbooked ends with the either/or close and a quick reply.
 - Signed by the person who took the call. Nothing mentions AI, transcripts, recordings or notes.

@@ -83,15 +83,20 @@ It writes `$S/lead.json` on every status:
   call: { staff, start, end, direction, talkSec, callId },
   calls: [ { callId, direction, start, end, talkSec, staff, transcriptFrom, summary } ],   // every call today, oldest first
   transcript: { summary, path },        // path = $S/transcript.txt, all of today's calls, newest last
+  createdBy: { employeeId, name, person },  // from the payload's initiator-uri; person false = automatic web/Google lead
   schedule: { textSendAt, closeDays },  // textSendAt null = send now
   contactMethodIds, waitingFor: [ ... ] }
 ```
 
-**schedule:** office hours are 8 AM-5 PM Eastern, Monday-Friday (office
-holidays from `src/callReview/calendar.js` are closed days). Outside them,
-`textSendAt` is the next business morning at 8:30 Eastern (which can be later
-the same day, e.g. at 6 AM). `closeDays` are the two business days after the
-day the text goes out. The first is "tomorrow" when it's the next calendar
+**schedule:** a new customer usually means someone at the office just
+talked to them, so the text and email go out right away (Daniel, Oct 27).
+The only hold is for a record nobody at the office created (the payload's
+`initiator-uri` is "Leads Nurture", employee 18677: website and Google leads)
+that arrives during quiet hours, 9 PM-8 AM Eastern (`config.textQuietHours`):
+its text waits until 8 AM. Records Steve, Shelley or Daniel created go out
+right away at any hour. `closeDays` are the two business days after the
+day the text goes out (office holidays from `src/callReview/calendar.js`
+are skipped). The first is "tomorrow" when it's the next calendar
 day **and** the text goes out the same day as the email; a text held
 overnight uses day names (the email goes out right away, so "tomorrow" would
 mean different days in the two messages).
@@ -130,8 +135,10 @@ picture). `pdfUrl` is the normal Drive share link.
 **Dependencies: none.** It drives the Chromium that the cloud image ships in
 `/opt/pw-browsers` over the DevTools protocol with Node 22's built-in
 WebSocket, so nothing is installed and no setup script is needed (0 seconds
-added). A full render plus upload takes about 8 seconds. Set `CHROME_PATH`
-if Chromium ever lives elsewhere. The cloud image has no Arial Black, so
+added). A full render plus upload takes about 8 seconds. It finds the
+newest headless shell or Chromium under `/opt/pw-browsers` whatever the
+folder layout (the image moved from `chromium-1194` to `chromium-1243` in
+October 2026 and the old fixed path broke). Set `CHROME_PATH` to override. The cloud image has no Arial Black, so
 headings render in Arial Bold (Liberation Sans Bold).
 
 ## send.js
@@ -154,11 +161,13 @@ node daily-routine/lead-followup/send.js --plan $S/plan.json [--no-log] [--previ
   message, the summary line, the pdfUrl, signed as, and the time. The PDF is
   attached to the email entry (tested: Briostack stores it as a
   "Communication Attachment"). Entries are written even when a send failed,
-  so a retry run can't double-send. The contact method is "Unknown", not the
-  customer's phone or email (Daniel's call): send.js reuses the customer's
-  UNKNOWN contact method from an existing entry if there is one (it isn't on
-  the customer record), otherwise posts with no contact method. If Briostack
-  rejects that, it logs under the phone/email and says so in `log`.
+  so a retry run can't double-send. Daniel prefers the "Unknown" contact
+  method, but Briostack requires an existing contact-method ID on every entry
+  and only creates an Unknown one for customers with no email (when its
+  nurture email goes out, about 10 minutes after the record). So send.js
+  uses the customer's Unknown method when an earlier entry has one and
+  otherwise logs under the phone/email directly (tested Oct 27: posting with
+  no contact method, or a new "UNKNOWN" one, is rejected with 400).
 - **Test mode** (`"testMode": true`): the text goes to `testPhone` with
   `TEST for <name> <phone>:` on top, the email to `testEmail` with
   `[TEST for <name>]` before the subject, and each log entry starts with

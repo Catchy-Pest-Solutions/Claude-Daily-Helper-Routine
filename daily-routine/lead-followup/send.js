@@ -148,18 +148,21 @@ async function findUnknownContactMethod(brio, customerId) {
   return null;
 }
 
-// Log under "Unknown": the customer's UNKNOWN contact method if found,
-// otherwise no contact method at all. If Briostack rejects that, log under
-// the phone/email instead so the entry (which prepare.js uses to spot
-// already-sent customers) is never lost.
-async function createLogEntry(brio, customerId, body, unknownId, fallbackId, notes) {
-  try {
-    return await brio.createCommunication(customerId, unknownId ? { ...body, contactMethods: [{ contactMethodId: unknownId }] } : body);
-  } catch (err) {
-    if (!fallbackId || !(err.status >= 400 && err.status < 500)) throw err;
-    notes.push(`${body.communicationTypeId} logged under the customer's contact, not Unknown: ${err.status}`);
-    return brio.createCommunication(customerId, { ...body, contactMethods: [{ contactMethodId: String(fallbackId) }] });
+// Log under "Unknown" when the customer has that contact method, else under
+// the phone/email. Briostack requires an existing contactMethodId on every
+// entry and only creates an Unknown one for customers with no email (when its
+// nurture email goes out), so most new customers don't have one yet. The
+// entry is what prepare.js uses to spot already-sent customers, so it must
+// never be lost.
+async function createLogEntry(brio, customerId, body, unknownId, fallbackId) {
+  if (unknownId) {
+    try {
+      return await brio.createCommunication(customerId, { ...body, contactMethods: [{ contactMethodId: unknownId }] });
+    } catch (err) {
+      if (!fallbackId || !(err.status >= 400 && err.status < 500)) throw err;
+    }
   }
+  return brio.createCommunication(customerId, fallbackId ? { ...body, contactMethods: [{ contactMethodId: String(fallbackId) }] } : body);
 }
 
 async function main() {
@@ -244,7 +247,7 @@ async function main() {
       // Daniel wants these entries under the "Unknown" contact method, not the
       // customer's phone or email.
       const unknownId = await findUnknownContactMethod(brio, plan.customerId);
-      const log = (body, fallbackId) => createLogEntry(brio, plan.customerId, body, unknownId, fallbackId, notes);
+      const log = (body, fallbackId) => createLogEntry(brio, plan.customerId, body, unknownId, fallbackId);
       if (textTo) {
         await log({
           subject: `${prefix} Text`,

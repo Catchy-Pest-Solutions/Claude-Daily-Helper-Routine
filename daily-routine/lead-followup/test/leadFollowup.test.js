@@ -6,7 +6,7 @@ const vm = require('node:vm');
 const crypto = require('node:crypto');
 
 const cal = require('../../src/callReview/calendar');
-const { schedule, officeOpen } = require('../lib/schedule');
+const { schedule, inQuietHours } = require('../lib/schedule');
 const lead = require('../lib/lead');
 const { parseAtsCommunication } = require('../lib/briostack');
 const { renderString, escapeHtml } = require('../lib/template');
@@ -17,45 +17,44 @@ const { emailBlocks, logContent, findUnknownContactMethod, createLogEntry, TEST_
 const et = (date, time) => cal.easternToMs(date, time);
 const NOT_BOOKED = ['Leads Marketing', 'Quote - Critter Control', 'Quote - Signature Pest', 'Quote - TermiteShield'];
 
-test('schedule: during office hours the text goes now and tomorrow is offered', () => {
-  // Wednesday Oct 21, 2026, 2 PM
-  assert.deepStrictEqual(schedule(et('2026-10-21', '14:00')), { textSendAt: null, closeDays: ['tomorrow', 'Friday'], closeDates: ['2026-10-22', '2026-10-23'] });
-});
-
-test('schedule: Friday offers Monday and Tuesday', () => {
-  const s = schedule(et('2026-10-23', '10:00'));
-  assert.strictEqual(s.textSendAt, null);
-  assert.deepStrictEqual(s.closeDays, ['Monday', 'Tuesday']);
-});
-
-test('schedule: after hours the text waits for 8:30 next business morning and uses day names', () => {
-  const s = schedule(et('2026-10-21', '19:30'));
-  assert.strictEqual(s.textSendAt, '2026-10-22T08:30:00.000-04:00');
-  // Text goes Thursday; the email went Wednesday night, so no "tomorrow".
-  assert.deepStrictEqual(s.closeDays, ['Friday', 'Monday']);
-});
-
-test('schedule: early morning on a business day sends at 8:30 the same day', () => {
-  const s = schedule(et('2026-10-22', '06:15'));
-  assert.strictEqual(s.textSendAt, '2026-10-22T08:30:00.000-04:00');
-  assert.deepStrictEqual(s.closeDays, ['tomorrow', 'Monday']);
-});
-
-test('schedule: Friday evening and weekends wait for Monday 8:30, offering Tuesday and Wednesday', () => {
-  for (const ms of [et('2026-10-23', '17:00'), et('2026-10-24', '11:00'), et('2026-10-25', '23:00')]) {
-    const s = schedule(ms);
-    assert.strictEqual(s.textSendAt, '2026-10-26T08:30:00.000-04:00');
-    assert.deepStrictEqual(s.closeDays, ['Tuesday', 'Wednesday']);
+test('schedule: daytime and evening send now, any day, and offer the next two business days', () => {
+  // Wednesday 2 PM and 8:30 PM: send now, offer tomorrow and Friday.
+  for (const t of ['14:00', '20:30']) {
+    assert.deepStrictEqual(schedule(et('2026-10-21', t)), { textSendAt: null, closeDays: ['tomorrow', 'Friday'], closeDates: ['2026-10-22', '2026-10-23'] });
   }
+  // Friday: Monday and Tuesday. Saturday: also sends now.
+  assert.deepStrictEqual(schedule(et('2026-10-23', '17:30')).closeDays, ['Monday', 'Tuesday']);
+  assert.deepStrictEqual(schedule(et('2026-10-24', '11:00')), { textSendAt: null, closeDays: ['Monday', 'Tuesday'], closeDates: ['2026-10-26', '2026-10-27'] });
 });
 
-test('schedule: holidays are skipped (Thanksgiving and Black Friday)', () => {
+test('schedule: overnight automatic leads wait until 8 AM; records the office created never wait', () => {
+  // A website lead at 11 PM Wednesday waits until 8 AM Thursday; the email went Wednesday, so day names.
+  const late = schedule(et('2026-10-21', '23:00'));
+  assert.strictEqual(late.textSendAt, '2026-10-22T08:00:00.000-04:00');
+  assert.deepStrictEqual(late.closeDays, ['Friday', 'Monday']);
+  // At 6:15 AM it goes at 8 AM the same day, so "tomorrow" still reads right.
+  const early = schedule(et('2026-10-22', '06:15'));
+  assert.strictEqual(early.textSendAt, '2026-10-22T08:00:00.000-04:00');
+  assert.deepStrictEqual(early.closeDays, ['tomorrow', 'Monday']);
+  // Steve created it at 11 PM: send now.
+  assert.strictEqual(schedule(et('2026-10-21', '23:00'), { createdByStaff: true }).textSendAt, null);
+  assert.strictEqual(inQuietHours(et('2026-10-21', '21:00')), true);
+  assert.strictEqual(inQuietHours(et('2026-10-21', '08:00')), false);
+  assert.strictEqual(inQuietHours(et('2026-10-21', '20:59')), false);
+});
+
+test('schedule: holidays are skipped when offering days (Thanksgiving and Black Friday)', () => {
   const s = schedule(et('2026-11-25', '15:00')); // Wednesday before Thanksgiving
   assert.strictEqual(s.textSendAt, null);
   assert.deepStrictEqual(s.closeDays, ['Monday', 'Tuesday']);
-  assert.strictEqual(officeOpen(et('2026-11-26', '10:00')), false);
-  assert.strictEqual(officeOpen(et('2026-10-21', '08:00')), true);
-  assert.strictEqual(officeOpen(et('2026-10-21', '17:00')), false);
+});
+
+test('payload: the real Briostack shape gives the customer and who created it', () => {
+  const real = JSON.stringify({ resource: { customerId: '19734', firstName: 'R' }, 'resource-uri': 'https://x/rest/v1/customers/19734', 'initiator-uri': 'https://x/rest/v1/employees/16195', event: 'WHEVENT_CUSTOMER_CREATE', timestamp: '2026-10-26T15:18:52-06:00' });
+  assert.strictEqual(lead.customerIdFromPayload(real), '19734');
+  assert.strictEqual(lead.initiatorFromPayload(real), '16195');
+  assert.strictEqual(lead.initiatorFromPayload(JSON.stringify(real)), '16195');
+  assert.strictEqual(lead.initiatorFromPayload('{"customerId":"1"}'), null);
 });
 
 test('payload: customer ID from the likely webhook shapes', () => {
@@ -277,38 +276,40 @@ test('relay: a 503 is queued and retried; a 401 is not retried and lets a resend
   assert.strictEqual(r2.fetched.length, 2);
 });
 
-test('log entries go under the Unknown contact method', async () => {
+test('log entries go under the Unknown contact method when the customer has one', async () => {
   const posted = [];
   const brio = {
     listCommunications: async () => [
-      { contactMethods: [{ contactMethodId: '5', contactMethodType: 'EMAIL_ADDRESS' }] },
+      { contactMethods: [{ contactMethodId: '5', contactMethodType: 'TELECOM_NUMBER' }] },
       { contactMethods: [{ contactMethodId: '7', contactMethodType: 'UNKNOWN' }] },
     ],
-    createCommunication: async (id, body) => { posted.push(body); return { communicationId: 'c1' }; },
+    createCommunication: async (id, body) => {
+      posted.push(body);
+      return { communicationId: 'c1' };
+    },
   };
   const unknownId = await findUnknownContactMethod(brio, '9');
   assert.strictEqual(unknownId, '7');
-  await createLogEntry(brio, '9', { subject: 's', communicationTypeId: 'SMS' }, unknownId, '1', []);
+  await createLogEntry(brio, '9', { subject: 's', communicationTypeId: 'SMS' }, unknownId, '1');
   assert.deepStrictEqual(posted[0].contactMethods, [{ contactMethodId: '7' }]);
 
-  // No Unknown method yet: post without one.
+  // No Unknown method (most new customers): straight to the phone/email, no failed attempt first.
   assert.strictEqual(await findUnknownContactMethod({ listCommunications: async () => [] }, '9'), null);
-  await createLogEntry(brio, '9', { subject: 's', communicationTypeId: 'SMS' }, null, '1', []);
-  assert.strictEqual(posted[1].contactMethods, undefined);
+  await createLogEntry(brio, '9', { subject: 's', communicationTypeId: 'SMS' }, null, '1');
+  assert.strictEqual(posted.length, 2);
+  assert.deepStrictEqual(posted[1].contactMethods, [{ contactMethodId: '1' }]);
 });
 
 test('log entry falls back to the phone/email when Briostack rejects Unknown', async () => {
   const posted = [];
-  const notes = [];
   const brio = {
     createCommunication: async (id, body) => {
       posted.push(body);
-      if (!body.contactMethods) throw Object.assign(new Error('bad'), { status: 400 });
+      if (body.contactMethods[0].contactMethodId === '7') throw Object.assign(new Error('bad'), { status: 400 });
       return { communicationId: 'c2' };
     },
   };
-  const entry = await createLogEntry(brio, '9', { subject: 's', communicationTypeId: 'SMS' }, null, '1', notes);
+  const entry = await createLogEntry(brio, '9', { subject: 's', communicationTypeId: 'SMS' }, '7', '1');
   assert.strictEqual(entry.communicationId, 'c2');
   assert.deepStrictEqual(posted[1].contactMethods, [{ contactMethodId: '1' }]);
-  assert.match(notes[0], /not Unknown: 400/);
 });

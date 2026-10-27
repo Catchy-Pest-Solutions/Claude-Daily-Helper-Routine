@@ -11,7 +11,7 @@
 
 1. **Who gets messages.** Every new customer whose call can be matched gets one text and one email. **Booked:** a short personal confirmation only (no discount, no quote, no sales pitch). **Unbooked:** the sales follow-up described in this guide and in PLAYBOOK.md.
 2. **Who it's from.** Messages are signed by the office person who took the call (Steve, Shelley or Daniel), from Catchy Pest Solutions. That person really did speak with the customer, so "thanks for calling" and "great talking with you" are fine. Never claim anyone inspected the home unless the call says so. Never mention AI, transcripts or recordings. Never call Daniel the owner.
-3. **Discounts.** The $50 annual discount is already built into the 12-month price ($347 vs $397 etc.). It is NOT an extra offer. The only extra discount: **10% off**, offered to unbooked customers by default (owner's call: give it more times than not), unless the rep already gave a discount on the call. It can apply to any option (annual, no-contract, one-time). Always give a true reason: our technicians are in your area this week, we have openings this week, or a seasonal (fall/winter/spring/summer) discount. **One discount per customer, never stacked, never for booked customers, never on top of a discount the rep already gave on the call.**
+3. **Discounts.** The $50 annual discount is already built into the 12-month price ($347 vs $397 etc.). It is NOT an extra offer. The only extra discount: **10% off**, offered to unbooked customers by default (owner's call: give it more times than not), unless the rep already gave a discount on the call. It can apply to any option (annual, no-contract, one-time). Give the reason as a plain, personal statement that we have a technician in their neighborhood on the days being offered, e.g. "I've actually got a tech just down the road from you Thursday and Friday" (owner-approved blanket statement, Oct 27, 2026: technicians cover every service area nearly every weekday, see 0.8). A seasonal (fall/winter/spring/summer) discount also works. **One discount per customer, never stacked, never for booked customers, never on top of a discount the rep already gave on the call.**
 4. **Whole dollars only.** Round every price to whole dollars (10% off $347 = $312; 10% off $247 = $222; 10% off $647 = $582).
 5. **Nothing else is offered.** No waived initial fees, no payment plans, no free add-ons. (A free pest inspection during a paid visit exists but is not mentioned.)
 6. **Guarantees.** Satisfaction guarantee (recurring plans): free return visits between scheduled services as needed until the pest is handled. **Money-back guarantee: annual plans only.** If the pest the customer called about isn't successfully removed after the first three months of service, they're eligible for a partial or full refund, pending manager approval. Never promise an automatic or full refund. One Time Service has no warranty. Warranties stay active through ongoing preventive treatments.
@@ -24,6 +24,8 @@
 13. **Mosquito-only leads.** The stand-alone mosquito grid is for the 2027 season only. Until that season, don't quote a mosquito-only price; treat it as a custom quote.
 14. **Uncertain or conflicting cases.** Wherever this guide says "route for review", "flag a human" or "confirm with the office", the routine messages Daniel on Slack and does not send.
 15. **Other facts you can use:** technicians wear shoe covers inside; Signature exterior includes foundation treatment, granulars, crack-and-crevice treatment, web removal and wasp/hornet/yellow jacket nest removal; Critter Control includes exclusion when needed (yard jobs like moles, voles, groundhogs and chipmunks usually don't need it); 1,000+ Google reviews rated 4.9–5.0 across our locations.
+16. **Billing wording (Oct 27, 2026).** To customers, describe the ongoing charge as monthly: "then $49 a month." Billing runs every 4 weeks under the terms and conditions, and "monthly" is the accurate, simpler description. Don't write "every 4 weeks" or "every 28 days" in texts, emails, quote cards or PDFs. This replaces the "never say monthly" rules in Sections 1, 2, 16 and 18.
+17. **Signature coverage wording (Oct 27, 2026).** HomeShield Signature covers **and treats** 30+ pests as part of every visit (ants, spiders, roaches, carpenter bees, carpenter ants, stink bugs, fleas, ticks and more). Say it as included and treated, never as something the customer has to ask for ("if you need us to").
 
 ---
 
@@ -71,7 +73,7 @@ The four main programs are: **HomeShield Signature Pest Control, HomeShield Crit
 
 **Initial three months:** The initial package price covers the first three months of treatments and plan coverage. No additional regular every-4-week maintenance charges during those three months.
 
-**After month three:** Regular recurring charges begin in **month four**, billed **every 28 days**. Billing frequency is separate from technician visit frequency. Do not say “monthly” when describing billing; explicitly say “every four weeks.”
+**After month three:** Regular recurring charges begin in **month four**, billed **every 28 days**. Billing frequency is separate from technician visit frequency. To customers, call it monthly ("$49 a month", Section 0.16).
 
 **Two ways to purchase the initial package:**
 - **12-month agreement:** $50 less on the initial service fee. The $50 initial discount is available **year-round**; it is not a seasonal or limited-time deal.
@@ -444,7 +446,7 @@ These are **patterns** to adapt from the transcript, not messages to send word-f
 
 # 18. SAFETY RAILS — WHAT THIS AI MUST NOT MISSTATE
 
-- Do NOT say recurring fees are calendar-monthly. **They are every 28 days.** Catchy Club **visits** are monthly; its **billing** is every 28 days.
+- Billing runs every 28 days internally; to customers it's "a month" (Section 0.16). Catchy Club **visits** are once a month.
 - Do NOT say the initial fee buys only one appointment; for the main programs it covers the **first three months**.
 - Do NOT say the no-contract first-three-month option automatically terminates in month three. **Regular maintenance begins month four, without a year-long lock-in.**
 - Do NOT misrepresent the year-round $50 annual-plan discount as a short-term coupon or deduct it twice.
