@@ -1,27 +1,35 @@
 // When the text goes out and which two days the close offers.
-// Office hours: 8 AM-5 PM Eastern, Monday-Friday, minus the office holidays
-// in src/callReview/calendar.js. Outside them the text is scheduled for the
-// next business morning at 8:30.
+//
+// A new customer in Briostack almost always means someone at the office just
+// talked to them, so the text and email go out right away. The only hold is
+// overnight (config.textQuietHours, 9 PM-8 AM Eastern) for records nobody at
+// the office created, such as website and Google leads: those texts wait
+// until 8 AM. Records Steve, Shelley or Daniel created go out right away at
+// any hour.
 const cal = require('../../src/callReview/calendar');
 
-const OPEN_MIN = 8 * 60;
-const CLOSE_MIN = 17 * 60;
-const SEND_TIME = '08:30';
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DEFAULT_QUIET = { start: '21:00', end: '08:00' };
 
-function officeOpen(ms) {
-  const e = cal.toEastern(ms);
-  return cal.isBusinessDay(e.date) && e.minutesOfDay >= OPEN_MIN && e.minutesOfDay < CLOSE_MIN;
+const minutesOf = (hhmm) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+};
+
+function inQuietHours(ms, quiet = DEFAULT_QUIET) {
+  const now = cal.toEastern(ms).minutesOfDay;
+  const start = minutesOf(quiet.start);
+  const end = minutesOf(quiet.end);
+  return start > end ? now >= start || now < end : now >= start && now < end;
 }
 
-// null when the office is open (send now), otherwise the next business
-// morning at 8:30 (which can be later today, e.g. at 6 AM on a Tuesday).
-function textSendAtMs(nowMs) {
-  if (officeOpen(nowMs)) return null;
+// null = send now; otherwise the end of quiet hours (later today if it's
+// before 8 AM, else tomorrow).
+function textSendAtMs(nowMs, { createdByStaff = false, quiet = DEFAULT_QUIET } = {}) {
+  if (createdByStaff || !inQuietHours(nowMs, quiet)) return null;
   const today = cal.toEastern(nowMs).date;
-  let day = today;
-  if (!cal.isBusinessDay(day) || cal.easternToMs(day, SEND_TIME) <= nowMs) day = cal.nextBusinessDay(day);
-  return cal.easternToMs(day, SEND_TIME);
+  const endToday = cal.easternToMs(today, quiet.end);
+  return endToday > nowMs ? endToday : cal.easternToMs(cal.addDays(today, 1), quiet.end);
 }
 
 // The two business days after the day the text goes out. The first is
@@ -39,8 +47,8 @@ function closeDays(nowMs, sendAtMs) {
   return { labels: [firstLabel, name(second)], dates: [first, second] };
 }
 
-function schedule(nowMs) {
-  const sendAt = textSendAtMs(nowMs);
+function schedule(nowMs, options = {}) {
+  const sendAt = textSendAtMs(nowMs, options);
   const days = closeDays(nowMs, sendAt);
   return {
     textSendAt: sendAt == null ? null : cal.easternIso(sendAt),
@@ -49,4 +57,4 @@ function schedule(nowMs) {
   };
 }
 
-module.exports = { schedule, officeOpen, textSendAtMs, closeDays };
+module.exports = { schedule, inQuietHours, textSendAtMs, closeDays };

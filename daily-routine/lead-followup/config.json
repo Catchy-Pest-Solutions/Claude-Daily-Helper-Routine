@@ -13,6 +13,13 @@
   },
   "googleReviewsLink": "https://share.google/7g30TV1epBN0KUyE5",
   "driveFolderId": "1V1FCdW2GQOkDEMZGXrzOcViSkCcQuW-V",
+  "textQuietHours": {
+    "start": "21:00",
+    "end": "08:00"
+  },
+  "automaticEmployeeIds": [
+    "18677"
+  ],
   "notBookedCategories": [
     "Leads Marketing",
     "Quote - Critter Control",

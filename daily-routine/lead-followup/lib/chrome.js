@@ -7,16 +7,54 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawn, execFileSync } = require('node:child_process');
 
-function findChrome() {
-  if (process.env.CHROME_PATH && fs.existsSync(process.env.CHROME_PATH)) return process.env.CHROME_PATH;
-  const roots = ['/opt/pw-browsers', process.env.PLAYWRIGHT_BROWSERS_PATH].filter(Boolean);
+const BINARIES = ['headless_shell', 'chrome-headless-shell', 'chrome', 'chromium'];
+
+const isExecutable = (p) => {
+  try {
+    return fs.statSync(p).isFile() && (fs.accessSync(p, fs.constants.X_OK), true);
+  } catch {
+    return false;
+  }
+};
+
+// Executables with a known Chromium name under dir, a few levels down. The
+// folder layout inside each Playwright browser changes between versions
+// (chrome-linux/, chrome-linux64/, chrome-headless-shell-linux64/), so search
+// rather than hard-code it.
+function findIn(dir, depth = 3) {
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const hits = entries.filter((e) => BINARIES.includes(e.name)).map((e) => path.join(dir, e.name)).filter(isExecutable);
+  if (depth > 0) for (const e of entries) if (e.isDirectory()) hits.push(...findIn(path.join(dir, e.name), depth - 1));
+  return hits;
+}
+
+// Newest headless shell first, then full Chromium, then a "chromium" entry
+// at the top (the cloud image has one), then whatever is on PATH.
+function findChrome(roots = ['/opt/pw-browsers', process.env.PLAYWRIGHT_BROWSERS_PATH].filter(Boolean)) {
+  if (process.env.CHROME_PATH && isExecutable(process.env.CHROME_PATH)) return process.env.CHROME_PATH;
+  const version = (name) => Number((/-(\d+)$/.exec(name) || [])[1] || 0);
   const candidates = [];
-  for (const root of roots) {
-    if (!fs.existsSync(root)) continue;
-    for (const dir of fs.readdirSync(root).sort().reverse()) {
-      if (dir.startsWith('chromium_headless_shell-')) candidates.push(path.join(root, dir, 'chrome-linux', 'headless_shell'));
-      if (dir.startsWith('chromium-')) candidates.push(path.join(root, dir, 'chrome-linux', 'chrome'));
+  for (const root of [...new Set(roots)]) {
+    let dirs = [];
+    try {
+      dirs = fs.readdirSync(root);
+    } catch {
+      continue;
     }
+    for (const prefix of ['chromium_headless_shell-', 'chromium-']) {
+      dirs
+        .filter((d) => d.startsWith(prefix))
+        .sort((a, b) => version(b) - version(a))
+        .forEach((d) => candidates.push(...findIn(path.join(root, d))));
+    }
+    const top = path.join(root, 'chromium');
+    if (isExecutable(top)) candidates.push(top);
+    else candidates.push(...findIn(top, 2));
   }
   for (const name of ['chromium', 'chromium-browser', 'google-chrome', 'google-chrome-stable']) {
     try {
@@ -25,8 +63,8 @@ function findChrome() {
       // not on PATH
     }
   }
-  const found = candidates.find((p) => p && fs.existsSync(p));
-  if (!found) throw new Error('Chromium not found (set CHROME_PATH)');
+  const found = candidates.find((p) => p && isExecutable(p));
+  if (!found) throw new Error(`Chromium not found under ${roots.join(', ')} or on PATH (set CHROME_PATH)`);
   return found;
 }
 

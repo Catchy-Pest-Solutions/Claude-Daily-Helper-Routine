@@ -91,6 +91,7 @@ function createBriostack({ apiKey = requireEnv(['BRIOSTACK_API_KEY']).BRIOSTACK_
       form.append('file', new Blob([data], { type: mimeType }), filename);
       return call('POST', `customers/${id}/communications/${cid}/documents`, { form });
     },
+    listEmployees: () => list('employees?limit=100'),
     listWebhooks: () => list('webhooks'),
     createWebhook: (body) => call('POST', 'webhooks', { json: body }),
     patchWebhook: (wid, body) => call('PATCH', `webhooks/${wid}`, { json: body }),

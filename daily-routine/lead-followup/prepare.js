@@ -68,6 +68,7 @@ async function main() {
   const rawPayload = fs.readFileSync(args.payload, 'utf8');
   const customerId = lead.customerIdFromPayload(rawPayload);
   if (!customerId) throw new Error('payload has no customer ID');
+  const initiatorId = lead.initiatorFromPayload(rawPayload);
 
   const statePath = path.join(out, 'prepare-state.json');
   const state = readJson(statePath, { runs: 0, feedCursor: null, feedStartMs: null, comms: {}, feed: {} });
@@ -86,6 +87,23 @@ async function main() {
 
   // Transcripts we already have, by ATS call ID: { summary, transcription, ext, source }.
   const transcripts = new Map();
+
+  // Who created the record (from the payload). Office staff map from
+  // src/callReview/config.js; anyone else is looked up once. "Leads Nurture"
+  // (website and Google leads) isn't a person.
+  async function whoCreated() {
+    if (!initiatorId) return null;
+    if (state.createdBy && state.createdBy.employeeId === initiatorId) return state.createdBy;
+    const staff = Object.values(officeConfig.staff).find((x) => String(x.briostackEmployeeId) === initiatorId);
+    let name = staff?.name || null;
+    if (!name) {
+      const e = (await brio.listEmployees().catch(() => [])).find((x) => String(x.employeeId) === initiatorId);
+      name = e ? [e.firstName, e.lastName].map((x) => String(x || '').trim()).filter(Boolean).join(' ') : null;
+    }
+    const automatic = (config.automaticEmployeeIds || []).includes(initiatorId);
+    state.createdBy = { employeeId: initiatorId, name, person: !automatic };
+    return state.createdBy;
+  }
 
   async function check() {
     const nowMs = now();
@@ -183,6 +201,7 @@ async function main() {
       transcript = { summary: mainT.summary || null, path: file };
     }
 
+    const createdBy = await whoCreated();
     const { contactMethodIds, phones10, ...customerOut } = info;
     const data = {
       customer: customerOut,
@@ -191,7 +210,10 @@ async function main() {
       call: main ? { staff, start: cal.easternIso(main.startMs), end: cal.easternIso(main.endMs), direction: main.direction, talkSec: main.talkSec || 0, callId: main.id } : null,
       calls: calls.map((c) => lead.callSummary(c, officeConfig, transcripts.get(c.id))),
       transcript,
-      schedule: (({ textSendAt, closeDays }) => ({ textSendAt, closeDays }))(schedule(Date.now())),
+      createdBy,
+      schedule: (({ textSendAt, closeDays }) => ({ textSendAt, closeDays }))(
+        schedule(Date.now(), { createdByStaff: Boolean(createdBy?.person), quiet: config.textQuietHours }),
+      ),
       contactMethodIds,
       waitingFor,
     };

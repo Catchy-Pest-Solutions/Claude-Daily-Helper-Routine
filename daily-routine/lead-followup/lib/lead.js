@@ -40,6 +40,14 @@ function customerIdFromPayload(payload) {
   return walk(obj, 0);
 }
 
+// Who created the record, from the payload's "initiator-uri"
+// (".../rest/v1/employees/16195"). Returns the employee ID or null.
+function initiatorFromPayload(payload) {
+  const text = typeof payload === 'string' ? payload : JSON.stringify(payload || {});
+  const m = /initiator-uri\\?"?\s*:\s*\\?"[^"]*\/employees\/(\d+)/.exec(text);
+  return m ? m[1] : null;
+}
+
 function safeParse(s) {
   try {
     return JSON.parse(s);
@@ -212,6 +220,7 @@ function transcriptText(calls, mainId, transcripts, config) {
 module.exports = {
   LOG_PREFIX,
   customerIdFromPayload,
+  initiatorFromPayload,
   customerInfo,
   pickMobile,
   formatAddress,
