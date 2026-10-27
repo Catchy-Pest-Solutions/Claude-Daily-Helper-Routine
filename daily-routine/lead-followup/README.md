@@ -32,7 +32,7 @@ and writes the messages. Claude never writes HTML or calls an API by hand.
 | `ROUTINE_PROMPT.md` | The routine's instructions (the contract the scripts follow) |
 | `KNOWLEDGE_BASE.md` | Services, prices and rules. Section 0 wins |
 | `PLAYBOOK.md` | Reading the call, objections, tools, voice, message shapes |
-| `config.json` | Test mode, test recipients, Slack ID, links, Drive folder, timings. No secrets |
+| `config.json` | Test mode, test recipients, Slack IDs (Daniel, and the reps for email checks), links, Drive folder, timings. No secrets |
 | `prepare.js` | Step 1: gathers the customer, services, call and transcript |
 | `render.js` | Step 3b: quote card + PDF, uploaded and shared |
 | `send.js` | Step 5: text, email and Briostack log |

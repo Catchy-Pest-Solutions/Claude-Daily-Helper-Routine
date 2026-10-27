@@ -12,7 +12,7 @@ Only the hard stops in Step 2 get no message.
 
 - `daily-routine/lead-followup/KNOWLEDGE_BASE.md`: services, prices and rules. **Section 0 wins over everything.** Follow its safety rails.
 - `daily-routine/lead-followup/PLAYBOOK.md`: reading the call, objections, tools, closing, voice, message shapes.
-- `daily-routine/lead-followup/config.json`: test mode, Daniel's Slack ID, links.
+- `daily-routine/lead-followup/config.json`: test mode, Slack IDs (Daniel's, and the office reps' in `slackUserIds`), links.
 
 ## Ground rules
 
@@ -64,7 +64,7 @@ Read the **full history** at `transcript.path`, not just the summary. It lists t
 
 **Customer's name:** Briostack first name if present; otherwise the name they clearly gave on the call; otherwise no name.
 
-**Where to send:** Briostack is the source of truth. Send the text to `customer.mobile` and the email to `customer.email`, exactly as they are on the record. Don't compare them with a number or email spelled on the call, and don't skip or change one because the call sounded different.
+**Where to send:** Briostack is the source of truth. Send the text to `customer.mobile` and the email to `customer.email`, exactly as they are on the record. Don't skip or change one because the call sounded different. If the customer spelled out an email on the call and it differs from `customer.email`, still send to `customer.email`, and ask the rep who entered it to double-check (Step 7, Email check).
 
 ## Step 3a. BOOKED
 
@@ -175,8 +175,12 @@ It sends the text (Textable, from 828-263-4804, scheduled if `sendAt` is set) an
 
 End with one line: customer, booked/unbooked/note/skipped, what was sent, signed as, and (if skipped) why.
 
-## Step 7. Slack messages to Daniel
+## Step 7. Slack messages
 
-Send a direct message to Daniel (Slack user ID in `config.json`) with the Slack connector. - **Skipped or failed:** 2–3 lines: customer name, phone, Briostack ID, what happened, and that nothing was sent. Example: "New customer Karen Smith, (828) 555-0100, Briostack 12345: no matching call in ATS. Phone may be mistyped. Nothing sent."
+Send direct messages with the Slack connector. Most go to Daniel (`danielSlackUserId` in `config.json`):
+
+- **Skipped or failed:** 2–3 lines: customer name, phone, Briostack ID, what happened, and that nothing was sent. Example: "New customer Karen Smith, (828) 555-0100, Briostack 12345: no matching call in ATS. Phone may be mistyped. Nothing sent."
 - **Commercial lead:** the information for an individual quote: business and contact name, address, phone, email, Briostack ID, the pest problem and where, what the rep quoted or booked, and the next step promised on the call. End with what was sent (the note, quoted) or "Nothing sent."
-- **Sent:** customer name, phone, Briostack ID, booked/unbooked/note (for a note, why), signed as (and `signer.reason` if there was no conversation), options and prices (and discount) if unbooked, whether the text was scheduled or opted out, then the text message itself as a quote.
+- **Sent:** customer name, phone, Briostack ID, booked/unbooked/note (for a note, why), signed as (and `signer.reason` if there was no conversation), options and prices (and discount) if unbooked, whether the text was scheduled or opted out, then the text message itself as a quote. If you sent an Email check, say so in one line.
+
+**Email check** (to the rep, Daniel, Oct 27): when the email the customer spelled on the call differs from the one in Briostack, message the rep who entered the record: `createdBy.name` when `createdBy.person` is true, otherwise `call.staff`. Their Slack user ID is in `config.json` `slackUserIds`. Ask them to double-check the email in Briostack and spell out both versions, for example: "Hi Shelley, can you double-check the email for Karen Smith (Briostack 12345)? On the call she spelled karensmith88@gmail.com, but Briostack has karensmtih88@gmail.com. Today's follow-up email went to the Briostack one." If the rep has no Slack ID there, or test mode is on, send it to Daniel instead.
