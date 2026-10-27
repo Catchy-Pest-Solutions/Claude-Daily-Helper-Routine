@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node daily-routine/lead-followup/prepare.js *)",
+      "Bash(node daily-routine/lead-followup/render.js *)",
+      "Bash(node daily-routine/lead-followup/send.js *)"
+    ]
+  }
+}
