@@ -185,6 +185,32 @@ test('call outcomes: answered, missed, and callbacks nobody picked up', () => {
   assert.strictEqual(lead.callOutcome({ direction: 'outbound', talkSec: 95 }, config), 'the office called them (2 min)');
 });
 
+test('signer: who talked with them, else who called back, else the voicemail box, else who created the record', () => {
+  const config = { staff: { 101: { name: 'Daniel' }, 102: { name: 'Shelley' }, 103: { name: 'Steve' } } };
+  const shelley = { employeeId: '16195', name: 'Shelley', person: true };
+  const calls = [
+    { direction: 'outbound', agent: 102, startMs: 1000 },
+    { direction: 'outbound', agent: 103, startMs: 2000 },
+    { direction: 'inbound', agent: 102, startMs: 3000 },
+  ];
+  const voicemails = [{ at: 500, mailboxExt: 102 }];
+  assert.deepStrictEqual(lead.pickSigner({ main: { direction: 'inbound' }, mainStaff: 'Daniel', calls, voicemails, createdBy: shelley }, config), { name: 'Daniel', reason: 'took their call (main call)' });
+  assert.deepStrictEqual(lead.pickSigner({ main: { direction: 'outbound' }, mainStaff: 'Steve', calls, voicemails }, config), { name: 'Steve', reason: 'called them (main call)' });
+  assert.deepStrictEqual(lead.pickSigner({ calls, voicemails, createdBy: shelley }, config), { name: 'Steve', reason: 'called them back' });
+  assert.deepStrictEqual(lead.pickSigner({ calls: [], voicemails, createdBy: null }, config), { name: 'Shelley', reason: 'their voicemail went to this mailbox' });
+  // The main line's mailbox isn't a person; the record's creator signs.
+  assert.deepStrictEqual(lead.pickSigner({ voicemails: [{ at: 1, mailboxExt: 100 }], createdBy: shelley }, config), { name: 'Shelley', reason: 'created the record' });
+  // Automatic web leads and people outside the office don't sign.
+  assert.strictEqual(lead.pickSigner({ createdBy: { name: 'Leads Nurture', person: false } }, config), null);
+  assert.strictEqual(lead.pickSigner({ createdBy: { name: 'Tech Person', person: true } }, config), null);
+});
+
+test('notes: emails sent from Briostack become plain text', () => {
+  const content = 'Please sign: Signature\r\nEmail sent to a@b.com:\r\n---Email Body---\r\n<!DOCTYPE HTML><html><head><style>p{margin:0}</style></head><body><p>Hi Sean,</p><p>Please sign &amp; return.</p></body></html>';
+  assert.strictEqual(lead.noteText(content), 'Please sign: Signature\nEmail sent to a@b.com:\n---Email Body---\nHi Sean, Please sign & return.');
+  assert.strictEqual(lead.noteText('Text Message  \nHi Brooke'), 'Text Message\nHi Brooke');
+});
+
 test('history: calls, voicemails, notes and texts in time order, open tasks last', () => {
   const config = { staff: { 103: { name: 'Steve' } } };
   const at = (time) => Date.parse(`2026-10-26T${time}:00-04:00`);

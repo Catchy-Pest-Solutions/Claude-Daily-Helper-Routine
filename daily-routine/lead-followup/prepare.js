@@ -216,7 +216,7 @@ async function main() {
         by: m.createdBy,
         type: m.communicationTypeId === 'SMS' ? 'text' : m.communicationTypeId === 'EMAIL_COMMUNICATION' ? 'email' : 'note',
         subject: inbound ? '' : String(m.subject || '').trim(),
-        text: String(d?.content || '').replace(/\s+\n/g, '\n').trim().slice(0, 1500),
+        text: lead.noteText(d?.content),
       };
     }
     const notes = Object.values(state.notes).sort((a, b) => a.at - b.at);
@@ -269,6 +269,7 @@ async function main() {
       ...(voicemailError ? { voicemailError } : {}),
       transcript,
       createdBy,
+      signer: lead.pickSigner({ main, mainStaff: staff, calls: allCalls, voicemails, createdBy }, officeConfig),
       schedule: (({ textSendAt, closeDays }) => ({ textSendAt, closeDays }))(
         schedule(Date.now(), { createdByStaff: Boolean(createdBy?.person), quiet: config.textQuietHours }),
       ),

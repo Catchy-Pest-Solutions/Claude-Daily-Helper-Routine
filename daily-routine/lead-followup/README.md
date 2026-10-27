@@ -2,9 +2,15 @@
 
 When the office creates a new customer in Briostack, a routine sends that
 customer one personal text and one personal email, signed by whoever took
-their call, then logs both on the customer's Communications tab. Booked
-customers get a short confirmation. Unbooked customers get a follow-up with a
-quote card picture in the text and a two-option quote PDF on the email.
+their call (or called them back), then logs both on the customer's
+Communications tab. Booked customers get a short confirmation. Unbooked
+customers get a follow-up with a quote card picture in the text and a
+two-option quote PDF on the email. Since Oct 27, customers nobody has really
+talked with yet (missed calls, a voicemail, an unanswered callback), unclear
+quotes and unbooked commercial properties get a short personal note with no
+prices. Only hard stops (wrong number, spam, vendor, not the customer, an
+existing customer's issue, asked not to be contacted, hostile, no contact
+info) get just a Slack message to Daniel.
 
 ```
 Briostack "new customer" webhook
@@ -87,7 +93,8 @@ Prints exactly one line: `already_sent`, `no_call`, `no_contact`, `waiting`,
 6. **ready** when the main call's transcript is in, any other conversation
    has its transcript (or ended 20+ minutes ago), and at least
    one service is on the record. Otherwise **waiting**. **no_call** only if
-   no call has shown up 10 minutes after the record was created.
+   no conversation has shown up 10 minutes after the record was created
+   (the routine then sends the short note).
    **no_contact** if there's no phone and no email 5 minutes after creation.
 
 It writes `$S/lead.json` on every status:
@@ -105,6 +112,9 @@ It writes `$S/lead.json` on every status:
   voicemailError,                       // only when Gmail couldn't be read
   transcript: { summary, path },        // summary = main call's; path = $S/transcript.txt, the whole history, newest last
   createdBy: { employeeId, name, person },  // from the payload's initiator-uri; person false = automatic web/Google lead
+  signer: { name, reason },             // who signs: the main call's staff; else who called them back, else whose
+                                        // voicemail box they left a message in, else the office person who created
+                                        // the record (Daniel, Oct 27); null if none
   schedule: { textSendAt, closeDays },  // textSendAt null = send now
   contactMethodIds, waitingFor: [ ... ] }
 ```
