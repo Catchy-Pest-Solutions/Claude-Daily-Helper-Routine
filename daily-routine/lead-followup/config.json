@@ -30,6 +30,7 @@
     "checkEveryMinutes": 2,
     "stopByMinutes": 9,
     "noCallAfterMinutes": 10,
-    "callLookbackHours": 3
+    "historyHours": 24,
+    "callLookbackHours": 24
   }
 }

@@ -21,6 +21,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { loadConfig, parseArgs, requireEnv } = require('./lib/env');
 const { createBriostack, parseAtsCommunication } = require('./lib/briostack');
+const google = require('./lib/google');
+const { parseVoicemailEmail, voicemailQuery } = require('./lib/voicemail');
 const lead = require('./lib/lead');
 const { schedule } = require('./lib/schedule');
 const cal = require('../src/callReview/calendar');
@@ -72,6 +74,8 @@ async function main() {
 
   const statePath = path.join(out, 'prepare-state.json');
   const state = readJson(statePath, { runs: 0, feedCursor: null, feedStartMs: null, comms: {}, feed: {} });
+  state.voicemails = state.voicemails || {};
+  state.notes = state.notes || {};
   state.runs += 1;
   const waitForBooked = Boolean(state.waitForBooked || (state.lastStatus === 'ready' && state.lastBooked === false));
   state.waitForBooked = waitForBooked;
@@ -119,15 +123,15 @@ async function main() {
     const createdMs = lead.creationMs(customer.dateAcquired, services, appointments) ?? nowMs;
     info.createdAt = cal.easternIso(createdMs);
 
-    // Calls with this customer's number: today, and at least the 3 hours
-    // before the record was created.
-    const dayStart = cal.easternToMs(cal.toEastern(createdMs).date);
-    const windowStart = Math.min(dayStart, createdMs - t.callLookbackHours * 60 * MIN);
+    // Every call with this customer's number, in or out, from the 24 hours
+    // before the record was created: missed calls and unanswered callbacks
+    // too. Only real conversations get transcripts.
+    const windowStart = createdMs - (t.historyHours || 24) * 60 * MIN;
     const legs = await ats.searchCalls(windowStart, nowMs + MIN);
-    const calls = groupCalls(legs)
+    const allCalls = groupCalls(legs)
       .map((c) => classifyCall(c, officeConfig))
-      .filter((c) => c.direction !== 'internal' && info.phones10.includes(c.phone) && c.startMs <= nowMs)
-      .filter(lead.isConversation);
+      .filter((c) => c.direction !== 'internal' && info.phones10.includes(c.phone) && c.startMs <= nowMs);
+    const calls = allCalls.filter(lead.isConversation);
     const recent = calls.filter((c) => c.startMs >= createdMs - t.callLookbackHours * 60 * MIN);
     const main = lead.pickMainCall(recent, createdMs);
 
@@ -182,6 +186,50 @@ async function main() {
       }
     }
 
+    // Voicemails they left (ATS emails a transcription to office@), entries
+    // the office logged or the customer texted on the Communications tab,
+    // and open Briostack tasks. None of these hold up a run.
+    let voicemailError = null;
+    try {
+      for (const id of await google.listMessages(voicemailQuery(windowStart - 10 * MIN), 100)) {
+        if (!state.voicemails[id]) state.voicemails[id] = parseVoicemailEmail(await google.getMessage(id)) || { none: true };
+      }
+    } catch (err) {
+      voicemailError = String(err.message || err).slice(0, 160);
+    }
+    const voicemails = Object.values(state.voicemails)
+      .filter((v) => !v.none && info.phones10.includes(v.phone10) && v.at >= windowStart - 10 * MIN && v.at <= nowMs)
+      .sort((a, b) => a.at - b.at);
+
+    for (const m of comms) {
+      const inbound = /receiv/i.test(String(m.status || m.statusId || ''));
+      const byOffice = m.createdBy && m.createdBy !== 'system';
+      if (!(inbound || byOffice) || lead.alreadySent([m]) || state.notes[m.communicationId]) continue;
+      const d = await brio.getCommunication(customerId, m.communicationId).catch(() => null);
+      state.notes[m.communicationId] = {
+        at: Date.parse(m.date),
+        inbound,
+        by: m.createdBy,
+        type: m.communicationTypeId === 'SMS' ? 'text' : m.communicationTypeId === 'EMAIL_COMMUNICATION' ? 'email' : 'note',
+        subject: inbound ? '' : String(m.subject || '').trim(),
+        text: String(d?.content || '').replace(/\s+\n/g, '\n').trim().slice(0, 1500),
+      };
+    }
+    const notes = Object.values(state.notes).sort((a, b) => a.at - b.at);
+
+    // The list is re-read each check (a task can be added after the record);
+    // each task's description is fetched once.
+    state.taskDetails = state.taskDetails || {};
+    const open = await brio.listOpenTasks().catch(() => null);
+    if (open) {
+      state.tasks = [];
+      for (const x of open.filter((x) => String(x.party?.partyId) === String(customerId))) {
+        if (!(x.taskId in state.taskDetails)) state.taskDetails[x.taskId] = String((await brio.getTask(x.taskId).catch(() => null))?.description || '').trim();
+        state.tasks.push({ title: x.title, description: state.taskDetails[x.taskId], created: x.createdDate });
+      }
+    }
+    state.tasks = state.tasks || [];
+
     // What we're still waiting for.
     const waitingFor = [];
     if (!main) waitingFor.push('a call with this phone number');
@@ -194,11 +242,13 @@ async function main() {
 
     const mainT = main ? transcripts.get(main.id) : null;
     const staff = main ? lead.staffName(main.agent, officeConfig) || lead.staffName(mainT?.ext, officeConfig) : null;
+    // transcript.txt holds the whole last day (calls, voicemails, notes,
+    // texts, tasks); the summary is the main call's.
     let transcript = null;
-    if (main && mainT) {
+    if (allCalls.length || voicemails.length || notes.length || state.tasks.length) {
       const file = path.join(out, 'transcript.txt');
-      fs.writeFileSync(file, lead.transcriptText(calls, main.id, transcripts, officeConfig));
-      transcript = { summary: mainT.summary || null, path: file };
+      fs.writeFileSync(file, lead.historyText({ calls: allCalls, mainId: main?.id, transcripts, voicemails, notes, tasks: state.tasks }, officeConfig));
+      transcript = { summary: mainT?.summary || null, path: file };
     }
 
     const createdBy = await whoCreated();
@@ -208,7 +258,11 @@ async function main() {
       services: svc.services,
       booked: svc.booked,
       call: main ? { staff, start: cal.easternIso(main.startMs), end: cal.easternIso(main.endMs), direction: main.direction, talkSec: main.talkSec || 0, callId: main.id } : null,
-      calls: calls.map((c) => lead.callSummary(c, officeConfig, transcripts.get(c.id))),
+      calls: allCalls.map((c) => lead.callSummary(c, officeConfig, transcripts.get(c.id))),
+      voicemails: voicemails.map((v) => ({ at: cal.easternIso(v.at), mailbox: v.mailbox, staff: lead.staffName(v.mailboxExt, officeConfig), transcription: v.transcription })),
+      notes: notes.map((n) => ({ at: cal.easternIso(n.at), from: n.inbound ? 'customer' : n.by, type: n.type, subject: n.subject, text: n.text })),
+      tasks: state.tasks,
+      ...(voicemailError ? { voicemailError } : {}),
       transcript,
       createdBy,
       schedule: (({ textSendAt, closeDays }) => ({ textSendAt, closeDays }))(

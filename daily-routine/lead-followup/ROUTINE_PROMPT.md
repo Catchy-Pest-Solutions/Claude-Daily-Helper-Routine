@@ -32,17 +32,17 @@ It works for up to 9 minutes (checking every 2 minutes), writes `$S/lead.json`, 
 | Status | Do this |
 |---|---|
 | `already_sent` | A follow-up was already logged for this customer. Stop. Do nothing else. |
-| `no_call` | No ATS call matches the customer's phone. Slack Daniel (Step 7), stop. |
+| `no_call` | No ATS conversation with the customer's phone (lead.json may still list missed calls or voicemails). Slack Daniel (Step 7), stop. |
 | `no_contact` | No mobile number and no email. Slack Daniel, stop. |
 | `waiting` | Transcript or service not on the record yet. Run `prepare.js` again. **Max 4 runs total (about 35 minutes).** Still waiting after 4: Slack Daniel, stop. |
 | `ready` | Continue. |
 | `error: ...` | Slack Daniel with the error, stop. |
 
-`lead.json` contains: `customer` (id, firstName, lastName, mobile, email, serviceAddress), `services` (category, price, appointmentDate, timeWindow; scratched services removed, names trimmed), `booked` (true/false), `call` (staff, start, end, direction), `transcript` (summary, and `path` to the full text), `createdBy` (who created the record: `name`, and `person` false for automatic website/Google leads), and `schedule` (`textSendAt`: null to send now, which is almost always; 8 AM the next morning only for an automatic lead that came in overnight; `closeDays`: the two days to offer, e.g. "tomorrow" and "Thursday").
+`lead.json` contains: `customer` (id, firstName, lastName, mobile, email, serviceAddress), `services` (category, price, appointmentDate, timeWindow; scratched services removed, names trimmed), `booked` (true/false), `call` (the main call: staff, start, end, direction), `calls` (every call with their number from the 24 hours before the record was created until now, in and out, missed calls and unanswered callbacks included: start, direction, `outcome` in plain words, `conversation` true/false, staff, summary), `voicemails` (voicemails they left: at, mailbox, staff, transcription), `notes` (texts the customer sent and texts, emails or notes the office logged on the Briostack Communications tab: at, from, type, subject, text), `tasks` (open Briostack tasks for this customer: title, description), `transcript` (the main call's summary, and `path` to the full history), `createdBy` (who created the record: `name`, and `person` false for automatic website/Google leads), and `schedule` (`textSendAt`: null to send now, which is almost always; 8 AM the next morning only for an automatic lead that came in overnight; `closeDays`: the two days to offer, e.g. "tomorrow" and "Thursday").
 
 ## Step 2. Read the call and decide
 
-Read the **full transcript** at `transcript.path`, not just the summary. Then decide, in this order:
+Read the **full history** at `transcript.path`, not just the summary. It lists the last 24 hours oldest first: every call (with its transcript when there was a conversation; the main call is marked), voicemails they left, texts they sent, texts and notes the office logged, and open tasks at the end. Use all of it: a voicemail or a later text can say what they need, and an office note or task can show what was already promised. Then decide, in this order:
 
 1. **Is this a real new-customer conversation?** Wrong number, vendor, spam, an existing customer's service issue, or no real conversation: Slack Daniel one line, stop.
 2. **Should we contact them at all?** If they asked not to be contacted, clearly said they hired someone else, or the call was hostile: Slack Daniel one line, stop.

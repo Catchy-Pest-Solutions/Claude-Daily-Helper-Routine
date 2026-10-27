@@ -9,6 +9,7 @@ const cal = require('../../src/callReview/calendar');
 const { schedule, inQuietHours } = require('../lib/schedule');
 const lead = require('../lib/lead');
 const { parseAtsCommunication } = require('../lib/briostack');
+const { parseVoicemailEmail } = require('../lib/voicemail');
 const { renderString, escapeHtml } = require('../lib/template');
 const { buildMime } = require('../lib/google');
 const { viewModel, money } = require('../render');
@@ -141,6 +142,66 @@ test('ATS copy on the Communications tab parses into summary, transcript and ext
     direction: 'inbound',
   });
   assert.strictEqual(parseAtsCommunication('no transcript here'), null);
+});
+
+test('voicemail email: both layouts give the number, mailbox and transcription', () => {
+  const tail = '<p>Listen by opening the enclosed attachment.</p><p>Sent by Affiliated Technology Solutions</p>';
+  const a = parseVoicemailEmail({
+    subject: 'V-Mail from WIRELESS CALLER (828) 555-0142 to Steve Barona 103',
+    html: `<div>You have a new voice mail from (828) 555-0142 (WIRELESS CALLER) .</div><div>Your transcribed message: Hi, it&#39;s Jane. Listen, I&#39;d like a quote. Thank you.</div>${tail}`,
+    internalDate: '1793120000000',
+  });
+  assert.deepStrictEqual(a, {
+    at: 1793120000000,
+    phone10: '8285550142',
+    callerIdName: 'WIRELESS CALLER',
+    mailbox: 'Steve Barona 103',
+    mailboxExt: 103,
+    transcription: "Hi, it's Jane. Listen, I'd like a quote. Thank you.",
+  });
+  const b = parseVoicemailEmail({ subject: '', html: `You have a new voice mail from (828) 555-0142 (DOE JANE)<br>Call me back about the ants please.${tail}`, internalDate: 5 });
+  assert.strictEqual(b.phone10, '8285550142');
+  assert.strictEqual(b.callerIdName, 'DOE JANE');
+  assert.strictEqual(b.mailbox, null);
+  assert.strictEqual(b.transcription, 'Call me back about the ants please.');
+  assert.strictEqual(parseVoicemailEmail({ subject: 'Your invoice', html: '<p>Thanks</p>' }), null);
+});
+
+test('call outcomes: answered, missed, and callbacks nobody picked up', () => {
+  const config = { staff: { 103: { name: 'Steve' } } };
+  assert.strictEqual(lead.callOutcome({ direction: 'inbound', answered: true, talkSec: 240, agent: 103 }, config), 'they called, Steve answered (4 min)');
+  assert.strictEqual(lead.callOutcome({ direction: 'inbound', answered: false, outcome: 'voicemail' }, config), 'they called, nobody answered: went to voicemail');
+  assert.strictEqual(lead.callOutcome({ direction: 'outbound', talkSec: 12, agent: 103 }, config), 'Steve called them, no answer');
+  assert.strictEqual(lead.callOutcome({ direction: 'outbound', talkSec: 95 }, config), 'the office called them (2 min)');
+});
+
+test('history: calls, voicemails, notes and texts in time order, open tasks last', () => {
+  const config = { staff: { 103: { name: 'Steve' } } };
+  const at = (time) => Date.parse(`2026-10-26T${time}:00-04:00`);
+  const calls = [
+    { id: 'c2', direction: 'outbound', talkSec: 300, agent: 103, startMs: at('16:00'), endMs: at('16:05') },
+    { id: 'c1', direction: 'inbound', answered: false, outcome: 'voicemail', startMs: at('09:00'), endMs: at('09:01') },
+  ];
+  const text = lead.historyText(
+    {
+      calls,
+      mainId: 'c2',
+      transcripts: new Map([['c2', { summary: 'Quoted Signature.', transcription: 'Speaker 0: Hi.' }]]),
+      voicemails: [{ at: at('09:01'), mailbox: 'Steve Barona 103', transcription: 'Please call me back.' }],
+      notes: [
+        { at: at('17:00'), inbound: true, type: 'text', text: 'Thanks!' },
+        { at: at('12:00'), inbound: false, by: 'Shelley', type: 'note', subject: 'Left message', text: 'No answer.' },
+      ],
+      tasks: [{ title: 'Call back', description: 'Wants Thursday.' }],
+    },
+    config,
+  );
+  const order = ['nobody answered', 'voicemail they left for Steve Barona 103', 'note logged by Shelley', 'Steve called them (5 min) (main call)', 'text from the customer', 'Open Briostack task: Call back'];
+  const positions = order.map((s) => text.indexOf(s));
+  assert.ok(positions.every((p) => p >= 0), positions.join());
+  assert.deepStrictEqual([...positions].sort((x, y) => x - y), positions);
+  assert.ok(text.includes('Summary: Quoted Signature.\n\nTranscript:\nSpeaker 0: Hi.'));
+  assert.ok(text.includes('Please call me back.') && text.includes('Wants Thursday.'));
 });
 
 test('template: escaping, sections, lists, and no re-reading of customer text', () => {

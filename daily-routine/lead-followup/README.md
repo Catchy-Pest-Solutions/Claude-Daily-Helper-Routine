@@ -57,18 +57,30 @@ Prints exactly one line: `already_sent`, `no_call`, `no_contact`, `waiting`,
    quoted price (`regularAmount`); their "Place Holder" appointment is not a
    visit. The routine quotes what the rep said on the call; Briostack's price
    is a cross-check.
-4. Finds the ATS calls with the customer's number (inbound `caller_id` or
-   outbound `callee_id`) from the start of that day and at least 3 hours
-   before the record was created. Calls under 20 seconds of talk are
-   ignored. The main call is the one in progress when the record was made
-   (else the latest before it; else a callback after it). Staff = who handled
-   the main call.
+4. Finds every ATS call with the customer's number (inbound `caller_id` or
+   outbound `callee_id`) from 24 hours before the record was created
+   (`timing.historyHours`) until now: answered, missed (voicemail, hung up
+   at the menu or in the queue) and callbacks nobody picked up. Only calls
+   with 20+ seconds of talk count as conversations and get transcripts. The
+   main call is the conversation in progress when the record was made (else
+   the latest before it; else a callback after it). Staff = who handled the
+   main call.
 5. Transcripts: the customer's Communications tab first (ATS copies each
    call there in ~30-minute batches), then the ATS transcript feed (found
    once, then 1-3 requests per re-check). Each Briostack copy is matched to
    the closest call in time.
-6. **ready** when the main call's transcript is in, any other call from the
-   last 3 hours has its transcript (or ended 20+ minutes ago), and at least
+   Also gathered, none of which holds up a run:
+   - **Voicemails** they left: ATS emails each one, with a transcription,
+     from vmail@voiceforpest.com to office@ (`lib/voicemail.js`). Read with
+     the office@ Google token (`gmail.readonly`). If Gmail can't be read,
+     `voicemailError` says why and the rest still works.
+   - **Communications entries** that aren't ATS call copies or our own log:
+     texts the customer sent (status "Received") and texts, emails or notes
+     someone at the office logged.
+   - **Open Briostack tasks** for the customer (the API has no account,
+     appointment or tech notes; tasks are the closest thing).
+6. **ready** when the main call's transcript is in, any other conversation
+   has its transcript (or ended 20+ minutes ago), and at least
    one service is on the record. Otherwise **waiting**. **no_call** only if
    no call has shown up 10 minutes after the record was created.
    **no_contact** if there's no phone and no email 5 minutes after creation.
@@ -81,8 +93,12 @@ It writes `$S/lead.json` on every status:
   services: [ { category, booked, status, price, discount, recurringPrice, appointmentDate, appointmentDay, timeWindow, createdAt } ],
   booked,
   call: { staff, start, end, direction, talkSec, callId },
-  calls: [ { callId, direction, start, end, talkSec, staff, transcriptFrom, summary } ],   // every call today, oldest first
-  transcript: { summary, path },        // path = $S/transcript.txt, all of today's calls, newest last
+  calls: [ { callId, direction, start, end, talkSec, outcome, conversation, staff, transcriptFrom, summary } ],   // last 24h, oldest first
+  voicemails: [ { at, mailbox, staff, transcription } ],
+  notes: [ { at, from ('customer' or who logged it), type (text/email/note), subject, text } ],
+  tasks: [ { title, description, created } ],
+  voicemailError,                       // only when Gmail couldn't be read
+  transcript: { summary, path },        // summary = main call's; path = $S/transcript.txt, the 24h history, newest last
   createdBy: { employeeId, name, person },  // from the payload's initiator-uri; person false = automatic web/Google lead
   schedule: { textSendAt, closeDays },  // textSendAt null = send now
   contactMethodIds, waitingFor: [ ... ] }
@@ -190,7 +206,7 @@ Email: `sent`, `skipped (no address)` or `failed: ...`. Log: `logged`,
 |---|---|---|
 | `BRIOSTACK_API_KEY` | prepare, send | Already set. Its user must be an admin to create the webhook |
 | `ATS_USERNAME`, `ATS_PASSWORD` | prepare | Already set |
-| `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` | render, send | Already set. office@'s token with `gmail.send` + `drive.file` scopes |
+| `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` | prepare, render, send | Already set. office@'s token with `gmail.send`, `gmail.readonly` (voicemails) and `drive.file` scopes |
 | `TEXTABLE_ACCOUNT_UID`, `TEXTABLE_API_TOKEN` | send | Set (as `Textable_Account_UID` / `Textable_Token`; names are matched ignoring case, and `TEXTABLE_USER_ID` / `TEXTABLE_TOKEN` also work). Or store them as a network secret for `atscall-txb.textable.app` (header `Authorization`, prefix `Bearer`, value `ACCOUNT_UID:TOKEN`) |
 | `CHROME_PATH` | render | Optional |
 

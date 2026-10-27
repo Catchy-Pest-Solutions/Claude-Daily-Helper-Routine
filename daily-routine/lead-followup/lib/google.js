@@ -1,8 +1,8 @@
 // Google APIs as office@catchypestsolutions.com, with the OAuth refresh token
 // in GMAIL_CLIENT_ID / GMAIL_CLIENT_SECRET / GMAIL_REFRESH_TOKEN. Its scopes
-// are gmail.send and drive.file: it can send mail and can only see Drive
-// files and folders this same OAuth client created (so the "AI Follow-ups"
-// folder was created with it too).
+// are gmail.send, gmail.readonly (voicemail emails) and drive.file: it can
+// only see Drive files and folders this same OAuth client created (so the
+// "AI Follow-ups" folder was created with it too).
 const crypto = require('node:crypto');
 const { requireEnv } = require('./env');
 
@@ -165,4 +165,30 @@ async function sendMail(message) {
   return sent.id;
 }
 
-module.exports = { accessToken, uploadShared, imageUrl, shareUrl, checkPublicImage, randomName, buildMime, sendMail, encodeHeader };
+// Gmail search (needs the gmail.readonly scope): message IDs, newest first.
+async function listMessages(q, max = 100) {
+  const ids = [];
+  let pageToken = '';
+  while (ids.length < max) {
+    const qs = new URLSearchParams({ q, maxResults: String(Math.min(100, max - ids.length)), ...(pageToken ? { pageToken } : {}) });
+    const page = await google('GET', `https://gmail.googleapis.com/gmail/v1/users/me/messages?${qs}`);
+    ids.push(...(page?.messages || []).map((m) => m.id));
+    pageToken = page?.nextPageToken;
+    if (!pageToken) break;
+  }
+  return ids;
+}
+
+// One message's subject, received time and HTML/plain body (attachments skipped).
+async function getMessage(id) {
+  const msg = await google('GET', `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`);
+  const header = (name) => (msg.payload?.headers || []).find((h) => h.name.toLowerCase() === name)?.value || '';
+  const find = (part, type) => (part?.mimeType === type && part.body?.data ? part : (part?.parts || []).map((p) => find(p, type)).find(Boolean));
+  const body = (type) => {
+    const part = find(msg.payload, type);
+    return part ? Buffer.from(part.body.data, 'base64url').toString('utf8') : '';
+  };
+  return { id, internalDate: Number(msg.internalDate), subject: header('subject'), html: body('text/html') || body('text/plain') };
+}
+
+module.exports = { listMessages, getMessage, accessToken, uploadShared, imageUrl, shareUrl, checkPublicImage, randomName, buildMime, sendMail, encodeHeader };
