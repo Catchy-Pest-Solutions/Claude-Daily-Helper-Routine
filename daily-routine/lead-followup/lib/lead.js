@@ -1,7 +1,7 @@
 // Pure decision logic for prepare.js: payload, contact, booked status, which
 // ATS call is the customer's, and how lead.json looks. No I/O here.
 const cal = require('../../src/callReview/calendar');
-const { normalizePhone } = require('../../src/callReview/callAnalysis');
+const { normalizePhone, OUTCOME_TEXT } = require('../../src/callReview/callAnalysis');
 
 const LOG_PREFIX = '[AI FOLLOW-UP';
 const SCRATCHED = new Set(['CSC_SCRATCH', 'CSC_CANCELLED', 'CSC_CANCELED']);
@@ -181,8 +181,29 @@ function pickMainCall(calls, createdMs) {
   return [...calls].sort((a, b) => a.startMs - b.startMs)[0];
 }
 
+// Where the history starts: 24 hours before the record, or the same time on
+// the previous business day if that's earlier, so a Monday record still sees
+// Friday's calls and the weekend (and the day after a holiday sees the day
+// before it).
+function historyStart(createdMs, hours = 24) {
+  const { date, hour, minute } = cal.toEastern(createdMs);
+  const prevBusiness = cal.easternToMs(cal.previousBusinessDay(date), `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
+  return Math.min(createdMs - hours * 3600000, prevBusiness);
+}
+
 function staffName(ext, config) {
   return ext ? config.staff[ext]?.name || null : null;
+}
+
+// What happened on a call, in plain words. Outbound talk time includes the
+// ring, so a short one means nobody picked up.
+function callOutcome(c, config) {
+  const who = staffName(c.agent, config) || 'the office';
+  if (c.direction === 'outbound') {
+    return isConversation(c) ? `${who} called them (${cal.formatDuration(c.talkSec || 0)})` : `${who} called them, no answer`;
+  }
+  if (c.answered) return `they called, ${who} answered (${cal.formatDuration(c.talkSec || 0)})`;
+  return `they called, nobody answered: ${OUTCOME_TEXT[c.outcome] || 'missed'}`;
 }
 
 function callSummary(c, config, transcript) {
@@ -192,29 +213,38 @@ function callSummary(c, config, transcript) {
     start: cal.easternIso(c.startMs),
     end: cal.easternIso(c.endMs),
     talkSec: c.talkSec || 0,
+    outcome: callOutcome(c, config),
+    conversation: isConversation(c),
     staff: staffName(c.agent, config) || staffName(transcript?.ext, config),
     transcriptFrom: transcript?.source || null,
     summary: transcript?.summary || null,
   };
 }
 
-// Full text for the transcript file: every call today, oldest first, so the
-// newest is last.
-function transcriptText(calls, mainId, transcripts, config) {
-  return calls
-    .map((c, i) => {
-      const t = transcripts.get(c.id);
-      const who = staffName(c.agent, config) || staffName(t?.ext, config) || 'unknown';
-      const head = [
-        `=== Call ${i + 1} of ${calls.length}${c.id === mainId ? ' (main call)' : ''}: ${c.direction}`,
-        `${cal.formatDay(c.startMs)} ${cal.formatTime(c.startMs)}`,
-        `${c.direction === 'inbound' ? 'answered by' : 'made by'} ${who}`,
-        `${cal.formatDuration(c.talkSec || 0)} ===`,
-      ].join(', ');
-      if (!t) return `${head}\n(no transcript)\n`;
-      return `${head}\nSummary: ${t.summary || '(none)'}\n\nTranscript:\n${t.transcription}\n`;
-    })
-    .join('\n');
+const stamp = (ms) => `${cal.formatDay(ms)} ${cal.formatTime(ms)}`;
+
+// The transcript file: everything we know about this customer from the last
+// day, oldest first so the newest is last. Calls (with transcripts),
+// voicemails, entries the office logged on the Communications tab, texts the
+// customer sent, and open tasks.
+function historyText({ calls, mainId, transcripts, voicemails = [], notes = [], tasks = [] }, config) {
+  const events = [];
+  for (const c of calls) {
+    const t = transcripts.get(c.id);
+    const head = `=== ${stamp(c.startMs)}: ${callOutcome(c, config)}${c.id === mainId ? ' (main call)' : ''} ===`;
+    const body = t ? `Summary: ${t.summary || '(none)'}\n\nTranscript:\n${t.transcription}` : isConversation(c) ? '(no transcript yet)' : '';
+    events.push({ at: c.startMs, text: body ? `${head}\n${body}` : head });
+  }
+  for (const v of voicemails) {
+    events.push({ at: v.at, text: `=== ${stamp(v.at)}: voicemail they left${v.mailbox ? ` for ${v.mailbox}` : ''} ===\n${v.transcription || '(no transcription)'}` });
+  }
+  for (const n of notes) {
+    const who = n.inbound ? 'text from the customer' : n.type === 'note' ? `note logged by ${n.by}` : `${n.type} ${n.by} sent`;
+    events.push({ at: n.at, text: `=== ${stamp(n.at)}: ${who} (Briostack Communications) ===\n${n.subject ? `${n.subject}\n` : ''}${n.text}` });
+  }
+  const sorted = events.sort((a, b) => a.at - b.at).map((e) => e.text);
+  const taskText = tasks.map((x) => `=== Open Briostack task: ${x.title} ===\n${x.description || '(no description)'}`);
+  return `${[...sorted, ...taskText].join('\n\n')}\n`;
 }
 
 module.exports = {
@@ -230,7 +260,9 @@ module.exports = {
   timeWindow,
   isConversation,
   pickMainCall,
+  historyStart,
+  callOutcome,
   callSummary,
-  transcriptText,
+  historyText,
   staffName,
 };

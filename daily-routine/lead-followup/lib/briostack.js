@@ -92,6 +92,10 @@ function createBriostack({ apiKey = requireEnv(['BRIOSTACK_API_KEY']).BRIOSTACK_
       return call('POST', `customers/${id}/communications/${cid}/documents`, { form });
     },
     listEmployees: () => list('employees?limit=100'),
+    // Open tasks for the whole account (a dozen or so); filtering by
+    // customer (partyId) isn't supported, so callers match party.partyId.
+    listOpenTasks: () => list(`tasks?limit=100&filter=${encodeURIComponent('statusId="ORDER_REQMNT_CREATED"')}`),
+    getTask: (taskId) => call('GET', `tasks/${taskId}`),
     listWebhooks: () => list('webhooks'),
     createWebhook: (body) => call('POST', 'webhooks', { json: body }),
     patchWebhook: (wid, body) => call('PATCH', `webhooks/${wid}`, { json: body }),
