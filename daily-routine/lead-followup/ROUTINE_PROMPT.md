@@ -56,6 +56,8 @@ Read the **full history** at `transcript.path`, not just the summary. It lists t
 
 **Customer's name:** Briostack first name if present; otherwise the name they clearly gave on the call; otherwise no name.
 
+**Where to send:** Briostack is the source of truth. Send the text to `customer.mobile` and the email to `customer.email`, exactly as they are on the record. Don't compare them with a number or email spelled on the call, and don't skip or change one because the call sounded different.
+
 ## Step 3a. BOOKED
 
 Write a text and an email following PLAYBOOK Section 8 (Booked). No prices, discounts, quote card or PDF. Use the appointment date (and time window) only from `services[].appointmentDate`/`timeWindow`; if Briostack has no date, don't state one. Include their program's video (PLAYBOOK Section 6). Skip to Step 4.
@@ -140,7 +142,7 @@ Write `$S/plan.json`:
   "pdfUrl": "pdfUrl or null"
 }
 ```
-Set `text.to` or `email.to` to null when that contact is missing. Then run:
+`text.to` is `customer.mobile` and `email.to` is `customer.email`; set one to null only when that contact is missing from the record. Then run:
 ```
 node daily-routine/lead-followup/send.js --plan $S/plan.json
 ```
