@@ -181,6 +181,16 @@ function pickMainCall(calls, createdMs) {
   return [...calls].sort((a, b) => a.startMs - b.startMs)[0];
 }
 
+// Where the history starts: 24 hours before the record, or the same time on
+// the previous business day if that's earlier, so a Monday record still sees
+// Friday's calls and the weekend (and the day after a holiday sees the day
+// before it).
+function historyStart(createdMs, hours = 24) {
+  const { date, hour, minute } = cal.toEastern(createdMs);
+  const prevBusiness = cal.easternToMs(cal.previousBusinessDay(date), `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
+  return Math.min(createdMs - hours * 3600000, prevBusiness);
+}
+
 function staffName(ext, config) {
   return ext ? config.staff[ext]?.name || null : null;
 }
@@ -250,6 +260,7 @@ module.exports = {
   timeWindow,
   isConversation,
   pickMainCall,
+  historyStart,
   callOutcome,
   callSummary,
   historyText,

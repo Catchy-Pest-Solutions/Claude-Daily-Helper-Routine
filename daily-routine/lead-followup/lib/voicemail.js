@@ -56,7 +56,16 @@ function parseVoicemailEmail({ subject, html, internalDate }) {
   };
 }
 
-// Gmail search for voicemail emails received since sinceMs.
+// Gmail search for voicemail emails received since sinceMs. The office
+// deletes a voicemail's email once they've called back, so search with
+// Trash included (Gmail keeps it there 30 days).
 const voicemailQuery = (sinceMs) => `from:${SENDER} after:${Math.floor(sinceMs / 1000)}`;
 
-module.exports = { parseVoicemailEmail, voicemailQuery, htmlToText, SENDER };
+// The caller's number from the subject alone, so only their emails need the
+// full download.
+function subjectPhone(subject) {
+  const m = /V-Mail from .*?\((\d{3})\)\s*(\d{3})-(\d{4})\s+to\s/i.exec(String(subject || ''));
+  return m ? normalizePhone(m.slice(1, 4).join('')) : null;
+}
+
+module.exports = { parseVoicemailEmail, voicemailQuery, subjectPhone, htmlToText, SENDER };

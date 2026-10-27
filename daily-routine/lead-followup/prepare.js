@@ -22,7 +22,7 @@ const path = require('node:path');
 const { loadConfig, parseArgs, requireEnv } = require('./lib/env');
 const { createBriostack, parseAtsCommunication } = require('./lib/briostack');
 const google = require('./lib/google');
-const { parseVoicemailEmail, voicemailQuery } = require('./lib/voicemail');
+const { parseVoicemailEmail, voicemailQuery, subjectPhone } = require('./lib/voicemail');
 const lead = require('./lib/lead');
 const { schedule } = require('./lib/schedule');
 const cal = require('../src/callReview/calendar');
@@ -124,9 +124,10 @@ async function main() {
     info.createdAt = cal.easternIso(createdMs);
 
     // Every call with this customer's number, in or out, from the 24 hours
-    // before the record was created: missed calls and unanswered callbacks
-    // too. Only real conversations get transcripts.
-    const windowStart = createdMs - (t.historyHours || 24) * 60 * MIN;
+    // before the record was created (back to the previous business day over
+    // a weekend or holiday): missed calls and unanswered callbacks too. Only
+    // real conversations get transcripts.
+    const windowStart = lead.historyStart(createdMs, t.historyHours || 24);
     const legs = await ats.searchCalls(windowStart, nowMs + MIN);
     const allCalls = groupCalls(legs)
       .map((c) => classifyCall(c, officeConfig))
@@ -191,8 +192,11 @@ async function main() {
     // and open Briostack tasks. None of these hold up a run.
     let voicemailError = null;
     try {
-      for (const id of await google.listMessages(voicemailQuery(windowStart - 10 * MIN), 100)) {
-        if (!state.voicemails[id]) state.voicemails[id] = parseVoicemailEmail(await google.getMessage(id)) || { none: true };
+      // Subjects first; only this customer's emails are downloaded in full.
+      for (const id of await google.listMessages(voicemailQuery(windowStart - 10 * MIN), 300, { includeSpamTrash: true })) {
+        if (state.voicemails[id]) continue;
+        const phone = subjectPhone((await google.getMessage(id, { subjectOnly: true })).subject);
+        state.voicemails[id] = phone && !info.phones10.includes(phone) ? { none: true } : parseVoicemailEmail(await google.getMessage(id)) || { none: true };
       }
     } catch (err) {
       voicemailError = String(err.message || err).slice(0, 160);

@@ -166,11 +166,12 @@ async function sendMail(message) {
 }
 
 // Gmail search (needs the gmail.readonly scope): message IDs, newest first.
-async function listMessages(q, max = 100) {
+// Trash and Spam are left out unless includeSpamTrash is set.
+async function listMessages(q, max = 100, { includeSpamTrash = false } = {}) {
   const ids = [];
   let pageToken = '';
   while (ids.length < max) {
-    const qs = new URLSearchParams({ q, maxResults: String(Math.min(100, max - ids.length)), ...(pageToken ? { pageToken } : {}) });
+    const qs = new URLSearchParams({ q, maxResults: String(Math.min(100, max - ids.length)), includeSpamTrash: String(includeSpamTrash), ...(pageToken ? { pageToken } : {}) });
     const page = await google('GET', `https://gmail.googleapis.com/gmail/v1/users/me/messages?${qs}`);
     ids.push(...(page?.messages || []).map((m) => m.id));
     pageToken = page?.nextPageToken;
@@ -179,9 +180,11 @@ async function listMessages(q, max = 100) {
   return ids;
 }
 
-// One message's subject, received time and HTML/plain body (attachments skipped).
-async function getMessage(id) {
-  const msg = await google('GET', `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`);
+// One message's subject, received time and HTML/plain body (attachments
+// skipped). subjectOnly fetches just the headers (html comes back empty).
+async function getMessage(id, { subjectOnly = false } = {}) {
+  const format = subjectOnly ? 'format=metadata&metadataHeaders=Subject' : 'format=full';
+  const msg = await google('GET', `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?${format}`);
   const header = (name) => (msg.payload?.headers || []).find((h) => h.name.toLowerCase() === name)?.value || '';
   const find = (part, type) => (part?.mimeType === type && part.body?.data ? part : (part?.parts || []).map((p) => find(p, type)).find(Boolean));
   const body = (type) => {

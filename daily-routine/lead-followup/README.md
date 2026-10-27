@@ -59,7 +59,9 @@ Prints exactly one line: `already_sent`, `no_call`, `no_contact`, `waiting`,
    is a cross-check.
 4. Finds every ATS call with the customer's number (inbound `caller_id` or
    outbound `callee_id`) from 24 hours before the record was created
-   (`timing.historyHours`) until now: answered, missed (voicemail, hung up
+   (`timing.historyHours`; over a weekend or holiday, back to the same time
+   on the previous business day, so a Monday record sees Friday and the
+   weekend) until now: answered, missed (voicemail, hung up
    at the menu or in the queue) and callbacks nobody picked up. Only calls
    with 20+ seconds of talk count as conversations and get transcripts. The
    main call is the conversation in progress when the record was made (else
@@ -72,8 +74,11 @@ Prints exactly one line: `already_sent`, `no_call`, `no_contact`, `waiting`,
    Also gathered, none of which holds up a run:
    - **Voicemails** they left: ATS emails each one, with a transcription,
      from vmail@voiceforpest.com to office@ (`lib/voicemail.js`). Read with
-     the office@ Google token (`gmail.readonly`). If Gmail can't be read,
-     `voicemailError` says why and the rest still works.
+     the office@ Google token (`gmail.readonly`), **Trash included**: the
+     office deletes a voicemail's email after calling back (Gmail keeps Trash
+     30 days). Subjects are read first; only the customer's emails are
+     downloaded. If Gmail can't be read, `voicemailError` says why and the
+     rest still works.
    - **Communications entries** that aren't ATS call copies or our own log:
      texts the customer sent (status "Received") and texts, emails or notes
      someone at the office logged.
@@ -93,12 +98,12 @@ It writes `$S/lead.json` on every status:
   services: [ { category, booked, status, price, discount, recurringPrice, appointmentDate, appointmentDay, timeWindow, createdAt } ],
   booked,
   call: { staff, start, end, direction, talkSec, callId },
-  calls: [ { callId, direction, start, end, talkSec, outcome, conversation, staff, transcriptFrom, summary } ],   // last 24h, oldest first
+  calls: [ { callId, direction, start, end, talkSec, outcome, conversation, staff, transcriptFrom, summary } ],   // 24h+ (see 4), oldest first
   voicemails: [ { at, mailbox, staff, transcription } ],
   notes: [ { at, from ('customer' or who logged it), type (text/email/note), subject, text } ],
   tasks: [ { title, description, created } ],
   voicemailError,                       // only when Gmail couldn't be read
-  transcript: { summary, path },        // summary = main call's; path = $S/transcript.txt, the 24h history, newest last
+  transcript: { summary, path },        // summary = main call's; path = $S/transcript.txt, the whole history, newest last
   createdBy: { employeeId, name, person },  // from the payload's initiator-uri; person false = automatic web/Google lead
   schedule: { textSendAt, closeDays },  // textSendAt null = send now
   contactMethodIds, waitingFor: [ ... ] }

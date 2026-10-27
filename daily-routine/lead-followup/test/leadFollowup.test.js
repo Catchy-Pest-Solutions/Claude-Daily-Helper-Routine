@@ -9,7 +9,7 @@ const cal = require('../../src/callReview/calendar');
 const { schedule, inQuietHours } = require('../lib/schedule');
 const lead = require('../lib/lead');
 const { parseAtsCommunication } = require('../lib/briostack');
-const { parseVoicemailEmail } = require('../lib/voicemail');
+const { parseVoicemailEmail, subjectPhone } = require('../lib/voicemail');
 const { renderString, escapeHtml } = require('../lib/template');
 const { buildMime } = require('../lib/google');
 const { viewModel, money } = require('../render');
@@ -165,6 +165,16 @@ test('voicemail email: both layouts give the number, mailbox and transcription',
   assert.strictEqual(b.mailbox, null);
   assert.strictEqual(b.transcription, 'Call me back about the ants please.');
   assert.strictEqual(parseVoicemailEmail({ subject: 'Your invoice', html: '<p>Thanks</p>' }), null);
+  assert.strictEqual(subjectPhone('V-Mail from WIRELESS CALLER (828) 555-0142 to Steve Barona 103'), '8285550142');
+  assert.strictEqual(subjectPhone('Your invoice'), null);
+});
+
+test('history start: 24 hours back, or the previous business day over weekends and holidays', () => {
+  const back = (iso) => cal.easternIso(lead.historyStart(Date.parse(iso)));
+  assert.strictEqual(back('2026-10-27T10:00:00-04:00'), '2026-10-26T10:00:00.000-04:00'); // Tuesday: 24h
+  assert.strictEqual(back('2026-10-26T10:00:00-04:00'), '2026-10-23T10:00:00.000-04:00'); // Monday: back to Friday
+  assert.strictEqual(back('2026-10-25T16:00:00-04:00'), '2026-10-23T16:00:00.000-04:00'); // Sunday: Friday
+  assert.strictEqual(back('2026-09-08T08:15:00-04:00'), '2026-09-04T08:15:00.000-04:00'); // after Labor Day: Friday
 });
 
 test('call outcomes: answered, missed, and callbacks nobody picked up', () => {
