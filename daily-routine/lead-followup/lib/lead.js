@@ -132,7 +132,9 @@ function dayLabel(dateStr) {
 const money = (n) => (Number(n) > 0 ? `$${Math.round(Number(n)).toLocaleString('en-US')}` : null);
 
 // Services with scratched/cancelled ones removed and names trimmed, the next
-// real appointment for each, and whether any of them is a booking.
+// real appointment for each, whether any of them is a booking, and whether
+// any is a commercial category (which can be a quote, not a booking: Daniel,
+// Oct 28).
 function servicesInfo(services, appointments, notBookedCategories) {
   const notBooked = new Set(notBookedCategories.map((c) => c.trim().toLowerCase()));
   const live = services.filter((s) => !SCRATCHED.has(s.statusId) && !s.cancelDate);
@@ -148,6 +150,7 @@ function servicesInfo(services, appointments, notBookedCategories) {
     return {
       category,
       booked: !isQuote,
+      commercial: /commercial/i.test(category),
       status: s.statusId,
       // Initial price net of the service's discount (e.g. $397 - $50 = $347);
       // "Quote -" services hold the quoted price in regularAmount.
@@ -160,7 +163,7 @@ function servicesInfo(services, appointments, notBookedCategories) {
       createdAt: s.createdDate || null,
     };
   });
-  return { services: out, booked: out.some((s) => s.booked) };
+  return { services: out, booked: out.some((s) => s.booked), commercial: out.some((s) => s.commercial) };
 }
 
 // Calls with a real conversation (inbound answered, or outbound that

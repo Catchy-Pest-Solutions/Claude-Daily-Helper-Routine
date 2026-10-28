@@ -89,10 +89,17 @@ test('services: a real service is booked, with its appointment day and arrival w
   const r = lead.servicesInfo(services, appts, NOT_BOOKED);
   assert.strictEqual(r.booked, true);
   assert.deepStrictEqual(r.services[0], {
-    category: 'Carolina TermiteShield', booked: true, status: 'CSC_PENDING', price: '$797', discount: '$50', recurringPrice: '$29',
+    category: 'Carolina TermiteShield', booked: true, commercial: false, status: 'CSC_PENDING', price: '$797', discount: '$50', recurringPrice: '$29',
     appointmentDate: '2026-10-27', appointmentDay: 'Tuesday, Oct 27', timeWindow: '11 AM–1 PM', createdAt: null,
   });
   assert.strictEqual(lead.timeWindow({ arrivalFrom: '08:00:00', arrivalThru: '10:30:00' }), '8–10:30 AM');
+});
+
+test('services: a commercial category is flagged so the call decides whether it is booked', () => {
+  const services = [{ serviceId: 1, serviceCategoryName: 'Commercial General Pest Control', statusId: 'CSC_PENDING' }];
+  const r = lead.servicesInfo(services, [], NOT_BOOKED);
+  assert.strictEqual(r.commercial, true);
+  assert.strictEqual(r.services[0].commercial, true);
 });
 
 test('creation time: dateAcquired unless it was reset to midnight', () => {

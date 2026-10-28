@@ -58,7 +58,9 @@ Prints exactly one line: `already_sent`, `no_call`, `no_contact`, `waiting`,
 3. Re-reads services and appointments (a real service has shown up 12 minutes
    after the record). Scratched/cancelled services are dropped, names
    trimmed. "Leads Marketing" and the three "Quote -" categories mean not
-   booked; anything else means booked. `price` is net of the service's
+   booked; anything else sets `booked`, which is only a hint: the routine
+   confirms a booking from the call (a commercial category is often just a
+   quote, so `commercial` flags it). `price` is net of the service's
    `initialDiscount` ($397 - $50 = $347). Quote services carry the rep's
    quoted price (`regularAmount`); their "Place Holder" appointment is not a
    visit. The routine quotes what the rep said on the call; Briostack's price
@@ -102,8 +104,9 @@ It writes `$S/lead.json` on every status:
 ```
 { status, run, checkedAt,
   customer: { id, firstName (null if blank), lastName, name, mobile (E.164), email, serviceAddress, createdAt },
-  services: [ { category, booked, status, price, discount, recurringPrice, appointmentDate, appointmentDay, timeWindow, createdAt } ],
+  services: [ { category, booked, commercial, status, price, discount, recurringPrice, appointmentDate, appointmentDay, timeWindow, createdAt } ],
   booked,
+  commercial,
   call: { staff, start, end, direction, talkSec, callId },
   calls: [ { callId, direction, start, end, talkSec, outcome, conversation, staff, transcriptFrom, summary } ],   // 24h+ (see 4), oldest first
   voicemails: [ { at, mailbox, staff, transcription } ],

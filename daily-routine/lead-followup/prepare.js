@@ -261,6 +261,7 @@ async function main() {
       customer: customerOut,
       services: svc.services,
       booked: svc.booked,
+      commercial: svc.commercial,
       call: main ? { staff, start: cal.easternIso(main.startMs), end: cal.easternIso(main.endMs), direction: main.direction, talkSec: main.talkSec || 0, callId: main.id } : null,
       calls: allCalls.map((c) => lead.callSummary(c, officeConfig, transcripts.get(c.id))),
       voicemails: voicemails.map((v) => ({ at: cal.easternIso(v.at), mailbox: v.mailbox, staff: lead.staffName(v.mailboxExt, officeConfig), transcription: v.transcription })),
