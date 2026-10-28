@@ -88,6 +88,7 @@ Program benefits to draw from (pick what fits the call, never list them all):
 Assume the sale. Make yes easy.
 
 - **Either/or close on days.** Offer the next two business days after the day the text goes out: "Would tomorrow or Thursday work better?" On a Friday (or after hours on Friday), offer Monday or Tuesday. Never name a time or a technician.
+- **The days are for a first treatment**, which is charged. We don't do free inspections, so never offer to "take a look," "come look at it," inspect, assess or estimate. (Bats are the exception: the $149 inspection is the service.)
 - **Either/or close on options** when the two options are the decision: "Want to go with the annual plan or the one-time visit?"
 - **Always end with a quick reply.** The customer should be able to answer in one word: "Just reply with the day that works, or NO if you're all set."
 - **One question, one call to action.** Don't stack questions.
@@ -158,15 +159,15 @@ A friendly person at the office, texting from their phone.
 
 For someone nobody has really talked with yet, a quote that can't be priced from the call, or an unbooked commercial property. Say what really happened, what they need if you know it, ask about two days, and invite a reply. No prices, discounts or video.
 
-> Hi Kim, it's Steve from Catchy Pest. I got your voicemail about the rodents and just tried calling you back, sorry I missed you. Would tomorrow or Thursday work to get someone out? Text me here or call (828) 263-4804 and we'll get you taken care of.
+> Hi Kim, it's Steve from Catchy Pest. I got your voicemail about the rodents and just tried calling you back, sorry I missed you. I'd be glad to go over pricing and get your first treatment on the schedule. Would tomorrow or Thursday work? Text me here or call (828) 263-4804.
 
-> Hi, it's Shelley from Catchy Pest. Thanks for reaching out to us this morning. Would Wednesday or Thursday work to get someone out to take a look? Text me here with what's going on, or call (828) 263-4804.
+> Hi, it's Shelley from Catchy Pest. Thanks for reaching out to us this morning. Would Wednesday or Thursday work for your first treatment? Text me here with what's going on and I'll go over pricing, or call (828) 263-4804.
 
 ### Note — email
 
 - Subject: "Sorry I missed you, Kim" or "Following up on your call."
 - Paragraph 1: what happened and what they need, if known.
-- Paragraph 2: the two days (unless it's commercial or they may have booked) + "Just reply to this email or text me at (828) 263-4804."
+- Paragraph 2: the two days for their first treatment, and that you'll go over pricing (unless it's commercial or they may have booked) + "Just reply to this email or text me at (828) 263-4804."
 - Signature: "[Rep]\nCatchy Pest Solutions\n(828) 263-4804"
 - No prices, discounts, card or PDF.
 
