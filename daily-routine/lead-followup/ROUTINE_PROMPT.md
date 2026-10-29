@@ -133,7 +133,7 @@ A short personal note following PLAYBOOK Section 8 (Note). No prices, discounts,
 - **Don't repeat the office.** If someone at the office already texted or emailed them after the last call (the history shows it), don't say the same thing again: add what it didn't say (what they need, the two days).
 - **What they need**, in a few words, if the history says it (a voicemail, a text, the call, a task or the services on the record). If it doesn't, keep it general ("thanks for reaching out").
 - **The offer:** offer `schedule.closeDays` as days for their **first treatment**, a paid service ("I'd be glad to go over pricing and get your first treatment on the schedule. Would tomorrow or Thursday work?"). We don't do free inspections: never offer to "take a look," "come look at it," inspect, assess or estimate (Daniel, Oct 28). Bats are the one exception: the $149 inspection is the service. Leave it out for a commercial property (mention the next step the call promised, if any) and for someone who may already have booked (thank them instead).
-- **Close:** "Text me here or call (828) 263-4804." Never "my direct line": texts come from the shared office number.
+- **Close:** text: "Text or call me here with any questions." (no phone number: the text comes from the office number, so they can text or call right back). Email: "Just reply to this email or text me at (828) 263-4804." Never "my direct line": texts come from the shared office number.
 - **Length:** text 20–60 words; email two short paragraphs plus the signature, not a copy of the text.
 
 ## Step 4. Check before sending
@@ -149,6 +149,7 @@ Fix anything that fails. If you can't fix it, Slack Daniel and stop.
 - Booked only when the history shows a confirmed booking (Step 2); a commercial category alone is never enough. Day offers are for a first treatment, never a free look or inspection.
 - Signed by the person Step 2 picked. Every statement about calls and voicemails matches the history, and no message (booked confirmations included) claims a conversation that didn't happen. Nothing mentions AI, transcripts, recordings or notes.
 - Text and email aren't word-for-word copies.
+- The text doesn't spell out the office number (it comes from that number); the email does.
 
 ## Step 5. Send and log
 
