@@ -101,6 +101,9 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
       const task = buildTask(entry, customer, { config, today: window.today, checkedAtMs: nowMs, lookedUp });
       task.summary = reports.missSummary(entry);
       task.shortSummary = reports.missSummary(entry, { short: true });
+      task.outcome = entry.misses[0].outcome;
+      task.missCount = entry.misses.length;
+      task.firstMissMs = entry.misses[0].startMs;
       if (canCreate) {
         try {
           task.briostackTaskId = await brio.createTask(task);

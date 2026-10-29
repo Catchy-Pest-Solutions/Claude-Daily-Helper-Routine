@@ -24,17 +24,30 @@ function hourLabel(h) {
   return `${h - 12} PM`;
 }
 
-// #office-only: kept short on purpose. Callbacks owed first, then a few
-// numbers and each person's line. The full picture goes to Daniel.
+// #office-only: kept short on purpose. Callbacks owed, grouped by who
+// calls back and then by what happened, then each person's line. The full
+// picture goes to Daniel.
 function officeOnlyMessage({ window: w, analysis, tasks, doubleCallMisses = [], likelyRobocalls = [], earlierOpen = null, config }) {
   const s = analysis.stats;
   const L = [`📊 *Daily call recap* — ${windowLabel(w)} _(noon to noon)_`, ''];
 
   L.push(tasks.length ? '📞 *Still need a callback*' : '📞 *Still need a callback:* none 🎉');
-  for (const t of tasks) {
-    const flag = t.callerType === 'new' ? '🆕 ' : '';
-    L.push(`• ${flag}*${t.displayName}* ${formatPhone(t.phone)} — ${t.shortSummary || t.summary} → *${t.assigneeName}*${t.error ? ' ⚠️ no task made' : ''}`);
+  for (const [person, list] of byAssignee(tasks, config)) {
+    L.push('');
+    L.push(`👤 *${person}* (${list.length})`);
+    for (const outcome of OUTCOME_ORDER) {
+      const group = list.filter((t) => (t.outcome || 'other') === outcome);
+      if (!group.length) continue;
+      L.push(`_${OUTCOME_HEADING[outcome]}_`);
+      for (const t of group) {
+        const flag = t.callerType === 'new' ? '🆕 ' : '';
+        const when = t.firstMissMs ? `${cal.formatDay(t.firstMissMs)} ${cal.formatTime(t.firstMissMs)}` : '';
+        const time = t.missCount > 1 ? ` — ${t.missCount} calls, first ${when}` : when ? ` — ${when}` : '';
+        L.push(`• ${flag}*${t.displayName}* ${formatPhone(t.phone)}${time}${t.error ? ' ⚠️ no task made' : ''}`);
+      }
+    }
   }
+  if (tasks.length) L.push('');
   if (earlierOpen?.total) {
     const fmt = (x) => `${x.open}${x.overdue ? ` (${x.overdue} overdue)` : ''}`;
     const people = Object.entries(earlierOpen.byPerson);
@@ -56,35 +69,31 @@ function officeOnlyMessage({ window: w, analysis, tasks, doubleCallMisses = [], 
   }
 
   L.push('');
-  L.push('📈 *By the numbers*');
-  L.push(`• ${s.inboundTotal} calls in · ${s.answered} answered (${pct(s.answered, s.inboundTotal)}) · ${s.outboundTotal} calls out`);
-  const busiest = Object.entries(s.hourly)
-    .filter(([k]) => k !== 'closedDay')
-    .sort((x, y) => y[1].total - x[1].total)[0];
-  L.push(
-    `• ⏱️ ${s.medianWaitSec != null ? cal.formatDuration(s.medianWaitSec) : '—'} median to answer${busiest ? ` · 🕐 busiest ${hourLabel(Number(busiest[0]))} (${plural(busiest[1].total, 'call')})` : ''}`,
-  );
-  const fast = withinHour(analysis.missedCalls, likelyRobocalls);
-  if (fast.total) L.push(`• ⚡ ${fast.fast} of ${fast.total} office-hours misses called back within an hour`);
-  if (s.callbackCount) {
-    L.push(`• ↩️ ${cal.formatDuration(s.avgCallbackOfficeSec)} average time to call back a missed call _(${plural(s.callbackCount, 'callback')}, office hours only)_`);
-  }
-
-  L.push('');
   L.push('👩‍💼 *Team*');
   L.push(...teamLines(s, { short: true }));
-  L.push(`• *Office total* — ${busyEmoji(s.team.busyScore)} busy ${s.team.busyScore ?? '—'}/10 · ${cal.formatDuration(s.team.talkSec)} on the phone`);
-  L.push('');
-  L.push('_Daniel gets the full report every day. Ask him if you want more detail on any of it._');
   return L.join('\n');
 }
 
-// Missed calls during office hours (robocalls aside) and how many were
-// handled within an hour.
-function withinHour(missedCalls, likelyRobocalls = []) {
-  const robo = new Set(likelyRobocalls.map((r) => r.phone));
-  const misses = missedCalls.filter((m) => m.context.period !== 'closed' && !robo.has(m.phone));
-  return { total: misses.length, fast: misses.filter((m) => m.handled && m.handled.delaySec <= 3600).length };
+const OUTCOME_ORDER = ['voicemail', 'overflow_hangup', 'queue_hangup', 'menu_hangup', 'other'];
+const OUTCOME_HEADING = {
+  voicemail: 'Left a voicemail',
+  overflow_hangup: 'Hung up on hold',
+  queue_hangup: 'Hung up in the queue',
+  menu_hangup: 'Hung up at the menu',
+  other: 'Other',
+};
+
+// Callback tasks per person: the new-customer assignee (Steve) first, then
+// the current-customer one (Shelley), then anyone else.
+function byAssignee(tasks, config) {
+  const order = [config.assignee.newCustomer, config.assignee.currentCustomer].map((ext) => config.staff[ext]?.name);
+  const groups = new Map(order.filter(Boolean).map((n) => [n, []]));
+  for (const t of tasks) {
+    const name = t.assigneeName || 'Unassigned';
+    if (!groups.has(name)) groups.set(name, []);
+    groups.get(name).push(t);
+  }
+  return [...groups].filter(([, list]) => list.length);
 }
 
 function teamLines(s, { short = false } = {}) {

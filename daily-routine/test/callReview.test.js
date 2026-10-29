@@ -248,7 +248,8 @@ test('runner: builds tasks and messages, creating tasks through Briostack', asyn
   assert.equal(created.length, 1);
   assert.equal(created[0].assigneeName, 'Steve');
   assert.equal(r.tasks[0].created, true);
-  assert.match(r.officeOnlyMessage, /Still need a callback\*\n• 🆕 .*\(828\) 555-0102 — missed Wed, Sep 30 9:30 AM, went to voicemail → \*Steve\*$/m);
+  assert.match(r.officeOnlyMessage, /Still need a callback\*\n\n👤 \*Steve\* \(1\)\n_Left a voicemail_\n• 🆕 .*\(828\) 555-0102 — Wed, Sep 30 9:30 AM$/m);
+  assert.doesNotMatch(r.officeOnlyMessage, /Shelley\* \(/);
   assert.match(r.ownerMessage, /ran cleanly/);
   assert.match(r.ownerMessage, /^<@U09LQDUPQTC>/);
 });
@@ -392,16 +393,11 @@ test('office message: short recap, team stats, earlier open tasks and within-the
   assert.match(m, /^📊 \*Daily call recap\* — Tue, Sep 29 12:00 PM → Wed, Sep 30 12:00 PM _\(noon to noon\)_/);
   assert.match(m, /Still need a callback:\* none 🎉/);
   assert.match(m, /📂 Still open from earlier days: Steve 2 \(1 overdue\) · Shelley 1$/m);
-  assert.match(m, /• 3 calls in · 1 answered \(33%\) · 2 calls out/);
-  assert.match(m, /median to answer · 🕐 busiest 9 AM \(3 calls\)/);
-  assert.match(m, /⚡ 1 of 2 office-hours misses called back within an hour/);
   assert.match(m, /\*Shelley\* — .* busy \d+\/10 · 1 answered · 1 out · /);
   assert.match(m, /\*Steve\* — /);
-  assert.match(m, /↩️ 55 min average time to call back a missed call _\(2 callbacks, office hours only\)_/);
-  assert.match(m, /\*Office total\* — .* busy \d+\/10 · .* on the phone$/m);
   assert.match(m, /🤖 Checked for robocalls: none found/);
-  assert.match(m, /Daniel gets the full report/);
-  assert.ok(m.split('\n').length <= 19, m);
+  assert.doesNotMatch(m, /By the numbers|Office total|Daniel gets the full report/);
+  assert.ok(m.split('\n').length <= 12, m);
 
   // Tasks without assignee fields: total only.
   const { earlierCallbackTasks } = require('../src/callReview/run');
@@ -465,4 +461,42 @@ test('ats transcripts CLI: options and the saved call record', () => {
   assert.equal(rec.start, '2026-09-29T10:00:00.000-04:00');
   assert.deepEqual(rec.transcript, { id: 7, callTimeUtc: '2026-09-29 14:00:00', summary: 'Asked about ants.', transcription: 'Speaker 0: Hi.' });
   assert.equal(callRecord(call, undefined).transcript, null);
+});
+
+test('office message groups callbacks by person, then by what happened', () => {
+  const { officeOnlyMessage } = require('../src/callReview/reports');
+  const config = require('../src/callReview/config');
+  const at = Date.parse('2026-09-30T13:30:00Z'); // Wed 9:30 AM Eastern
+  const t = (displayName, phone, assigneeName, outcome, extra = {}) => ({ displayName, phone, assigneeName, outcome, missCount: 1, firstMissMs: at, callerType: 'new', ...extra });
+  const tasks = [
+    t('Alice', '8285550701', 'Shelley', 'menu_hangup', { callerType: 'current' }),
+    t('Bob', '8285550702', 'Steve', 'overflow_hangup'),
+    t('Unknown caller', '8285550703', 'Steve', 'menu_hangup'),
+    t('Carol', '8285550704', 'Steve', 'menu_hangup', { missCount: 3 }),
+    t('Dave', '8285550705', 'Steve', 'voicemail', { error: 'boom' }),
+  ];
+  const stats = { team: {}, agents: {} };
+  const m = officeOnlyMessage({ window: { startMs: 0, endMs: 0 }, analysis: { stats }, tasks, config });
+  const section = m.slice(m.indexOf('📞'), m.indexOf('_🤖'));
+  assert.equal(
+    section,
+    [
+      '📞 *Still need a callback*',
+      '',
+      '👤 *Steve* (4)',
+      '_Left a voicemail_',
+      '• 🆕 *Dave* (828) 555-0705 — Wed, Sep 30 9:30 AM ⚠️ no task made',
+      '_Hung up on hold_',
+      '• 🆕 *Bob* (828) 555-0702 — Wed, Sep 30 9:30 AM',
+      '_Hung up at the menu_',
+      '• 🆕 *Unknown caller* (828) 555-0703 — Wed, Sep 30 9:30 AM',
+      '• 🆕 *Carol* (828) 555-0704 — 3 calls, first Wed, Sep 30 9:30 AM',
+      '',
+      '👤 *Shelley* (1)',
+      '_Hung up at the menu_',
+      '• *Alice* (828) 555-0701 — Wed, Sep 30 9:30 AM',
+      '',
+      '',
+    ].join('\n'),
+  );
 });
