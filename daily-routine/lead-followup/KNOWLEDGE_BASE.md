@@ -260,8 +260,8 @@ Recommend when a prospect wants broad, hands-off protection or has multiple pest
 These are for a customer buying multiple distinct service categories. Start with the pest they called about; do not overwhelm them with a bundle and every possible add-on.
 
 **Add Signature Pest to an existing Critter Control or TermiteShield account:**
-- **$49 initial add-on fee**.
-- **$49 every 4 weeks** ongoing (discounted from normal Signature Pest $59).
+- **No initial add-on fee** (owner, October 29, 2026).
+- **$59 every 4 weeks** ongoing (say "$59 a month"). The ants or other insects can be treated while the tech is already out for the Critter Control or TermiteShield visits.
 
 **Add Critter Control OR TermiteShield to another program:**
 - **50% off the additional program's initial three-month package fee**; charge full applicable initial price for the primary service.
@@ -401,7 +401,7 @@ All below are **USD**. Main-program initial prices cover **the first three month
 - WDIR: **$275** standard; full service credit for **new homeowners only**.
 - Mosquito add-on for existing recurring customers: **$49 per treatment every ~3 weeks**, no initial charge.
 - Mosquito-only season: **full advance payment required**; use the **2027** start-month pricing in Section 7, not $49 pay per visit.
-- Signature Pest add-on to Critter/Termite: **$49 initial + $49 every 4 weeks**.
+- Signature Pest add-on to Critter/Termite: **no initial fee + $59 every 4 weeks**.
 - Extra Critter or Termite category: **50% off additional initial fee**, ordinary ongoing rate.
 
 ---

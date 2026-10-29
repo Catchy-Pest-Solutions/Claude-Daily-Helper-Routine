@@ -54,7 +54,9 @@ function viewModel(quote, config) {
       schedule: o.schedule || null,
       guarantee: o.guarantee || null,
       price,
-      wasPrice: discount ? wasPrice : null,
+      // A wasPrice shows struck through even without a discount badge, so a
+      // rep's own call discount can sit next to an undiscounted option.
+      wasPrice: wasPrice && wasPrice !== price ? wasPrice : null,
       priceNote: o.priceNote || null,
       cardLine: o.priceNote || o.bestFor || '',
     };
