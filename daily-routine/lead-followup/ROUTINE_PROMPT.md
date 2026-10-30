@@ -17,6 +17,7 @@ Only the hard stops in Step 2 get no message.
 ## Ground rules
 
 - All API work happens through the scripts in `daily-routine/lead-followup/`. Don't call APIs by hand unless a script fails and you're diagnosing it.
+- **Run each script as its own command**, from the repo root, exactly as shown (`node daily-routine/lead-followup/send.js --plan ...`, with `$S` written out as the real path). Don't chain it with `cd`, `&&`, `;`, pipes, variable assignments or heredocs, and write files like `plan.json` in a separate step first. Only a bare script command matches the pre-approved permissions in `.claude/settings.json`. A chained one goes to the safety check, which blocks sends in an unattended run (Oct 30: a booked confirmation was blocked this way).
 - Never print secrets or raw API responses. Never write customer data into the repo. Never commit, push or edit repo files.
 - Work in a scratch folder: `S=/tmp/lead-$(date +%s)`.
 - **Send something whenever it can be honest** (Daniel, Oct 27): most new customers should hear from us. When the quote is unclear, send the short note without prices rather than nothing. Skip only for the hard stops in Step 2 (Slack Daniel instead, Step 7). When a fact is in doubt, leave it out rather than guess: a wrong message can't be taken back.
