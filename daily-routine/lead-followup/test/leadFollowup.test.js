@@ -417,3 +417,25 @@ test('log entry falls back to the phone/email when Briostack rejects Unknown', a
   assert.strictEqual(entry.communicationId, 'c2');
   assert.deepStrictEqual(posted[1].contactMethods, [{ contactMethodId: '1' }]);
 });
+
+test('technician names: only roster names, spelled the roster way', () => {
+  const { technicianNameProblems, checkTechnicianNames } = require('../send');
+  const roster = ['Aaron', 'Sidney', 'Steve', 'Max', 'Dustin', 'Joey'];
+  // The Justin/Dustin slip, and Sydney for Sidney.
+  assert.deepStrictEqual(technicianNameProblems('Our technician Justin will be there tomorrow.', roster), [{ name: 'Justin', suggestion: 'Dustin' }]);
+  assert.deepStrictEqual(technicianNameProblems('Sydney will be your tech.', roster), [{ name: 'Sydney', suggestion: 'Sidney' }]);
+  assert.deepStrictEqual(technicianNameProblems('Your technician, Bartholomew, will text you.', roster), [{ name: 'Bartholomew', suggestion: null }]);
+  assert.deepStrictEqual(technicianNameProblems("Tech named Kevin's on the way", roster), [{ name: 'Kevin', suggestion: null }]);
+  // Roster names, the customer's name, days and plain "the tech" are fine.
+  for (const ok of [
+    'Hi Arlene, it\'s Shelley from Catchy Pest. Dustin will be your technician tomorrow.',
+    'Our tech, Sidney, will text you ahead of time.',
+    'Hi Arlene, the tech will text you ahead of time.',
+    "I've actually got a tech just down the road from you Thursday and Friday.",
+    "I've got a tech Thursday and Friday in your area.",
+    'Thanks, Karen. Your tech will text you.',
+  ]) assert.deepStrictEqual(technicianNameProblems(ok, roster), [], ok);
+  assert.throws(() => checkTechnicianNames([['text.body', 'ok'], ['email.bodyText', 'Our tech Justin will be out Thursday.']], roster), /email\.bodyText.*"Justin" \(did the call mean Dustin\?\)/);
+  // The shipped config has the roster.
+  assert.deepStrictEqual(require('../config.json').technicians, roster);
+});
