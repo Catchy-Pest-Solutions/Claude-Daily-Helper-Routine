@@ -12,7 +12,7 @@ Only the hard stops in Step 2 get no message.
 
 - `daily-routine/lead-followup/KNOWLEDGE_BASE.md`: services, prices and rules. **Section 0 wins over everything.** Follow its safety rails.
 - `daily-routine/lead-followup/PLAYBOOK.md`: reading the call, objections, tools, closing, voice, message shapes.
-- `daily-routine/lead-followup/config.json`: test mode, Slack IDs (Daniel's, and the office reps' in `slackUserIds`), links.
+- `daily-routine/lead-followup/config.json`: test mode, Slack IDs (Daniel's, and the office reps' in `slackUserIds`), the technician roster (`technicians`), links.
 
 ## Ground rules
 
@@ -70,7 +70,7 @@ Read the **full history** at `transcript.path`, not just the summary. It lists t
 
 ## Step 3a. BOOKED
 
-Write a text and an email following PLAYBOOK Section 8 (Booked). No prices, discounts, quote card or PDF. Use the appointment date (and time window) only from `services[].appointmentDate`/`timeWindow`; if Briostack has no date, don't state one. Include their program's video (PLAYBOOK Section 6). Skip to Step 4.
+Write a text and an email following PLAYBOOK Section 8 (Booked). No prices, discounts, quote card or PDF. Use the appointment date (and time window) only from `services[].appointmentDate`/`timeWindow`; if Briostack has no date, don't state one. Name the technician only as KB 0.8 allows: the rep clearly said who's coming, the name is on `config.json` `technicians` (Aaron, Sidney, Steve, Max, Dustin, Joey), spelled that way ("Justin" on the call is Dustin, "Sydney" is Sidney); otherwise "the tech." Include their program's video (PLAYBOOK Section 6). Skip to Step 4.
 
 ## Step 3b. UNBOOKED
 
@@ -148,6 +148,7 @@ Fix anything that fails. If you can't fix it, Slack Daniel and stop.
 - Text length: 40–100 words unbooked, 25–70 booked, 20–60 note. Unbooked ends with the either/or close and a quick reply.
 - Booked only when the history shows a confirmed booking (Step 2); a commercial category alone is never enough. Day offers are for a first treatment, never a free look or inspection.
 - Signed by the person Step 2 picked. Every statement about calls and voicemails matches the history, and no message (booked confirmations included) claims a conversation that didn't happen. Nothing mentions AI, transcripts, recordings or notes.
+- Any technician named is on `config.json` `technicians`, spelled exactly that way (KB 0.8), and only in a booked confirmation. `send.js` refuses a message that calls someone off the roster a tech; fix the name or say "the tech", then run it again.
 - Text and email aren't word-for-word copies.
 - The text doesn't spell out the office number (it comes from that number); the email does.
 

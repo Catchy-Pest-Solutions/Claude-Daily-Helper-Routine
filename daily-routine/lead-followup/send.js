@@ -37,6 +37,60 @@ const TEXTABLE = 'https://atscall-txb.textable.app/api/send';
 
 const isNull = (v) => v == null || v === '' || v === 'null';
 
+// Technician names (Daniel, Nov 4): a message may only name a technician on
+// config.json "technicians", spelled that way. Speech-to-text turns Dustin
+// into Justin and Sidney into Sydney, and a wrong name can't be taken back.
+const NOT_NAMES = new Set(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'today', 'tomorrow',
+  'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december',
+  'and', 'or', 'will', 'is', 'can', 'should', 'from', 'at', 'in', 'on', 'catchy', 'here', 'just']);
+function editDistance(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  }
+  return d[a.length][b.length];
+}
+// Names the message gives a technician ("tech Dustin", "our technician,
+// Sidney", "technician named Joey", "Max will be your technician") that aren't on
+// the roster, each with the closest roster name (or null).
+function technicianNameProblems(message, roster) {
+  const ok = new Map((roster || []).map((n) => [String(n).toLowerCase(), String(n)]));
+  const name = "([A-Z][a-z]+(?:'s)?)";
+  const patterns = [
+    new RegExp(`\\b[Tt]ech(?:nician)?s?,?\\s+(?:named\\s+|is\\s+|will be\\s+)?${name}`, 'g'),
+    new RegExp(`${name}\\s+(?:is|will be|should be)\\s+(?:our|your|the)\\s+tech(?:nician)?\\b`, 'g'),
+  ];
+  const found = new Map();
+  for (const re of patterns) {
+    for (const m of String(message || '').matchAll(re)) {
+      const raw = m[1].replace(/'s$/, '');
+      const key = raw.toLowerCase();
+      if (NOT_NAMES.has(key) || found.has(key)) continue;
+      if (ok.has(key)) {
+        if (ok.get(key) !== raw) found.set(key, { name: raw, suggestion: ok.get(key) });
+        continue;
+      }
+      let best = null;
+      for (const [k, v] of ok) {
+        const dist = editDistance(key, k);
+        if (dist <= 2 && (!best || dist < best.dist)) best = { dist, v };
+      }
+      found.set(key, { name: raw, suggestion: best ? best.v : null });
+    }
+  }
+  return [...found.values()];
+}
+function checkTechnicianNames(fields, roster) {
+  for (const [label, message] of fields) {
+    const bad = technicianNameProblems(message, roster);
+    if (bad.length) {
+      const list = bad.map((b) => `"${b.name}"${b.suggestion ? ` (did the call mean ${b.suggestion}?)` : ''}`).join(', ');
+      throw new Error(`${label} names a technician who isn't on config.json technicians (${(roster || []).join(', ')}): ${list}. Use the roster spelling, or say "the tech" instead. Nothing was sent.`);
+    }
+  }
+}
+
 function loadPlan(file) {
   const plan = JSON.parse(fs.readFileSync(file, 'utf8'));
   if (!plan.customerId) throw new Error('plan.json has no customerId');
@@ -170,6 +224,7 @@ async function main() {
   if (!args.plan) throw new Error('usage: send.js --plan plan.json [--no-log] [--preview]');
   const config = loadConfig();
   const { plan, text, email, sendAtMs } = loadPlan(args.plan);
+  checkTechnicianNames([['text.body', text.body], ['email.subject', email.subject], ['email.bodyText', email.bodyText]], config.technicians);
   const outDir = path.dirname(path.resolve(args.plan));
   const test = config.testMode !== false;
   if (test && (!config.testPhone || !config.testEmail)) throw new Error('testMode is on but testPhone/testEmail are empty in config.json');
@@ -286,4 +341,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { emailBlocks, loadPlan, logContent, findUnknownContactMethod, createLogEntry, TEST_PREFIX, LIVE_PREFIX };
+module.exports = { emailBlocks, loadPlan, technicianNameProblems, checkTechnicianNames, logContent, findUnknownContactMethod, createLogEntry, TEST_PREFIX, LIVE_PREFIX };
