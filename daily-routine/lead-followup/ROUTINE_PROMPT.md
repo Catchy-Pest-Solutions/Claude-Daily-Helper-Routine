@@ -17,8 +17,9 @@ Only the hard stops in Step 2 get no message.
 ## Ground rules
 
 - All API work happens through the scripts in `daily-routine/lead-followup/`. Don't call APIs by hand unless a script fails and you're diagnosing it.
+- **Run each script as its own command** from the repo root, exactly `node daily-routine/lead-followup/<script>.js ...`, with no `cd`, `&&`, `;`, pipes or heredocs around it. Write `payload.json`, `quote.json` and `plan.json` with the Write tool first, in a separate step. Only that exact form matches the allow rules in `.claude/settings.json`; a chained command goes to the permission check, which blocks `send.js` (Nov 5: a follow-up didn't send because of this).
 - Never print secrets or raw API responses. Never write customer data into the repo. Never commit, push or edit repo files.
-- Work in a scratch folder: `S=/tmp/lead-$(date +%s)`.
+- Work in a scratch folder: pick `/tmp/lead-<unix seconds>` once (run `date +%s`), and write that literal path wherever this prompt says `$S`. Shell variables don't carry over between separate commands.
 - **Send something whenever it can be honest** (Daniel, Oct 27): most new customers should hear from us. When the quote is unclear, send the short note without prices rather than nothing. Skip only for the hard stops in Step 2 (Slack Daniel instead, Step 7). When a fact is in doubt, leave it out rather than guess: a wrong message can't be taken back.
 - **Test mode:** if `config.json` has `"testMode": true`, `send.js` redirects every text and email to Daniel and labels it TEST. Do everything else exactly as live. Never change `testMode`.
 
