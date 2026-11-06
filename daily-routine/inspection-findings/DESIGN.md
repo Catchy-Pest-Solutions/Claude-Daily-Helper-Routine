@@ -1,6 +1,6 @@
 # Inspection findings routine: design (agreed with Daniel, Nov 5-6, 2026)
 
-Status: **design agreed, not built yet.** This is the spec the build follows.
+Status: **design agreed, open questions answered Nov 6; build in progress (test mode).** This is the spec the build follows.
 It's a new routine, separate from the new-customer follow-up
 (`../lead-followup/`). It may reuse that folder's helper code (`lib/`:
 Briostack client, Google, Chromium renderer, templates) and data, but
@@ -248,10 +248,36 @@ leads; set a real minimum after 2-3 weeks of data.
   `scheduledTime`, `serviceAddress`; services carry `statusId`
   (`CSC_ACTIVE`, `CSC_COMPLETE`, `CSC_SCRATCH`, ...).
 
-## Open questions (Nov 6)
+## Answers to the Nov 6 open questions (Daniel, Nov 6)
 
-1. Does a "complete" plan with no monthly fee count as no active plan?
-2. Rodent droppings with "no entry points": exclusion ($647 base) or not
-   ($447 base)? Credit the full total paid for inspection + one-time ($247)?
-3. How many days after the visit can a post still count?
-4. OK to create one test task for Steve B on test customer 19696?
+1. **A "complete" plan with no monthly fee counts as no active plan**, so
+   no 50% off. The customer is a returning customer and gets the **10%
+   returning-customer discount** instead, shown as a credit like the others.
+   (Still to confirm: 10% of the initial fee only, or of the monthly too?
+   Build assumes the initial fee only, rounded up to whole dollars.)
+2. **Exclusion rule for rodent signs inside the home, crawl space or
+   attic**: quote Critter Control *with* exclusion unless the tech says
+   exclusion isn't needed. If the tech says it's needed, or says nothing
+   about it, assume exclusion. The visit credit is the **full amount paid**
+   (inspection + one-time, $247 in the test post). Test post #19602 says
+   "No entry points", which the build reads as "no exclusion needed":
+   $447 - $247 = **$200** (pending Daniel's confirmation).
+3. **Late posts**: accept a post on the appointment day or **one day
+   after** the appointment was completed. Older posts don't count. (The
+   Nov 6 test posts are on customers not visited recently; test mode lets
+   a post skip this check so the rest of the flow can be tested.)
+4. **Test tasks go to Daniel W (Briostack employee 12883)**, not Steve B.
+   Live tasks still go to Steve B (16635). This is a config value
+   (`taskAssigneeTest` / `taskAssignee`).
+
+## Setup status (Nov 6)
+
+- `SLACK_BOT_TOKEN` is valid (bot "inspection_findings_r", scopes
+  `channels:history,groups:history,files:read,users:read`), but the bot is
+  **not a member of #inspection-findings** yet: `conversations.history`
+  returns `channel_not_found` and `files.info` returns `file_not_found`.
+  The channel's only member is Daniel. The `/invite @Inspection Findings
+  Reader` was posted as a plain message (in code formatting) rather than run
+  as a command. To fix: in the channel, open the channel name > Integrations
+  > Add apps > Inspection Findings Reader (or send `/invite @Inspection
+  Findings Reader` as plain text with no backticks).
