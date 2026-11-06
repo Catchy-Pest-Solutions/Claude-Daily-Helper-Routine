@@ -77,6 +77,7 @@ function quoteModel(decision, post, config, { today }) {
     regularInitial: money(price.regularInitial),
     credit: price.credit > 0 ? money(price.credit) : null,
     creditReason: { other_plan: `50% off with your ${post.plans.otherPlans[0] || 'current plan'}`, visit_credit: 'what you paid for your inspection visit', returning: 'returning-customer discount' }[price.tier],
+    creditReasonOffice: { other_plan: `50% off because they have ${post.plans.otherPlans[0] || 'another plan'}`, visit_credit: 'what they paid for their inspection visits', returning: '10% returning-customer discount' }[price.tier],
     creditExpires: shortDate(creditExpires),
     creditExpiresLong: longDate(creditExpires),
     creditExpiresYmd: creditExpires,

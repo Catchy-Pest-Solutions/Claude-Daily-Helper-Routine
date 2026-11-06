@@ -140,9 +140,9 @@ test('texts go at 10 AM; tasks are due 1 PM, Saturday runs move to Monday', () =
 test('pay week: Thursday covers last Thursday through Wednesday', () => {
   assert.deepEqual(payWindow('2026-11-12'), { start: '2026-11-05', end: '2026-11-11' });
   const rows = [
-    { Posted: '2026-11-05', Tech: 'Dustin M.', Counted: 'yes', Bonus: '4.5', Customer: 'A', Plan: 'critter' },
-    { Posted: '2026-11-12', Tech: 'Dustin M.', Counted: 'yes', Bonus: '3', Customer: 'B', Plan: 'critter' },
-    { Posted: '2026-11-06', Tech: 'Dustin M.', Counted: 'no', Bonus: '0' },
+    { 'Visit date': '2026-11-05', Tech: 'Dustin M.', Counted: 'yes', Bonus: '$4.50', Customer: 'A', Plan: 'critter' },
+    { 'Visit date': '11/12/2026', Tech: 'Dustin M.', Counted: 'yes', Bonus: '3', Customer: 'B', Plan: 'critter' },
+    { 'Visit date': '2026-11-06', Tech: 'Dustin M.', Counted: 'no', Bonus: '0' },
   ];
   const d = summarize(rows, Object.values(config.technicians), payWindow('2026-11-12'), { 17907: 4 }).find((t) => t.tech === 'Dustin M.');
   assert.deepEqual([d.total, d.counted, d.notCounted], [4.5, 1, 1]);
@@ -153,4 +153,25 @@ test('pay week: Thursday covers last Thursday through Wednesday', () => {
 test('sheet CSV round-trips commas, quotes and newlines', () => {
   const rows = [['Post ID', 'Reason'], ['1.1', 'said "no", then\nyes']];
   assert.deepEqual(sheet.parseCsv(sheet.toCsv(rows)), rows);
+});
+
+test('sheet layout: pay weeks newest first, a SUMIFS total per tech and for the week', () => {
+  assert.equal(sheet.payWeekOf('2026-11-06'), 'Nov 5 - Nov 11, 2026');
+  assert.equal(sheet.payWeekOf('11/12/2026'), 'Nov 12 - Nov 18, 2026');
+  const out = sheet.layout([
+    { 'Visit date': '2026-11-06', Tech: 'Dustin M.', Bonus: 4.5, Quote: 200, 'Post ID': '1:critter' },
+    { 'Visit date': '2026-11-13', Tech: 'Aaron W', Bonus: 4, 'Post ID': '2:termite' },
+    { 'Visit date': '2026-11-07', Tech: 'Aaron W', Bonus: 2, 'Post ID': '3:signature' },
+  ]);
+  const col = (name) => sheet.COLUMNS.indexOf(name);
+  assert.equal(out[1][col('Pay week')], 'Nov 12 - Nov 18, 2026');
+  assert.equal(out[2][col('Tech')], 'Aaron W - week total');
+  assert.equal(out[2][col('Bonus')], '=DOLLAR(SUMIFS(J:J,A:A,A2,C:C,"Aaron W"))');
+  assert.equal(out[3][col('Tech')], 'ALL TECHS - week total');
+  assert.equal(out[5][col('Tech')], 'Aaron W'); // older week, sorted by tech
+  assert.equal(out[6][col('Bonus')], '$4.50');
+  assert.equal(out[6][col('Quote')], '$200');
+  // Reading it back skips the total rows.
+  const back = sheet.rowsToObjects(sheet.parseCsv(sheet.toCsv(out))).items;
+  assert.deepEqual(back.map((r) => r['Post ID']), ['2:termite', '3:signature', '1:critter']);
 });

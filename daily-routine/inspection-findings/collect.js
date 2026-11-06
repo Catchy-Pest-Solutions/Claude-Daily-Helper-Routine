@@ -204,8 +204,8 @@ async function main() {
     const priorOffers = [
       ...offers.filter((o) => o.plan && o.until && o.until >= today && (test || !o.test)).map((o) => ({ source: 'briostack', ...o })),
       ...sheetRows
-        .filter((r) => r['Customer ID'] === String(parsed.customerId) && r.Status === 'quoted' && r['Credit expires'] >= today && postOf(r['Post ID']) !== m.ts)
-        .map((r) => ({ source: 'sheet', plan: r.Plan, until: r['Credit expires'], quoted: r.Posted })),
+        .filter((r) => r['Customer ID'] === String(parsed.customerId) && r.Status === 'quoted' && sheet.toYmd(r['Credit good through']) >= today && postOf(r['Post ID']) !== m.ts)
+        .map((r) => ({ source: 'sheet', plan: String(r['Post ID']).split(':')[1] || null, until: sheet.toYmd(r['Credit good through']), quoted: sheet.toYmd(r['Visit date']) })),
     ];
 
     const addr = visit?.serviceAddress || customer.primaryAddress || {};

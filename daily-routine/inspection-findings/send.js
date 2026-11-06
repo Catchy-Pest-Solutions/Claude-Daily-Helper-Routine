@@ -141,49 +141,60 @@ function logBody({ prefix, kind, key, model, post, status, recipient, whenMs, se
   ].join('\n');
 }
 
-function taskDescription({ decision, post, model, results, pdfUrl, action }) {
-  const lines = [
-    `Inspection finding from ${post.tech?.fullName || 'a tech'} on ${model?.visitLong || post.postDate} (Slack: ${post.link}).`,
-    `Found: ${(decision.found || [post.text]).join(' ')}`,
-    `Visit appointment: ${post.visit?.appointmentId || 'none'} (${post.visit?.categoryName || ''})`,
+// The Briostack task the office reads before calling: short lines, the
+// customer ID first (to paste into Briostack search), only what the call
+// needs.
+function taskDescription({ decision, post, model, results, action, sentAtMs }) {
+  const name = [post.customer?.firstName, post.customer?.lastName].filter(Boolean).join(' ');
+  const phones = (post.customer?.phones || []).map((p) => formatPhone(normalizePhone(p.number))).filter(Boolean);
+  const sentences = (decision.found || [post.text]).join(' ').split(/(?<=[.!?])\s+/).map((x) => x.trim()).filter(Boolean);
+  const visitDay = model ? `${model.visitDay.slice(0, 3)}, ${Q.shortDate(model.visitDate)}` : Q.shortDate(post.visit?.date || post.postDate);
+  const blocks = [
+    [`Customer ID: ${post.customer?.id || post.customerIdPosted}`, name, ...phones],
+    [`Found by ${post.tech?.name || 'the tech'} on ${visitDay}:`, ...sentences],
   ];
   if (action === 'quote') {
-    lines.push(
-      `Quote: ${model.planName}${model.exclusion === false ? ' (no exclusion)' : ''}, ${model.initial} initial, then ${model.monthly} a month (12-month plan). No annual commitment: ${model.noAnnualInitial}.`,
-      `Credit: ${model.credit || 'none'}${model.credit ? `, good through ${model.creditExpiresLong} (${model.price.reason}). Not entered in Briostack: honor it at booking.` : ''}`,
-      `Email: ${results.email}. Text: ${results.text}${results.textAt ? ` (${results.textAt})` : ''}.`,
-      `PDF: ${pdfUrl || 'none'}`,
-      'Call to close it unless they already said YES; note what happened here and close the task.',
+    blocks.push(
+      [
+        'Quote:',
+        `${model.planName}${model.exclusion === false ? ' (no exclusion)' : model.exclusion ? ' (with exclusion)' : ''}`,
+        `${model.initial} to start, then ${model.monthly} a month.`,
+        `No annual commitment: ${model.noAnnualInitial} to start.`,
+      ],
+      model.credit ? [`Credit: ${model.credit}, good through ${model.creditExpires}.`, `(${model.creditReasonOffice[0].toUpperCase()}${model.creditReasonOffice.slice(1)}.)`] : ['No credit on this one.'],
+      [
+        'Sent:',
+        `Email: ${results.email === 'sent' ? cal.formatTime(sentAtMs) : results.email}.`,
+        `Text: ${['sent', 'scheduled'].includes(results.text) ? cal.formatTime(results.textAtMs || sentAtMs) : results.text}.`,
+      ],
+      ['Next:', '1. Check for a YES reply first.', '2. Call to close it.', '3. Note what happened here and close the task.'],
     );
   } else if (action === 'commercial') {
-    lines.push('Business: no automatic price. Please price this and follow up with the customer. Nothing was sent to them.');
+    blocks.push(['Business: no automatic price.', 'Nothing was sent to the customer.'], ['Next:', '1. Price it.', '2. Call the customer.', '3. Note what happened here and close the task.']);
   } else {
-    lines.push(`Quote request: ${decision.request || post.text}. Please quote it. Nothing was sent to the customer.`);
+    blocks.push([`They asked about: ${decision.request || 'see above'}.`, 'Nothing was sent to the customer.'], ['Next:', '1. Call and quote it.', '2. Note what happened here and close the task.']);
   }
-  return lines.join('\n');
+  return blocks.map((b) => b.join('\n')).join('\n\n');
 }
 
-function sheetRow({ decision, post, model, status, counted, reason, bonus, testMode }) {
+function sheetRow({ decision, post, model, status, counted, reason, bonus, config }) {
+  const labels = (decision.findings || []).map((k) => config.findings.find((f) => f.key === k)?.label || k);
+  const planKey = decision.plan || model?.plan || '';
   return {
-    'Post ID': Q.leadKey(decision),
-    Posted: post.postDate,
-    'Visit date': post.visit?.actualDate || '',
+    'Visit date': model?.visitDate || post.visit?.date || post.postDate,
     Tech: post.tech?.fullName || post.slackUser,
-    'Customer ID': post.customer?.id || post.customerIdPosted || '',
     Customer: model?.customerName || [post.customer?.firstName, post.customer?.lastName].filter(Boolean).join(' '),
-    Findings: (decision.findings || []).join(', '),
-    Plan: decision.plan || model?.plan || '',
-    Initial: model ? model.price.initial : '',
-    Monthly: model ? model.price.monthly : '',
+    'Customer ID': post.customer?.id || post.customerIdPosted || '',
+    Finding: labels.join('; '),
+    Plan: planKey ? `${config.plans[planKey]?.name || planKey}${model?.exclusion === false ? ' (no exclusion)' : ''}` : '',
+    Quote: model ? model.price.initial : '',
     Credit: model ? model.price.credit : '',
-    'Credit expires': model ? model.creditExpiresYmd : '',
-    Status: status,
-    Counted: counted ? 'yes' : 'no',
-    Reason: reason || '',
     Bonus: bonus ?? 0,
-    'Visit type': post.visit?.categoryName || '',
-    'Slack link': post.link,
-    Updated: `${cal.easternIso(Date.now())}${testMode ? ' TEST' : ''}`,
+    Counted: counted ? 'yes' : 'no',
+    Notes: reason || '',
+    Status: status,
+    'Credit good through': model ? model.creditExpiresYmd : '',
+    'Post ID': Q.leadKey(decision),
   };
 }
 
@@ -233,7 +244,7 @@ async function main() {
     results.push(r);
 
     if (d.action === 'skip' || d.action === 'ask') {
-      rows.push(sheetRow({ decision: d, post, status: d.action === 'ask' ? 'waiting' : 'not counted', counted: false, reason: d.reason || d.techMessage, bonus: 0, testMode: test }));
+      rows.push(sheetRow({ decision: d, post, status: d.action === 'ask' ? 'waiting' : 'not counted', counted: false, reason: d.reason || d.techMessage, bonus: 0, config }));
       continue;
     }
 
@@ -259,6 +270,7 @@ async function main() {
       const numbers = textNumbers(post);
       const sendAtMs = textSendAt(nowMs, config);
       r.textAt = sendAtMs ? `${cal.formatDay(sendAtMs)} ${cal.formatTime(sendAtMs)}` : 'now';
+      r.textAtMs = sendAtMs || nowMs;
       const subjectBase = `What I found at ${model.street}`;
       const subject = test ? `[TEST for ${who}] ${subjectBase}` : subjectBase;
       const photos = rend.photos;
@@ -348,7 +360,7 @@ async function main() {
           title: title.slice(0, 120),
           taskTypeId: config.taskTypeId,
           statusId: 'ORDER_REQMNT_CREATED',
-          description: taskDescription({ decision: d, post, model, results: r, pdfUrl: rend?.pdfUrl, action: d.action }),
+          description: taskDescription({ decision: d, post, model, results: r, action: d.action, sentAtMs: nowMs }),
           employeeId: String(assignee.employeeId),
           partyId: String(post.customer.id),
           startDate: cal.easternIso(nowMs),
@@ -368,7 +380,7 @@ async function main() {
       counted: d.action !== 'quote_request' && !missing.length,
       reason: missing.length ? `no bonus: missing ${missing.join(', ')}` : d.reason || '',
       bonus: missing.length ? 0 : bonus,
-      testMode: test,
+      config,
     }));
   }
 
@@ -391,4 +403,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { textSendAt, taskDue, textNumbers, logBody };
+module.exports = { textSendAt, taskDue, textNumbers, logBody, taskDescription };

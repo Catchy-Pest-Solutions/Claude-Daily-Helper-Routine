@@ -88,5 +88,13 @@
     { "key": "yard_burrows", "label": "Mole, vole or groundhog burrows in the yard", "plan": "critter", "bonus": 1, "infographic": "yard-burrowing", "exclusionDefault": false },
     { "key": "quote_request", "label": "Quote request with nothing to photograph", "plan": null, "bonus": 0 }
   ],
-  "infographics": {}
+  "infographics": {
+    "signs-of-termites": "assets/infographics/signs-of-termites.jpg",
+    "termite-entry-points": "assets/infographics/termite-entry-points.jpg",
+    "rodent-droppings": "assets/infographics/rodent-droppings.jpg",
+    "exclusion-needed": "assets/infographics/exclusion-needed.jpg",
+    "carpenter-bee-damage": "assets/infographics/carpenter-bee-damage.jpg",
+    "stinging-insects": "assets/infographics/stinging-insects.jpg",
+    "yard-burrowing": "assets/infographics/yard-burrowing.jpg"
+  }
 }

@@ -80,12 +80,11 @@ Catchy Club customer.
 - **Briostack**: tasks can't carry an appointment ID (POST /tasks rejects
   unknown fields), so it goes in the description. `appointmentDate` filters
   work on `/appointments` (used for days worked).
-- **Infographics**: Daniel's 7 PNGs are in office@'s Drive folder
-  "Infographics", but the routine's token (`drive.file`) can't open files it
-  didn't create. Put JPG copies in `assets/` and
-  map them in `config.json` `infographics` (e.g.
-  `"rodent-droppings": "assets/rodent-droppings.jpg"`); until then the
-  email and PDF leave them out.
+- **Infographics**: Daniel's 7 infographics (office@ Drive folder
+  "Infographics", PNG 1122x1402) are in `assets/infographics/` as 900x1125
+  JPGs (~200 KB each), mapped in `config.json` `infographics`. They go in
+  the email and PDF labeled "Example illustration, not a photo of your
+  home." To replace one, overwrite the JPG with the same name.
 
 ## Test mode
 
