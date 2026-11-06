@@ -105,7 +105,10 @@ async function main() {
   const settled = new Set(sheetRows.map((r) => postOf(r['Post ID'])).filter((ts) => !waitingPosts.has(ts)));
   const team = await slack.team();
 
-  const oldest = (nowMs - config.lookbackDays * 86400000) / 1000;
+  // Live runs ignore posts from before go-live (config.liveSince, Eastern
+  // date): those were tests, already handled in test mode.
+  let oldest = (nowMs - config.lookbackDays * 86400000) / 1000;
+  if (!test && config.liveSince) oldest = Math.max(oldest, cal.easternToMs(config.liveSince, '00:00') / 1000);
   let messages = await slack.history(config.channelId, oldest);
   messages = messages.filter((m) => m.type === 'message' && !m.subtype && !m.bot_id);
   if (args.post) {

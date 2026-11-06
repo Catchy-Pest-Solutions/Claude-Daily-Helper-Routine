@@ -1,6 +1,6 @@
 # Inspection findings routine: design (agreed with Daniel, Nov 5-6, 2026)
 
-Status: **built in test mode (Nov 6); see README.md.** This is the spec the build follows.
+Status: **live since Nov 7, 2026 (tested Nov 6); see README.md.** This is the spec the build follows.
 It's a new routine, separate from the new-customer follow-up
 (`../lead-followup/`). It may reuse that folder's helper code (`lib/`:
 Briostack client, Google, Chromium renderer, templates) and data, but
