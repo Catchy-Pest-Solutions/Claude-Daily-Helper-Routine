@@ -250,18 +250,23 @@ leads; set a real minimum after 2-3 weeks of data.
 
 ## Answers to the Nov 6 open questions (Daniel, Nov 6)
 
-1. **A "complete" plan with no monthly fee counts as no active plan**, so
-   no 50% off. The customer is a returning customer and gets the **10%
-   returning-customer discount** instead, shown as a credit like the others.
-   (Still to confirm: 10% of the initial fee only, or of the monthly too?
-   Build assumes the initial fee only, rounded up to whole dollars.)
+1. **Returning-customer discount (10%)**: a customer gets 10% off the
+   **initial fee only** (no discount on the monthly fee; halves/percentages
+   round up to whole dollars) when they have **no other active service**
+   with us, on any of their properties (same address or another one). An
+   active service means an active recurring plan: HomeShield Signature,
+   Pest Control, HomeShield, Critter Control, Carolina TermiteShield, Catchy
+   Club, or Commercial General Pest Control. A "complete" plan (no monthly
+   fee) is not active. The 50% "buy one, get one" price applies only when
+   another active plan exists. Shown as a credit like the others.
 2. **Exclusion rule for rodent signs inside the home, crawl space or
    attic**: quote Critter Control *with* exclusion unless the tech says
    exclusion isn't needed. If the tech says it's needed, or says nothing
    about it, assume exclusion. The visit credit is the **full amount paid**
    (inspection + one-time, $247 in the test post). Test post #19602 says
-   "No entry points", which the build reads as "no exclusion needed":
-   $447 - $247 = **$200** (pending Daniel's confirmation).
+   "No entry points", which means no exclusion needed (Daniel confirmed):
+   $447 - $247 = **$200**. Rule: "no entry points" counts as the tech
+   saying exclusion isn't needed.
 3. **Late posts**: accept a post on the appointment day or **one day
    after** the appointment was completed. Older posts don't count. (The
    Nov 6 test posts are on customers not visited recently; test mode lets
@@ -272,12 +277,13 @@ leads; set a real minimum after 2-3 weeks of data.
 
 ## Setup status (Nov 6)
 
-- `SLACK_BOT_TOKEN` is valid (bot "inspection_findings_r", scopes
-  `channels:history,groups:history,files:read,users:read`), but the bot is
-  **not a member of #inspection-findings** yet: `conversations.history`
-  returns `channel_not_found` and `files.info` returns `file_not_found`.
-  The channel's only member is Daniel. The `/invite @Inspection Findings
-  Reader` was posted as a plain message (in code formatting) rather than run
-  as a command. To fix: in the channel, open the channel name > Integrations
-  > Add apps > Inspection Findings Reader (or send `/invite @Inspection
-  Findings Reader` as plain text with no backticks).
+- `SLACK_BOT_TOKEN` works: after Daniel added the app to #inspection-findings,
+  `conversations.history` read both test posts and `url_private_download`
+  fetched all 5 photos at full size (IMG_0583, IMG_0563 on #15910; IMG_3331,
+  IMG_3332, IMG_1554 on #19602).
+- Slack strips EXIF from the photos (no DateTimeOriginal, no camera model),
+  so the quote card's date/time stamp comes from the Slack post time, as
+  planned.
+- Who counts as having "another active plan" can only be decided per
+  customer ID across all their properties. The coverage and pricing checks
+  must read every service on the customer, not just the visited address.
