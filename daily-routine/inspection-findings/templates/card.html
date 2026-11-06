@@ -1,0 +1,41 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- Inspection findings quote card (texted picture), 1080x1350. Filled by render.js. -->
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1350px; overflow: hidden; }
+  body { background: #fff; color: #0E120E; font-family: Arial, Helvetica, "Liberation Sans", sans-serif; display: flex; flex-direction: column; }
+  .heavy { font-family: "Arial Black", "Arial Bold", Arial, "Liberation Sans", sans-serif; font-weight: 900; }
+  .photo { position: relative; height: 640px; background: #0E120E; overflow: hidden; }
+  .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .stamp { position: absolute; left: 0; right: 0; bottom: 0; padding: 70px 44px 24px; background: linear-gradient(transparent, rgba(0,0,0,.75)); color: #fff; font-size: 30px; line-height: 1.3; }
+  .stamp b { display: block; font-size: 34px; }
+  .logo { position: absolute; top: 26px; left: 30px; background: #fff; border-radius: 18px; padding: 12px 20px; }
+  .logo img { height: 74px; width: auto; display: block; }
+  main { flex: 1; padding: 34px 64px 26px; display: flex; flex-direction: column; gap: 18px; }
+  .kicker { font-size: 26px; font-weight: 700; letter-spacing: 4px; color: #11960B; text-transform: uppercase; }
+  h1 { font-size: 56px; line-height: 1.08; letter-spacing: -0.5px; }
+  .fix { display: flex; align-items: flex-end; gap: 26px; margin-top: 4px; }
+  .fix .label { font-size: 34px; font-weight: 700; padding-bottom: 14px; }
+  .fix .price { font-size: 128px; line-height: .9; letter-spacing: -3px; }
+  .plan { font-size: 31px; line-height: 1.32; color: #333B34; }
+  .credit { align-self: flex-start; background: #15BA0D; color: #0E120E; font-size: 30px; font-weight: 700; padding: 12px 26px; border-radius: 999px; }
+  footer { background: #0E120E; color: #fff; padding: 30px 50px 34px; font-size: 36px; font-weight: 700; display: flex; justify-content: center; gap: 18px; white-space: nowrap; }
+  footer .dot { color: #15BA0D; font-size: 24px; align-self: center; }
+  .compact h1 { font-size: 48px; }
+  .compact .fix .price { font-size: 112px; }
+  .compact .plan { font-size: 28px; }
+  .compact main { gap: 14px; padding-top: 26px; }
+</style></head>
+<body>
+  <div class="photo"><img src="{{photoUrl}}" alt=""><div class="logo"><img src="{{logoUrl}}" alt=""></div>
+    <div class="stamp"><b>{{address}}</b>{{when}}</div></div>
+  <main>
+    <div class="kicker">What {{techName}} found</div>
+    <h1 class="heavy">{{headline}}</h1>
+    <div class="fix"><span class="label">Fix it for</span><span class="price heavy">{{initial}}</span></div>
+    <p class="plan">Then {{monthly}} a month on {{planName}} (12-month plan). Initial fee includes a 3-month warranty.</p>
+    {{#credit}}<div class="credit">Includes your {{credit}} credit &middot; good through {{creditExpires}}</div>{{/credit}}
+  </main>
+  <footer><span>Reply YES to get scheduled</span><span class="dot">&#9679;</span><span>{{officePhone}}</span></footer>
+</body></html>

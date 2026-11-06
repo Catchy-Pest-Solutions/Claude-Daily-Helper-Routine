@@ -1,0 +1,92 @@
+{
+  "testMode": true,
+  "testPhone": null,
+  "testEmail": null,
+  "testTaskAssignee": { "employeeId": "12883", "name": "Daniel W" },
+  "testAllowAnyVisit": true,
+
+  "channelId": "C0CF6R073M4",
+  "danielSlackUserId": "U09LQDUPQTC",
+  "lookbackDays": 8,
+  "lateDays": 1,
+  "clarificationNudgeDays": 3,
+
+  "taskAssignee": { "employeeId": "16635", "name": "Steve B" },
+  "taskTypeId": "BID_FOLLOWUP",
+  "taskDueTime": "13:00",
+  "officeWorksSaturday": false,
+  "textSendTime": "10:00",
+
+  "creditDays": 90,
+  "repeatDays": 90,
+  "visitCreditLookbackDays": 60,
+  "returningDiscountPercent": 10,
+  "noAnnualExtra": 50,
+
+  "textFrom": "+18282634804",
+  "officePhone": "(828) 263-4804",
+  "senderEmail": "office@catchypestsolutions.com",
+  "company": {
+    "name": "Catchy Pest Solutions",
+    "address": "1854 Hendersonville Rd, Suite A8, Asheville, NC",
+    "website": "catchypestsolutions.com"
+  },
+  "driveFolderId": "1V1FCdW2GQOkDEMZGXrzOcViSkCcQuW-V",
+  "sheet": { "liveId": null, "testId": "1xs8orQ7ot6Cqen05DESubJyphOQ_E5fiYebRcTIDlr4", "shareWith": "dwilde@catchypestsolutions.com" },
+
+  "technicians": {
+    "U0A6N1FUYG3": { "name": "Steve", "fullName": "Steve H", "employeeId": "17047" },
+    "U09NRTFNAG2": { "name": "Aaron", "fullName": "Aaron W", "employeeId": "15783" },
+    "U0BCZ2CK6PN": { "name": "Sidney", "fullName": "Sidney M", "employeeId": "15724", "otherEmployeeIds": ["15990"] },
+    "U0B4DP8PJ59": { "name": "Dustin", "fullName": "Dustin M.", "employeeId": "17829" },
+    "U0B73RK14N4": { "name": "Max", "fullName": "Max R.", "employeeId": "17907" },
+    "U0C6QBF7491": { "name": "Joey", "fullName": "Joey J", "employeeId": "19570" }
+  },
+
+  "inspectionCategories": ["12501", "12504"],
+  "bonusMultiplierInspection": 1.5,
+
+  "plans": {
+    "signature": {
+      "name": "HomeShield Signature",
+      "categories": ["GPCONETIME", "GPCBIMON", "GPCQTR", "GPCANNUAL", "10502", "GPCMONTHLY"],
+      "video": "https://youtube.com/shorts/VVmB4DXNLFw",
+      "covers": "ants, spiders, ticks, fleas, carpenter bees, carpenter ants, wasps, hornets, yellow jackets, roaches, stink bugs, Asian lady beetles, centipedes, boxelder bugs, millipedes, beetles, earwigs, silverfish, carpet beetles, pantry pests, moths, indoor gnats and flies",
+      "prices": { "standard": { "initial": 347, "monthly": 59 }, "withOtherPlan": { "monthly": 44 } }
+    },
+    "critter": {
+      "name": "HomeShield Critter Control",
+      "categories": ["RODENT", "11002", "11004"],
+      "video": "https://youtube.com/shorts/jPJk2au6hZg",
+      "covers": "mice, rats, moles, meadow voles, chipmunks, grey squirrels, flying squirrels, snakes, raccoons, opossums, groundhogs and skunks",
+      "prices": {
+        "standard": { "initial": 647, "monthly": 49 },
+        "noExclusion": { "initial": 447, "monthly": 49 },
+        "withOtherPlan": { "monthly": 34 }
+      }
+    },
+    "termite": {
+      "name": "Carolina TermiteShield",
+      "categories": ["TERMSRV"],
+      "video": "https://youtube.com/shorts/S2_D-WmwC9s",
+      "covers": "subterranean termites",
+      "prices": { "standard": { "initial": 797, "monthly": 29 }, "withOtherPlan": { "monthly": 19 } },
+      "sizeNote": "1,200-3,000 sq ft"
+    }
+  },
+  "catchyClubCategories": ["11001"],
+  "commercialCategories": ["GPCMONTHLY"],
+  "otherPlanCategories": ["GPCONETIME", "RODENT", "TERMSRV", "11001", "GPCMONTHLY", "GPCBIMON", "GPCQTR", "GPCANNUAL", "10502", "11002"],
+
+  "findings": [
+    { "key": "termites", "label": "Signs of termites (damage or activity)", "plan": "termite", "bonus": 4, "infographic": "signs-of-termites" },
+    { "key": "rodent_droppings", "label": "Rodent or wildlife droppings in the attic, crawl space or home", "plan": "critter", "bonus": 3, "infographic": "rodent-droppings", "exclusionDefault": true },
+    { "key": "carpenter_bees", "label": "Carpenter bee burrows", "plan": "signature", "bonus": 2, "infographic": "carpenter-bee-damage" },
+    { "key": "exclusion_needed", "label": "Exclusion needed (a gap a mouse could fit through)", "plan": "critter", "bonus": 2, "infographic": "exclusion-needed", "exclusionDefault": true },
+    { "key": "wood_to_ground", "label": "Wood or siding touching the ground", "plan": "termite", "bonus": 2, "infographic": "termite-entry-points" },
+    { "key": "stinging_nest", "label": "Wasp, hornet or yellow jacket nest", "plan": "signature", "bonus": 1, "infographic": "stinging-insects" },
+    { "key": "yard_burrows", "label": "Mole, vole or groundhog burrows in the yard", "plan": "critter", "bonus": 1, "infographic": "yard-burrowing", "exclusionDefault": false },
+    { "key": "quote_request", "label": "Quote request with nothing to photograph", "plan": null, "bonus": 0 }
+  ],
+  "infographics": {}
+}

@@ -96,6 +96,11 @@ function createBriostack({ apiKey = requireEnv(['BRIOSTACK_API_KEY']).BRIOSTACK_
     // customer (partyId) isn't supported, so callers match party.partyId.
     listOpenTasks: () => list(`tasks?limit=100&filter=${encodeURIComponent('statusId="ORDER_REQMNT_CREATED"')}`),
     getTask: (taskId) => call('GET', `tasks/${taskId}`),
+    // Used by the inspection findings routine (not by the follow-up).
+    findCustomersByPhone: (e164) => list(`customers?filter=${encodeURIComponent(`primaryPhone.number="${e164}"`)}`),
+    createTask: (body) => call('POST', 'tasks', { json: body }),
+    // filter on appointmentDate works on the top-level list (Nov 6, 2026).
+    listAppointmentsOn: (ymd, start = 0) => list(`appointments?limit=100&start=${start}&filter=${encodeURIComponent(`appointmentDate="${ymd}"`)}`),
     listWebhooks: () => list('webhooks'),
     createWebhook: (body) => call('POST', 'webhooks', { json: body }),
     patchWebhook: (wid, body) => call('PATCH', `webhooks/${wid}`, { json: body }),
