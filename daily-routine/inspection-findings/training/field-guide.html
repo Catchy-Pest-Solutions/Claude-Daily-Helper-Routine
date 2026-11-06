@@ -9,7 +9,7 @@
   .heavy { font-family: "Arial Black", "Arial Bold", Arial, "Liberation Sans", sans-serif; font-weight: 900; }
   .page { padding: 0.4in 0.5in 0.3in; height: 11in; display: flex; flex-direction: column; }
   .page > * { flex-shrink: 0; }
-  header { display: flex; align-items: center; justify-content: space-between; border-bottom: 5px solid #000; padding-bottom: 10px; }
+  header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 10px; }
   header img { height: 46px; filter: grayscale(1) contrast(1.4); }
   header .title { text-align: right; }
   header h1 { font-size: 30px; letter-spacing: -0.5px; line-height: 1; }
@@ -17,8 +17,8 @@
   .tag { margin: 8px 0 0; font-size: 14px; }
   .tag b { font-size: 15px; }
 
-  .cat { margin-top: 9px; border: 2.5px solid #000; border-radius: 12px; overflow: hidden; }
-  .cat h2 { background: #000; color: #fff; font-size: 15px; letter-spacing: 2.5px; text-transform: uppercase; padding: 5px 14px; display: flex; justify-content: space-between; align-items: baseline; }
+  .cat { margin-top: 9px; border: 1.5px solid #000; border-radius: 12px; overflow: hidden; }
+  .cat h2 { background: #fff; color: #000; border-bottom: 1.5px solid #000; font-size: 15px; letter-spacing: 2.5px; text-transform: uppercase; padding: 5px 14px; display: flex; justify-content: space-between; align-items: baseline; }
   .cat h2 span { font-size: 11.5px; letter-spacing: 1px; font-weight: 400; text-transform: none; }
   .items { display: flex; }
   .item { flex: 1; padding: 8px 14px 10px; border-right: 1.5px dashed #000; }
@@ -30,23 +30,23 @@
   .item .pay { font-size: 40px; line-height: 1; }
 
   .extras { display: flex; gap: 10px; margin-top: 9px; }
-  .extra { flex: 1; border: 2px solid #000; border-radius: 10px; padding: 6px 12px; font-size: 12px; line-height: 1.35; }
+  .extra { flex: 1; border: 1.5px solid #000; border-radius: 10px; padding: 6px 12px; font-size: 12px; line-height: 1.35; }
   .extra b { font-size: 14px; display: block; }
-  .extra.big { flex: 1.3; background: #000; color: #fff; }
+  .extra.big { flex: 1.3; border-width: 2.5px; }
   .extra.big b { font-size: 16px; }
 
-  .steps { margin-top: auto; border-top: 5px solid #000; padding-top: 8px; }
+  .steps { margin-top: auto; border-top: 2px solid #000; padding-top: 8px; }
   .steps h2 { font-size: 16px; letter-spacing: 2.5px; text-transform: uppercase; display: flex; justify-content: space-between; }
   .steps h2 span { letter-spacing: 0; text-transform: none; font-size: 13px; }
   .row { display: flex; gap: 10px; margin-top: 8px; }
-  .step { flex: 1; border: 2.5px solid #000; border-radius: 12px; padding: 7px 8px 9px; text-align: center; }
-  .step .n { width: 30px; height: 30px; border-radius: 50%; background: #000; color: #fff; font-size: 17px; line-height: 30px; margin: 0 auto 4px; }
+  .step { flex: 1; border: 1.5px solid #000; border-radius: 12px; padding: 7px 8px 9px; text-align: center; }
+  .step .n { width: 30px; height: 30px; border-radius: 50%; background: #fff; color: #000; border: 2px solid #000; font-size: 16px; line-height: 26px; margin: 0 auto 4px; }
   .step svg { width: 38px; height: 38px; display: block; margin: 0 auto 4px; }
   .step p { font-size: 15.5px; font-weight: 700; line-height: 1.2; }
   .post { margin-top: 8px; display: flex; gap: 10px; align-items: stretch; }
-  .post .ex { flex: 1.4; border: 2px dashed #000; border-radius: 10px; padding: 8px 12px; font-size: 13px; line-height: 1.4; }
+  .post .ex { flex: 1.4; border: 1.5px dashed #000; border-radius: 10px; padding: 8px 12px; font-size: 13px; line-height: 1.4; }
   .post .ex code { font-family: "Courier New", monospace; font-size: 14px; font-weight: 700; }
-  .post .q { flex: 1; border: 2px solid #000; border-radius: 10px; padding: 8px 12px; font-size: 12.5px; line-height: 1.35; }
+  .post .q { flex: 1; border: 1.5px solid #000; border-radius: 10px; padding: 8px 12px; font-size: 12.5px; line-height: 1.35; }
   footer { margin-top: 8px; font-size: 10.5px; text-align: center; }
 </style></head>
 <body><div class="page">
@@ -83,7 +83,7 @@
     <h2>Rodents &amp; wildlife <span>HomeShield Critter Control</span></h2>
     <div class="items">
       <div class="item">
-        <div class="top"><svg viewBox="0 0 64 64" fill="#000" stroke="#000" stroke-width="2">
+        <div class="top"><svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="2">
           <path d="M6 50h52" fill="none" stroke-width="3" stroke-linecap="round"/>
           <ellipse cx="14" cy="44" rx="4.5" ry="2.2" transform="rotate(-15 14 44)"/><ellipse cx="26" cy="46" rx="4.5" ry="2.2" transform="rotate(10 26 46)"/>
           <ellipse cx="38" cy="43" rx="4.5" ry="2.2" transform="rotate(-25 38 43)"/><ellipse cx="50" cy="46" rx="4.5" ry="2.2" transform="rotate(5 50 46)"/>
@@ -96,14 +96,14 @@
       <div class="item">
         <div class="top"><svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
           <path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/>
-          <path d="M14 54h10v-4c0-2 2-4 4-4s4 2 4 4v4" fill="#000"/>
+          <path d="M14 54h10v-4c0-2 2-4 4-4s4 2 4 4v4" fill="none"/>
           <path d="M40 34h12M40 40h12M44 31v12" stroke-width="2.5"/>
         </svg><div class="pay heavy">$2</div></div>
         <div><div class="name">Exclusion needed</div><div class="what">A specific gap a mouse fits through (pencil width or bigger) that our exclusion work can fix</div></div>
       </div>
       <div class="item">
         <div class="top"><svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 44h56"/><path d="M10 44c2-10 8-14 14-14s12 4 14 14"/><ellipse cx="24" cy="44" rx="5" ry="3" fill="#000"/>
+          <path d="M4 44h56"/><path d="M10 44c2-10 8-14 14-14s12 4 14 14"/><ellipse cx="24" cy="44" rx="5" ry="3" fill="none"/>
           <path d="M40 44c4 0 4-6 8-6s4 6 8 6" stroke-dasharray="2 3"/><path d="M42 52c4 0 6-3 10-3" stroke-dasharray="2 3"/>
           <path d="M16 22v-6M22 18l-2-5M28 22l2-5" stroke-width="2"/>
         </svg><div class="pay heavy">$1</div></div>
@@ -120,7 +120,7 @@
         <div class="top"><svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
           <ellipse cx="30" cy="38" rx="14" ry="10"/><path d="M24 29v18M32 28v20" stroke-width="4"/><circle cx="47" cy="34" r="5"/>
           <path d="M22 28c-4-10 2-16 8-12M34 28c2-10 10-12 12-6"/><path d="M50 30l4-6M50 32l6-2"/>
-          <circle cx="12" cy="14" r="5" fill="#000"/><path d="M2 8h20" stroke-width="2"/>
+          <circle cx="12" cy="14" r="5" fill="none"/><path d="M2 8h20" stroke-width="2"/>
         </svg><div class="pay heavy">$2</div></div>
         <div><div class="name">Carpenter bee burrows</div><div class="what">Round holes about 1/2 inch, sawdust below</div></div>
       </div>
@@ -128,7 +128,7 @@
         <div class="top"><svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
           <path d="M6 6h52"/><path d="M32 6v6"/>
           <path d="M20 22c0-6 6-10 12-10s12 4 12 10v14c0 8-6 14-12 14S20 44 20 36z"/>
-          <path d="M20 26h24M20 33h24M21 40h22" stroke-width="2"/><circle cx="32" cy="46" r="2.5" fill="#000"/>
+          <path d="M20 26h24M20 33h24M21 40h22" stroke-width="2"/><circle cx="32" cy="46" r="2.5" fill="none"/>
           <path d="M50 46c4-2 6 2 8 0M52 52l3-3" stroke-width="2"/>
         </svg><div class="pay heavy">$1</div></div>
         <div><div class="name">Wasp, hornet or yellow jacket nest</div><div class="what">On the house, deck, shed or in the ground</div></div>
@@ -146,7 +146,7 @@
     <h2>Every finding, 4 steps <span><b>All 4 steps = bonus</b></span></h2>
     <div class="row">
       <div class="step"><div class="n heavy">1</div>
-        <svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linejoin="round"><rect x="6" y="18" width="52" height="36" rx="5"/><path d="M22 18l4-7h12l4 7"/><circle cx="32" cy="36" r="11"/><circle cx="32" cy="36" r="4" fill="#000"/></svg>
+        <svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linejoin="round"><rect x="6" y="18" width="52" height="36" rx="5"/><path d="M22 18l4-7h12l4 7"/><circle cx="32" cy="36" r="11"/><circle cx="32" cy="36" r="4" fill="none"/></svg>
         <p>Photograph the problem up close</p></div>
       <div class="step"><div class="n heavy">2</div>
         <svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 30 32 10l26 20"/><path d="M12 26v28h40V26"/><rect x="27" y="38" width="10" height="16"/><path d="M2 4h10M2 4v10M62 4H52M62 4v10M2 60h10M2 60V50M62 60H52M62 60V50" stroke-width="2.5"/></svg>
