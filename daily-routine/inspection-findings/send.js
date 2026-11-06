@@ -151,7 +151,7 @@ function taskDescription({ decision, post, model, results, action, sentAtMs }) {
   const visitDay = model ? `${model.visitDay.slice(0, 3)}, ${Q.shortDate(model.visitDate)}` : Q.shortDate(post.visit?.date || post.postDate);
   const blocks = [
     [`Customer ID: ${post.customer?.id || post.customerIdPosted}`, name, ...phones],
-    [`Found by ${post.tech?.name || 'the tech'} on ${visitDay}:`, ...sentences],
+    [model?.request ? `Asked ${post.tech?.name || 'the tech'} for a quote on ${visitDay}:` : `Found by ${post.tech?.name || 'the tech'} on ${visitDay}:`, ...sentences],
   ];
   const notes = String(decision.customerNotes || '').split(/(?<=[.!?])\s+|\n+/).map((x) => x.trim()).filter(Boolean);
   if (notes.length) blocks.push(['Customer notes:', ...notes]);
@@ -274,10 +274,10 @@ async function main() {
       const sendAtMs = textSendAt(nowMs, config);
       r.textAt = sendAtMs ? `${cal.formatDay(sendAtMs)} ${cal.formatTime(sendAtMs)}` : 'now';
       r.textAtMs = sendAtMs || nowMs;
-      const subjectBase = `What I found at ${model.street}`;
+      const subjectBase = model.request ? `Your quote for ${model.street}` : `What I found at ${model.street}`;
       const subject = test ? `[TEST for ${who}] ${subjectBase}` : subjectBase;
       const photos = rend.photos;
-      const infoPath = config.infographics?.[config.findings.find((f) => f.key === d.findings[0])?.infographic];
+      const infoPath = config.infographics?.[d.infographic || config.findings.find((f) => f.key === d.findings[0])?.infographic];
       const infographic = infoPath && fs.existsSync(path.join(__dirname, infoPath)) ? path.join(__dirname, infoPath) : null;
       const html = emailHtml({ decision: d, model, subject, photos, config, infographic });
       const textBody = d.text.body.trim();
@@ -381,7 +381,7 @@ async function main() {
       decision: d, post, model,
       status: d.action === 'quote' ? 'quoted' : d.action === 'commercial' ? 'task for office' : 'quote request',
       counted: d.action !== 'quote_request' && !missing.length,
-      reason: missing.length ? `no bonus: missing ${missing.join(', ')}` : d.reason || '',
+      reason: missing.length ? `no bonus: missing ${missing.join(', ')}` : d.reason || (model?.request ? 'quote request (no bonus)' : ''),
       bonus: missing.length ? 0 : bonus,
       config,
     }));

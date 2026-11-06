@@ -1,0 +1,185 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Inspection Findings field guide</title>
+<!-- Printed 1-page technician field guide, black and white, letter portrait. build.js renders it to PDF. -->
+<style>
+  @page { size: letter; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 8.5in; height: 11in; font-family: Arial, Helvetica, "Liberation Sans", sans-serif; color: #000; background: #fff; }
+  .heavy { font-family: "Arial Black", "Arial Bold", Arial, "Liberation Sans", sans-serif; font-weight: 900; }
+  .page { padding: 0.38in 0.5in 0.25in; height: 11in; display: flex; flex-direction: column; }
+  .page > * { flex-shrink: 0; }
+  header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 10px; }
+  header img { height: 46px; filter: grayscale(1) contrast(1.4); }
+  header .title { text-align: right; }
+  header h1 { font-size: 30px; letter-spacing: -0.5px; line-height: 1; }
+  header p { font-size: 13px; margin-top: 4px; letter-spacing: 2px; text-transform: uppercase; }
+  .tag { margin: 8px 0 0; font-size: 14px; }
+  .tag b { font-size: 15px; }
+
+  .cat { margin-top: 9px; border: 1.5px solid #000; border-radius: 12px; overflow: hidden; }
+  .cat h2 { background: #fff; color: #000; border-bottom: 1.5px solid #000; font-size: 15px; letter-spacing: 2.5px; text-transform: uppercase; padding: 5px 14px; display: flex; justify-content: space-between; align-items: baseline; }
+  .cat h2 span { font-size: 11.5px; letter-spacing: 1px; font-weight: 400; text-transform: none; }
+  .items { display: flex; }
+  .item { flex: 1; padding: 8px 14px 10px; border-right: 1.5px dashed #000; }
+  .item:last-child { border-right: none; }
+  .item .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .item svg { width: 40px; height: 40px; flex-shrink: 0; }
+  .item .name { font-size: 15.5px; font-weight: 700; line-height: 1.2; }
+  .item .what { font-size: 12px; line-height: 1.3; margin-top: 3px; }
+  .item .pay { font-size: 40px; line-height: 1; }
+
+  .extras { display: flex; gap: 10px; margin-top: 9px; }
+  .extra { flex: 1; border: 1.5px solid #000; border-radius: 10px; padding: 6px 12px; font-size: 12px; line-height: 1.35; }
+  .extra b { font-size: 14px; display: block; }
+  .extra.big { flex: 1.3; border-width: 2.5px; }
+  .extra.big b { font-size: 16px; }
+
+  .steps { margin-top: auto; border-top: 2px solid #000; padding-top: 8px; }
+  .steps h2 { font-size: 16px; letter-spacing: 2.5px; text-transform: uppercase; display: flex; justify-content: space-between; }
+  .steps h2 span { letter-spacing: 0; text-transform: none; font-size: 13px; }
+  .row { display: flex; gap: 10px; margin-top: 8px; }
+  .step { flex: 1; border: 1.5px solid #000; border-radius: 12px; padding: 6px 8px 8px; display: grid; grid-template-columns: auto auto; justify-content: center; align-items: center; column-gap: 10px; row-gap: 4px; text-align: center; }
+  .step > :nth-child(n+3) { grid-column: 1 / -1; }
+  .step .n { width: 30px; height: 30px; border-radius: 50%; background: #fff; color: #000; border: 2px solid #000; font-size: 16px; line-height: 26px; margin: 0; text-align: center; }
+  .step svg { width: 32px; height: 32px; display: block; margin: 0; flex-shrink: 0; }
+  .step p { font-size: 14.5px; font-weight: 700; line-height: 1.2; }
+  .step p.small { font-size: 12px; font-weight: 400; margin-top: 2px; }
+  .post { margin-top: 8px; display: flex; gap: 10px; align-items: stretch; }
+  .post .ex { flex: 2.1; border: 2.5px solid #000; border-radius: 10px; padding: 8px 12px 9px; }
+  .post .must { font-size: 17px; font-weight: 900; font-family: "Arial Black", "Arial Bold", Arial, sans-serif; line-height: 1.15; }
+  .post .how { font-size: 12.5px; line-height: 1.35; margin-top: 3px; }
+  .post .msg { margin-top: 6px; border: 1.5px dashed #000; border-radius: 8px; padding: 6px 10px; }
+  .post .first { font-family: "Courier New", monospace; font-size: 16px; font-weight: 700; }
+  .post .pics { display: flex; gap: 6px; margin: 4px 0; }
+  .post .pics span { border: 1.5px solid #000; border-radius: 4px; font-size: 10px; padding: 6px 12px; }
+  .post .desc { font-size: 11.5px; line-height: 1.3; }
+  .post .warn { font-size: 13px; font-weight: 700; margin-top: 5px; }
+  .post .q { flex: 1; border: 1.5px solid #000; border-radius: 10px; padding: 8px 12px; font-size: 12.5px; line-height: 1.4; align-self: flex-start; }
+  footer { margin-top: 8px; font-size: 10.5px; text-align: center; }
+</style></head>
+<body><div class="page">
+  <header>
+    <img src="../../lead-followup/assets/logo-print.png" alt="Catchy Pest Solutions">
+    <div class="title"><h1 class="heavy">INSPECTION FINDINGS</h1><p>Technician field guide</p></div>
+  </header>
+  <p class="tag"><b>Find it. Photograph it. Post it. Get paid.</b> The customer gets a quote the next morning, signed with your name.</p>
+
+  <!-- TERMITES -->
+  <section class="cat">
+    <h2>Termites <span>Carolina TermiteShield</span></h2>
+    <div class="items">
+      <div class="item">
+        <div class="top"><svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="32" cy="20" rx="7" ry="6"/><ellipse cx="32" cy="34" rx="8" ry="8"/><ellipse cx="32" cy="50" rx="7" ry="9"/>
+          <path d="M28 15 22 7M36 15l6-8"/><path d="M24 30 12 24M24 36l-13 2M25 42l-11 9M40 30l12-6M40 36l13 2M39 42l11 9"/>
+        </svg><div class="pay heavy">$4</div></div>
+        <div><div class="name">Signs of termites</div><div class="what">Damage, mud tubes, swarmers or live termites</div></div>
+      </div>
+      <div class="item">
+        <div class="top"><svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="14" y="6" width="22" height="42" rx="1"/><path d="M20 12v30M30 12v30"/>
+          <path d="M4 46h56"/><path d="M8 52l4-4M18 54l4-6M30 54l4-6M42 54l4-6M52 52l4-4"/>
+          <path d="M44 40c0-6 8-6 8-12" stroke-dasharray="3 4"/>
+        </svg><div class="pay heavy">$2</div></div>
+        <div><div class="name">Wood or siding touching the ground</div><div class="what">A hidden way in for termites</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RODENTS & WILDLIFE -->
+  <section class="cat">
+    <h2>Rodents &amp; wildlife <span>HomeShield Critter Control</span></h2>
+    <div class="items">
+      <div class="item">
+        <div class="top"><svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="2">
+          <path d="M6 50h52" fill="none" stroke-width="3" stroke-linecap="round"/>
+          <ellipse cx="14" cy="44" rx="4.5" ry="2.2" transform="rotate(-15 14 44)"/><ellipse cx="26" cy="46" rx="4.5" ry="2.2" transform="rotate(10 26 46)"/>
+          <ellipse cx="38" cy="43" rx="4.5" ry="2.2" transform="rotate(-25 38 43)"/><ellipse cx="50" cy="46" rx="4.5" ry="2.2" transform="rotate(5 50 46)"/>
+          <ellipse cx="20" cy="38" rx="4.5" ry="2.2" transform="rotate(20 20 38)"/><ellipse cx="44" cy="37" rx="4.5" ry="2.2" transform="rotate(-10 44 37)"/>
+          <path d="M12 26c4-10 16-14 26-10 6 2 10 6 12 10h-8c-2 4-8 6-14 6H20" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="44" cy="22" r="1.6"/>
+        </svg><div class="pay heavy">$3</div></div>
+        <div><div class="name">Rodent or wildlife droppings</div><div class="what">In the attic, crawl space or home (bats too)</div></div>
+      </div>
+      <div class="item">
+        <div class="top"><svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/>
+          <path d="M14 54h10v-4c0-2 2-4 4-4s4 2 4 4v4" fill="none"/>
+          <path d="M40 34h12M40 40h12M44 31v12" stroke-width="2.5"/>
+        </svg><div class="pay heavy">$2</div></div>
+        <div><div class="name">Exclusion needed</div><div class="what">A specific gap a mouse fits through (pencil width or bigger) that our exclusion work can fix</div></div>
+      </div>
+      <div class="item">
+        <div class="top"><svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 44h56"/><path d="M10 44c2-10 8-14 14-14s12 4 14 14"/><ellipse cx="24" cy="44" rx="5" ry="3" fill="none"/>
+          <path d="M40 44c4 0 4-6 8-6s4 6 8 6" stroke-dasharray="2 3"/><path d="M42 52c4 0 6-3 10-3" stroke-dasharray="2 3"/>
+          <path d="M16 22v-6M22 18l-2-5M28 22l2-5" stroke-width="2"/>
+        </svg><div class="pay heavy">$1</div></div>
+        <div><div class="name">Mole, vole or groundhog burrows</div><div class="what">Tunnels, runways or holes in the yard</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BEES & WASPS -->
+  <section class="cat">
+    <h2>Bees &amp; wasps <span>HomeShield Signature</span></h2>
+    <div class="items">
+      <div class="item">
+        <div class="top"><svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="30" cy="38" rx="14" ry="10"/><path d="M24 29v18M32 28v20" stroke-width="4"/><circle cx="47" cy="34" r="5"/>
+          <path d="M22 28c-4-10 2-16 8-12M34 28c2-10 10-12 12-6"/><path d="M50 30l4-6M50 32l6-2"/>
+          <circle cx="12" cy="14" r="5" fill="none"/><path d="M2 8h20" stroke-width="2"/>
+        </svg><div class="pay heavy">$2</div></div>
+        <div><div class="name">Carpenter bee burrows</div><div class="what">Round holes about 1/2 inch, sawdust below</div></div>
+      </div>
+      <div class="item">
+        <div class="top"><svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 6h52"/><path d="M32 6v6"/>
+          <path d="M20 22c0-6 6-10 12-10s12 4 12 10v14c0 8-6 14-12 14S20 44 20 36z"/>
+          <path d="M20 26h24M20 33h24M21 40h22" stroke-width="2"/><circle cx="32" cy="46" r="2.5" fill="none"/>
+          <path d="M50 46c4-2 6 2 8 0M52 52l3-3" stroke-width="2"/>
+        </svg><div class="pay heavy">$1</div></div>
+        <div><div class="name">Wasp, hornet or yellow jacket nest</div><div class="what">On the house, deck, shed or in the ground</div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="extras">
+    <div class="extra big"><b>1.5x on Inspection &amp; One Time</b>Inspection / Consultation and One Time Service visits pay 1.5x. Example: $4 becomes $6.</div>
+    <div class="extra"><b>One lead per plan</b>Carpenter bees + a wasp nest = one Signature lead, paid at the higher amount.</div>
+    <div class="extra"><b>Doesn't count</b>Apartments, mobile homes, already covered by their plan, or quoted in the last 90 days.</div>
+  </div>
+
+  <section class="steps">
+    <h2>Every finding, 4 steps <span><b>All 4 steps = bonus</b></span></h2>
+    <div class="row">
+      <div class="step"><div class="n heavy">1</div>
+        <svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linejoin="round"><rect x="6" y="18" width="52" height="36" rx="5"/><path d="M22 18l4-7h12l4 7"/><circle cx="32" cy="36" r="11"/><circle cx="32" cy="36" r="4" fill="none"/></svg>
+        <p>Photograph the problem up close</p></div>
+      <div class="step"><div class="n heavy">2</div>
+        <svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 30 32 10l26 20"/><path d="M12 26v28h40V26"/><rect x="27" y="38" width="10" height="16"/><path d="M2 4h10M2 4v10M62 4H52M62 4v10M2 60h10M2 60V50M62 60H52M62 60V50" stroke-width="2.5"/></svg>
+        <p>Step back. Take a wide photo</p></div>
+      <div class="step"><div class="n heavy">3</div>
+        <svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round"><rect x="22" y="6" width="20" height="32" rx="10"/><path d="M14 30c0 10 8 18 18 18s18-8 18-18M32 48v10M22 58h20"/></svg>
+        <p>Voice-to-text what you see</p></div>
+      <div class="step"><div class="n heavy">4</div>
+        <svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 30 58 8 46 56 30 38z"/><path d="M30 38 58 8"/><path d="M30 38v16l8-9"/></svg>
+        <div><p>Post it before you leave</p><p class="small">Name + ID first</p></div></div>
+    </div>
+    <div class="post">
+      <div class="ex">
+        <div class="must">Every post starts with the customer's <u>name</u> and <u>ID</u></div>
+        <div class="how">Copy and paste both from your technician app into your Slack message in <b>#inspection-findings</b>. Then add the photos and your description, all in one post.</div>
+        <div class="msg">
+          <div class="first">Customer: Jane Smith #12345</div>
+          <div class="pics"><span>photo</span><span>photo</span></div>
+          <div class="desc">4 carpenter bee holes on the fascia above the back deck, fresh sawdust...</div>
+        </div>
+        <div class="warn">No name and ID = no quote and no bonus.</div>
+      </div>
+      <div class="q"><b>Quote request?</b> If the customer asks for a quote and there's nothing to photograph, start the post with the name and ID, then <b>"Quote request"</b> and what they want. They still get a quote the next morning. No bonus.</div>
+    </div>
+  </section>
+  <footer>Paid weekly with payroll, for every lead that counts &middot; Questions? Ask Daniel</footer>
+</div></body></html>
