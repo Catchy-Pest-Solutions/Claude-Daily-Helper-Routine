@@ -1,5 +1,6 @@
 {
-  "testMode": true,
+  "testMode": false,
+  "liveSince": "2026-11-07",
   "testPhone": null,
   "testEmail": null,
   "testTaskAssignee": { "employeeId": "12883", "name": "Daniel W" },

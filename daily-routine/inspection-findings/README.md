@@ -92,7 +92,7 @@ Test recipients come from the environment, not the repo:
 `INSPECTION_TEST_PHONE` (E.164, Daniel's cell) and `INSPECTION_TEST_EMAIL`.
 `send.js` refuses to run in test mode without them.
 
-`"testMode": true` (default): the text goes to the test phone with "TEST for
+`"testMode": true`: the text goes to the test phone with "TEST for
 <name> (<numbers>):" on top, the email to the test email with "[TEST for
 <name>]" in the subject, tasks go to Daniel W (12883) not Steve B, log
 entries start `[INSPECTION FINDINGS — TEST, not sent to customer]`, rows go
@@ -145,6 +145,8 @@ returned `already_sent` for both, and the next collect found no new posts.
    - **Schedule**: Monday-Saturday, 8:00 AM Eastern.
 4. **Test**: post a new test finding in #inspection-findings, then **Run
    now**. Already-handled posts are skipped, so an old post won't run again.
-5. **Go live** (when Daniel says so): set `"testMode": false` in
-   `config.json` on the default branch and create the live sheet with
-   `node inspection-findings/setup-sheet.js --live`.
+5. **Live since Saturday, Nov 7, 2026** (`"testMode": false`,
+   `"liveSince": "2026-11-07"`): live runs ignore posts from before that
+   date (the Nov 6 tests). Live sheet:
+   `1U0b-dBSQvrSeZaeXm69vZbHoAmekPE6agnl1nAqfPEM`. To pause sending, set
+   `"testMode": true` again on the default branch (a one-line PR).
