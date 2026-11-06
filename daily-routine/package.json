@@ -5,7 +5,7 @@
   "description": "Daily routine steps for Catchy Pest Solutions: cross-sell check, call review and new-customer follow-up (Briostack, ATS, Slack, Textable, Gmail)",
   "main": "src/index.js",
   "scripts": {
-    "test": "node --test test/crossSellCheck.test.js test/callReview.test.js lead-followup/test/leadFollowup.test.js",
+    "test": "node --test test/crossSellCheck.test.js test/callReview.test.js lead-followup/test/leadFollowup.test.js inspection-findings/test/inspectionFindings.test.js",
     "check": "node src/cli.js",
     "call-review": "node src/callReview/run.js",
     "lead-prepare": "node lead-followup/prepare.js",

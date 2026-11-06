@@ -1,0 +1,53 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- Inspection findings proposal PDF (letter). Filled by render.js. -->
+<style>
+  @page { size: letter; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 816px; font-family: Arial, Helvetica, "Liberation Sans", sans-serif; color: #0E120E; font-size: 13.5px; line-height: 1.5; }
+  .heavy { font-family: "Arial Black", "Arial Bold", Arial, "Liberation Sans", sans-serif; font-weight: 900; }
+  .page { padding: 40px 56px 36px; }
+  header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 5px solid #15BA0D; padding-bottom: 16px; }
+  header img { height: 62px; }
+  header .meta { text-align: right; font-size: 12px; color: #4A554B; line-height: 1.55; }
+  h1 { font-size: 27px; line-height: 1.15; margin: 22px 0 4px; }
+  .sub { color: #4A554B; font-size: 13px; }
+  h2 { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; color: #11960B; margin: 20px 0 8px; }
+  .photos { display: grid; grid-template-columns: repeat({{photoCols}}, 1fr); gap: 10px; margin-top: 14px; }
+  .photos figure { break-inside: avoid; }
+  .photos img { width: 100%; height: {{photoHeight}}px; object-fit: contain; background: #0E120E; border-radius: 6px; display: block; }
+  .photos figcaption { font-size: 11px; color: #4A554B; margin-top: 3px; }
+  ul { padding-left: 18px; } li { margin: 3px 0; }
+  .fix { margin-top: 18px; background: #EEF1EE; border-left: 10px solid #15BA0D; border-radius: 10px; padding: 16px 22px; break-inside: avoid; display: flex; gap: 26px; align-items: center; }
+  .fix .price { font-size: 46px; line-height: 1; }
+  .fix .was { color: #6B756C; text-decoration: line-through; font-size: 17px; }
+  .fix .lines { font-size: 13px; line-height: 1.55; }
+  .fix b { font-size: 15px; }
+  .terms { font-size: 11.5px; color: #4A554B; margin-top: 8px; }
+  .infographic { break-before: page; padding: 48px 56px 0; text-align: center; }
+  .infographic h2 { text-align: left; margin-top: 0; }
+  .infographic img { max-width: 100%; max-height: 820px; border-radius: 8px; }
+  .infographic p { font-size: 11px; color: #4A554B; }
+  footer { margin-top: 20px; border-top: 1px solid #DDE3DD; padding-top: 10px; font-size: 11.5px; color: #4A554B; display: flex; justify-content: space-between; }
+  .compact .photos img { height: {{photoHeightCompact}}px; }
+  .compact h1 { margin-top: 16px; }
+</style></head>
+<body><div class="page">
+  <header><img src="{{logoUrl}}" alt="Catchy Pest Solutions"><div class="meta">Prepared for {{customerName}}<br>{{address}}<br>{{date}}</div></header>
+  <h1 class="heavy">{{headline}}</h1>
+  <p class="sub">Found by {{techName}} during {{visitPhrase}}, {{visitLong}}.</p>
+  <div class="photos">{{#photos}}<figure><img src="{{url}}" alt=""><figcaption>{{caption}}</figcaption></figure>{{/photos}}</div>
+  <h2>What {{techName}} found</h2>
+  {{#found}}<p>{{.}}</p>{{/found}}
+  {{#hasWhy}}<h2>Why it matters</h2><ul>{{#why}}<li>{{.}}</li>{{/why}}</ul>{{/hasWhy}}
+  {{#hasChecked}}<h2>What looked fine</h2><p>{{checkedSentence}}</p>{{/hasChecked}}
+  <h2>The fix</h2>
+  <div class="fix">
+    <div>{{#credit}}<div class="was">{{regularInitial}}</div>{{/credit}}<div class="price heavy">{{initial}}</div><div style="font-size:12px">initial fee</div></div>
+    <div class="lines"><b>{{planName}}</b><br>{{fixLine}}<br>The initial fee comes with a 3-month warranty.<br>{{#credit}}Includes your <b>{{credit}} credit</b> ({{creditReason}}), good through {{creditExpiresLong}}.{{/credit}}</div>
+  </div>
+  <p class="terms">12-month plan: {{initial}} today covers the first 3 months, then {{monthly}} a month (billed every 4 weeks) from month four. No annual commitment: {{noAnnualInitial}} initial, same monthly fee. Reply YES to the text or call {{officePhone}} and the office will get you scheduled.</p>
+  <footer><span>{{company.name}} &middot; {{company.address}}</span><span>{{officePhone}} &middot; {{company.website}}</span></footer>
+</div>
+{{#infographicUrl}}<div class="infographic"><h2>Why it's worth fixing</h2><img src="{{infographicUrl}}" alt=""><p>Example illustration, not a photo of your home.</p></div>{{/infographicUrl}}
+</body></html>
