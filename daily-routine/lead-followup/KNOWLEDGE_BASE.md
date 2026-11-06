@@ -27,6 +27,7 @@
 16. **Billing wording (Oct 27, 2026).** To customers, describe the ongoing charge as monthly: "then $49 a month." Billing runs every 4 weeks under the terms and conditions, and "monthly" is the accurate, simpler description. Don't write "every 4 weeks" or "every 28 days" in texts, emails, quote cards or PDFs. This replaces the "never say monthly" rules in Sections 1, 2, 16 and 18.
 17. **Signature coverage wording (Oct 27, 2026).** HomeShield Signature covers **and treats** 30+ pests as part of every visit (ants, spiders, roaches, carpenter bees, carpenter ants, stink bugs, fleas, ticks and more). Say it as included and treated, never as something the customer has to ask for ("if you need us to").
 18. **Short note (Oct 27, 2026).** Send more often. A new customer we didn't fully talk with still gets a short personal note: no real conversation yet (missed calls, a voicemail, an unanswered callback), a quote that can't be priced from the call, or an unbooked commercial property. A note has no prices or discounts. It's signed by whoever called them back, else whose voicemail box they left a message in, else whoever at the office created the record (this extends Section 0.2). It says what really happened ("I got your voicemail about the mice," "sorry I missed you, I just tried calling you back") and never claims a conversation that didn't happen. Texts come from the shared office number, so say "text me here," never "my direct line." Only these get no message: opted out or asked not to be contacted, hostile, wrong number, spam, a vendor, not the actual customer, an existing customer's service issue, or no phone and no email.
+19. **Multi-plan pricing (Nov 6, 2026).** "Buy one service, get any other service 50% off": an added plan is 50% off its 12-month initial fee, with a reduced recurring fee. Signature **$174, then $44 a month**; Critter Control **$324 ($224 without exclusion), then $34 a month**; TermiteShield **$399, then $19 a month**. Full table in Section 8. This replaces the October 29 "no initial fee + $59" Signature add-on. The multi-plan price is the customer's one discount (0.3): never add the 10% on top of it.
 
 ---
 
@@ -259,14 +260,20 @@ Recommend when a prospect wants broad, hands-off protection or has multiple pest
 
 These are for a customer buying multiple distinct service categories. Start with the pest they called about; do not overwhelm them with a bundle and every possible add-on.
 
-**Add Signature Pest to an existing Critter Control or TermiteShield account:**
-- **No initial add-on fee** (owner, October 29, 2026).
-- **$59 every 4 weeks** ongoing (say "$59 a month"). The ants or other insects can be treated while the tech is already out for the Critter Control or TermiteShield visits.
+**"Buy one service, get any other service 50% off" (owner, November 6, 2026; replaces the October 29 "no initial fee" Signature add-on).** A customer adding a second (or third) plan to a plan they already have, or buying two plans together, pays the full initial price for the first plan and, for each added plan, **50% off that plan's 12-month initial price** (rounded up to whole dollars) plus a **reduced recurring fee**:
 
-**Add Critter Control OR TermiteShield to another program:**
-- **50% off the additional program's initial three-month package fee**; charge full applicable initial price for the primary service.
-- **Normal recurring fee** for each extra program thereafter: **$49 every 4 weeks** for Critter Control; **$29 every 4 weeks** for TermiteShield.
-- Determine exclusion need and home size before stating precise final combination price.
+| Adding | Initial (3-month package) | Every 4 weeks from month four |
+|---|---:|---:|
+| Signature Pest | $347 − 50% = **$174** | **$44** (normally $59) |
+| Critter Control (with exclusion) | $647 − 50% = **$324** | **$34** (normally $49) |
+| Critter Control (no exclusion) | $447 − 50% = **$224** | **$34** (normally $49) |
+| TermiteShield (1,200–3,000 sq. ft.) | $797 − 50% = **$399** | **$19** (normally $29) |
+| Mosquito Plus | **$49 per treatment** | $49 per treatment |
+
+- Other TermiteShield sizes: 50% off that tier's 12-month price ($697 → **$349**; $897 → **$449**), still **$19** every 4 weeks.
+- These are 12-month-agreement prices. An added plan without an annual commitment follows Section 2: **$50 more** on the added plan's initial fee (Signature $224, Critter $374 or $274 without exclusion, TermiteShield $449), same reduced recurring fee. Quote it directly; no need to route it to the office.
+- The discount always applies to the added plan, never the first one. Say it as an exact dollar amount, never "50% off" alone.
+- Determine exclusion need and home size before stating a precise final combination price.
 
 **Add Mosquito Plus:** Use Section 7.1's owner-confirmed **$49 per treatment every 3 weeks, no initial fee**, and only for an existing qualifying recurring customer. Ignore conflicting old combo row.
 
@@ -401,8 +408,7 @@ All below are **USD**. Main-program initial prices cover **the first three month
 - WDIR: **$275** standard; full service credit for **new homeowners only**.
 - Mosquito add-on for existing recurring customers: **$49 per treatment every ~3 weeks**, no initial charge.
 - Mosquito-only season: **full advance payment required**; use the **2027** start-month pricing in Section 7, not $49 pay per visit.
-- Signature Pest add-on to Critter/Termite: **no initial fee + $59 every 4 weeks**.
-- Extra Critter or Termite category: **50% off additional initial fee**, ordinary ongoing rate.
+- Adding a second plan (Section 8): **50% off the added plan's 12-month initial fee** plus a reduced recurring fee: Signature **$174 + $44**, Critter **$324 (or $224 without exclusion) + $34**, TermiteShield **$399 + $19** (every 4 weeks from month four).
 
 ---
 
