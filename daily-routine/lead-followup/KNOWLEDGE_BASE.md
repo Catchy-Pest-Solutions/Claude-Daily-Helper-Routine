@@ -271,7 +271,7 @@ These are for a customer buying multiple distinct service categories. Start with
 | Mosquito Plus | **$49 per treatment** | $49 per treatment |
 
 - Other TermiteShield sizes: 50% off that tier's 12-month price ($697 → **$349**; $897 → **$449**), still **$19** every 4 weeks.
-- These are 12-month-agreement prices. If a customer wants an added plan without an annual commitment, that is a custom quote: route it per Section 0.14.
+- These are 12-month-agreement prices. An added plan without an annual commitment follows Section 2: **$50 more** on the added plan's initial fee (Signature $224, Critter $374 or $274 without exclusion, TermiteShield $449), same reduced recurring fee. Quote it directly; no need to route it to the office.
 - The discount always applies to the added plan, never the first one. Say it as an exact dollar amount, never "50% off" alone.
 - Determine exclusion need and home size before stating a precise final combination price.
 
