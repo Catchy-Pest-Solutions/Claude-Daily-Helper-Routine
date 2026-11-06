@@ -175,3 +175,14 @@ test('sheet layout: pay weeks newest first, a SUMIFS total per tech and for the 
   const back = sheet.rowsToObjects(sheet.parseCsv(sheet.toCsv(out))).items;
   assert.deepEqual(back.map((r) => r['Post ID']), ['2:termite', '3:signature', '1:critter']);
 });
+
+test('office task: customer ID first, customer notes and custom-quote alert when given', () => {
+  const { taskDescription } = require('../send');
+  const m = Q.quoteModel(decision, post, config, { today: '2026-11-06' });
+  const text = taskDescription({ decision: { ...decision, customerNotes: 'Wants it before Thanksgiving. Call his wife Ann.', officeAlert: 'Possible bats.' }, post, model: m, results: { email: 'sent', text: 'scheduled', textAtMs: Date.parse('2026-11-06T15:00:00Z') }, action: 'quote', sentAtMs: Date.parse('2026-11-06T13:05:00Z') });
+  assert.match(text, /^Customer ID: 99999\n/);
+  assert.match(text, /Customer notes:\nWants it before Thanksgiving\.\nCall his wife Ann\./);
+  assert.match(text, /Custom quote needed:\nPossible bats\./);
+  assert.doesNotMatch(text, /slack|appointment|drive\.google/i);
+  assert.doesNotMatch(taskDescription({ decision, post, model: m, results: { email: 'sent', text: 'sent' }, action: 'quote', sentAtMs: Date.now() }), /Customer notes/);
+});

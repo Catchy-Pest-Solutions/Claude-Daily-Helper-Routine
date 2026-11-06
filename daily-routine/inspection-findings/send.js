@@ -153,6 +153,9 @@ function taskDescription({ decision, post, model, results, action, sentAtMs }) {
     [`Customer ID: ${post.customer?.id || post.customerIdPosted}`, name, ...phones],
     [`Found by ${post.tech?.name || 'the tech'} on ${visitDay}:`, ...sentences],
   ];
+  const notes = String(decision.customerNotes || '').split(/(?<=[.!?])\s+|\n+/).map((x) => x.trim()).filter(Boolean);
+  if (notes.length) blocks.push(['Customer notes:', ...notes]);
+  if (String(decision.officeAlert || '').trim()) blocks.push(['Custom quote needed:', String(decision.officeAlert).trim()]);
   if (action === 'quote') {
     blocks.push(
       [
