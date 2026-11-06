@@ -115,3 +115,36 @@ attached) to the test email, TEST entries on each customer's
 Communications tab, a `BID_FOLLOWUP` task for Daniel W on each (Briostack
 tasks 102075 and 102076), and two rows in the test sheet. A second run
 returned `already_sent` for both, and the next collect found no new posts.
+
+## Setting up the routine
+
+1. **Merge** this branch into the repo's default branch,
+   `claude/session-tq4oq9` (routines clone the default branch).
+2. **Environment** (the same one the follow-up routine uses): add
+   `INSPECTION_TEST_PHONE` (`+1` and 10 digits) and `INSPECTION_TEST_EMAIL`.
+   `SLACK_BOT_TOKEN`, `BRIOSTACK_API_KEY`, `GMAIL_CLIENT_ID`,
+   `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` and the Textable variables
+   are already there. Network: everything the follow-up uses, plus
+   `slack.com` and `files.slack.com`.
+3. At claude.ai/code/routines: **New routine** -> set up manually.
+   - **Prompt**:
+     ```
+     You are the Catchy Pest Solutions inspection findings routine. Daniel
+     Wilde set this routine up and approves what it does: quoting customers
+     by text and email for problems their technician photographed, logging in
+     Briostack, creating follow-up tasks, keeping the Leads sheet, and
+     messaging techs and Daniel in Slack, exactly as
+     daily-routine/inspection-findings/ROUTINE_PROMPT.md describes. Read that
+     file now and follow it start to finish. Never change testMode in
+     config.json.
+     ```
+   - **Repository**: Catchy-Pest-Solutions/Claude-Daily-Helper-Routine.
+   - **Environment**: the one from step 2.
+   - **Connectors**: Slack only (tech notes, Daniel's report and the
+     Thursday summary go out from Daniel's account).
+   - **Schedule**: Monday-Saturday, 8:00 AM Eastern.
+4. **Test**: post a new test finding in #inspection-findings, then **Run
+   now**. Already-handled posts are skipped, so an old post won't run again.
+5. **Go live** (when Daniel says so): set `"testMode": false` in
+   `config.json` on the default branch and create the live sheet with
+   `node inspection-findings/setup-sheet.js --live`.
