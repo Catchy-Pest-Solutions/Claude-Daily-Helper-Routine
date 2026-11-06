@@ -98,7 +98,11 @@ async function main() {
   const brio = createBriostack({ pauseMs: 800 });
   const sheetId = test ? config.sheet.testId : config.sheet.liveId;
   const sheetRows = sheetId && !args['no-sheet'] ? (await sheet.readSheet(sheetId)).items : [];
-  const settled = new Set(sheetRows.filter((r) => r.Status && r.Status !== 'waiting').map((r) => r['Post ID']));
+  // Rows are keyed "<ts>:<plan>" (or "<ts>"); a post is settled once it has
+  // rows and none of them is "waiting".
+  const postOf = (id) => String(id || '').split(':')[0];
+  const waitingPosts = new Set(sheetRows.filter((r) => r.Status === 'waiting').map((r) => postOf(r['Post ID'])));
+  const settled = new Set(sheetRows.map((r) => postOf(r['Post ID'])).filter((ts) => !waitingPosts.has(ts)));
   const team = await slack.team();
 
   const oldest = (nowMs - config.lookbackDays * 86400000) / 1000;
@@ -141,7 +145,7 @@ async function main() {
       quoteRequest: parsed.quoteRequest,
       photos,
       thread,
-      sheetRow: sheetRows.find((r) => r['Post ID'] === m.ts) || null,
+      sheetRows: sheetRows.filter((r) => postOf(r['Post ID']) === m.ts),
       checks: {},
       problems: [],
     };
@@ -200,7 +204,7 @@ async function main() {
     const priorOffers = [
       ...offers.filter((o) => o.plan && o.until && o.until >= today && (test || !o.test)).map((o) => ({ source: 'briostack', ...o })),
       ...sheetRows
-        .filter((r) => r['Customer ID'] === String(parsed.customerId) && r.Status === 'quoted' && r['Credit expires'] >= today && r['Post ID'] !== m.ts)
+        .filter((r) => r['Customer ID'] === String(parsed.customerId) && r.Status === 'quoted' && r['Credit expires'] >= today && postOf(r['Post ID']) !== m.ts)
         .map((r) => ({ source: 'sheet', plan: r.Plan, until: r['Credit expires'], quoted: r.Posted })),
     ];
 

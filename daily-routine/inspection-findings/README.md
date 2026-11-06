@@ -74,12 +74,15 @@ Catchy Club customer.
   settled row's Bonus is never overwritten). Formatting resets on each
   write. Enabling the Sheets API would allow proper cell updates later.
 - **Sheets**: test sheet `1xs8orQ7ot6Cqen05DESubJyphOQ_E5fiYebRcTIDlr4`
-  (shared with dwilde@). Create the live one with
+  (shared with dwilde@, moved by Daniel into "***Catchy Daily***"; moving
+  it doesn't affect access). Create the live one with
   `node inspection-findings/setup-sheet.js --live`.
 - **Briostack**: tasks can't carry an appointment ID (POST /tasks rejects
   unknown fields), so it goes in the description. `appointmentDate` filters
   work on `/appointments` (used for days worked).
-- **Infographics**: not in the repo yet. Put JPG/PNG files in `assets/` and
+- **Infographics**: Daniel's 7 PNGs are in office@'s Drive folder
+  "Infographics", but the routine's token (`drive.file`) can't open files it
+  didn't create. Put JPG copies in `assets/` and
   map them in `config.json` `infographics` (e.g.
   `"rodent-droppings": "assets/rodent-droppings.jpg"`); until then the
   email and PDF leave them out.
@@ -104,3 +107,12 @@ node inspection-findings/collect.js --out $S
 node inspection-findings/render.js --posts $S/posts.json --decisions $S/decisions.json --no-upload
 node inspection-findings/send.js --posts $S/posts.json --decisions $S/decisions.json --preview
 ```
+
+## First live-API test (Nov 6, 2026)
+
+Both of Daniel's test posts went through end to end in test mode: texts
+(with the quote card) to the test phone, emails (photos inline, PDF
+attached) to the test email, TEST entries on each customer's
+Communications tab, a `BID_FOLLOWUP` task for Daniel W on each (Briostack
+tasks 102075 and 102076), and two rows in the test sheet. A second run
+returned `already_sent` for both, and the next collect found no new posts.

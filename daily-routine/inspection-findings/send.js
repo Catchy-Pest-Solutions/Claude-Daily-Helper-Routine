@@ -23,7 +23,8 @@
 // testTaskAssignee (Daniel W) instead of Steve B, log entries start
 // "[INSPECTION FINDINGS — TEST, not sent to customer]", and rows go to the
 // test sheet. --preview writes the messages next to decisions.json and
-// sends, logs and creates nothing.
+// sends, logs and creates nothing. --resend (test mode only) skips the
+// duplicate check so a test can go out again.
 //
 // Prints one JSON line: {"results": [{key, action, text, email, log, task, sheet}], "testMode": ...}
 require('../lead-followup/lib/proxy');
@@ -187,7 +188,8 @@ function sheetRow({ decision, post, model, status, counted, reason, bonus, testM
 }
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2), { values: ['posts', 'decisions', 'now'], flags: ['preview', 'no-sheet'] });
+  const args = parseArgs(process.argv.slice(2), { values: ['posts', 'decisions', 'now'], flags: ['preview', 'no-sheet', 'resend'] });
+  if (args.resend && loadConfig().testMode === false) throw new Error('--resend only works in test mode');
   if (!args.posts || !args.decisions) throw new Error('usage: send.js --posts posts.json --decisions decisions.json [--preview] [--no-sheet]');
   const config = loadConfig();
   const test = config.testMode !== false;
@@ -239,7 +241,7 @@ async function main() {
     const rend = model ? rendered.find((x) => x.key === model.key) : null;
 
     // Duplicate protection: this lead already logged on the customer.
-    if (brio && d.action === 'quote') {
+    if (brio && d.action === 'quote' && !args.resend) {
       const comms = await brio.listCommunications(post.customer.id);
       let dup = false;
       for (const c of comms.filter((x) => String(x.subject || '').startsWith('[INSPECTION FINDINGS'))) {
