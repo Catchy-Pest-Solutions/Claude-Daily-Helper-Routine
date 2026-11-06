@@ -1,0 +1,41 @@
+/* Shared look for the two meeting decks (16:9, on screen). */
+@page { size: 13.333in 7.5in; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, "Liberation Sans", sans-serif; color: #0E120E; background: #fff; }
+.heavy, h1, h2 { font-family: "Arial Black", "Arial Bold", Arial, "Liberation Sans", sans-serif; font-weight: 900; }
+.slide { width: 13.333in; height: 7.5in; padding: 0.55in 0.75in 0.5in; position: relative; overflow: hidden; break-after: page; display: flex; flex-direction: column; }
+.slide:last-child { break-after: auto; }
+.slide::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 0.16in; background: #15BA0D; }
+.slide .logo { position: absolute; right: 0.6in; bottom: 0.32in; height: 34px; opacity: .9; }
+.slide .num { position: absolute; left: 0.75in; bottom: 0.34in; font-size: 13px; color: #6B756C; }
+.kicker { font-size: 15px; letter-spacing: 3px; text-transform: uppercase; color: #11960B; font-weight: 700; margin-bottom: 8px; }
+h1 { font-size: 64px; line-height: 1.02; letter-spacing: -1px; }
+h2 { font-size: 40px; line-height: 1.08; letter-spacing: -0.5px; margin-bottom: 22px; }
+p, li { font-size: 23px; line-height: 1.38; }
+ul { padding-left: 30px; } li { margin: 0 0 10px; }
+li b, p b { color: #0E120E; }
+.sub { font-size: 26px; color: #4A554B; margin-top: 18px; }
+.cols { display: flex; gap: 36px; align-items: flex-start; }
+.cols > * { flex: 1; }
+.box { background: #EEF1EE; border-left: 10px solid #15BA0D; border-radius: 14px; padding: 18px 24px; }
+.box p, .box li { font-size: 21px; }
+.dark { background: #0E120E; color: #fff; }
+.dark::before { background: #15BA0D; }
+.dark h1, .dark h2, .dark p { color: #fff; }
+.dark .kicker { color: #15BA0D; }
+.big-quote { font-size: 30px; line-height: 1.35; background: #EEF1EE; border-radius: 14px; padding: 22px 28px; }
+.flow { display: flex; gap: 18px; margin-top: 8px; }
+.flow .stepc { flex: 1; background: #EEF1EE; border-radius: 16px; padding: 18px 18px 20px; border-top: 8px solid #15BA0D; }
+.flow .stepc .n { font-size: 42px; color: #11960B; line-height: 1; }
+.flow .stepc b { display: block; font-size: 23px; margin: 8px 0 6px; }
+.flow .stepc p { font-size: 18.5px; line-height: 1.35; }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 9px 14px; font-size: 20px; border-bottom: 1.5px solid #DDE3DD; }
+th { font-size: 15px; letter-spacing: 1.5px; text-transform: uppercase; color: #4A554B; }
+td.money, th.money { text-align: right; white-space: nowrap; }
+td.money { font-weight: 700; }
+tr.cat td { background: #0E120E; color: #fff; font-weight: 700; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; padding: 6px 14px; }
+.pay { font-size: 26px; font-weight: 900; color: #11960B; }
+.note { font-size: 17px; color: #4A554B; margin-top: 12px; }
+.example { font-family: "Courier New", monospace; font-size: 19px; line-height: 1.45; background: #0E120E; color: #fff; border-radius: 12px; padding: 18px 22px; white-space: pre-wrap; }
+.tag { display: inline-block; background: #15BA0D; color: #0E120E; font-weight: 700; border-radius: 999px; padding: 6px 16px; font-size: 18px; }

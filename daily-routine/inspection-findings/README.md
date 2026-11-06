@@ -150,3 +150,17 @@ returned `already_sent` for both, and the next collect found no new posts.
    date (the Nov 6 tests). Live sheet:
    `1U0b-dBSQvrSeZaeXm69vZbHoAmekPE6agnl1nAqfPEM`. To pause sending, set
    `"testMode": true` again on the default branch (a one-line PR).
+
+## Training (Nov 6, 2026)
+
+`training/` has the rollout material, built with
+`node inspection-findings/training/build.js` (PDFs land in `training/pdf/`):
+
+- `field-guide.html`: the printed 1-page technician field guide (black and
+  white, portrait): the 7 findings by plan with pay, 1.5x, the 4 steps.
+- `tech-meeting.html`: the technician meeting deck (Monday, Nov 9: the
+  $25/$50 upsell bonuses end).
+- `office-meeting.html`: the office meeting deck (tasks, YES replies, the
+  pitch, the credit method, pricing, cancellations).
+
+Edit the HTML and rebuild; `slides.css` is shared by both decks.
