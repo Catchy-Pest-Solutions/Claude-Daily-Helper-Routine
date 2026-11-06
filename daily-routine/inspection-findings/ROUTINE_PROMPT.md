@@ -55,8 +55,17 @@ action per post per plan:
   Slack and skip it.
 - **commercial**: a business. Task for the office to price it; nothing to
   the customer; the tech still earns the bonus.
-- **quote_request**: post starts "Quote request" (nothing to photograph):
-  task for the office, $0 bonus, nothing to the customer.
+- **Quote request** (the post says "Quote request", nothing to photograph):
+  - For one of our three plans (Signature, Critter Control,
+    TermiteShield): quote it like a finding, without photos. Use
+    `"action": "quote"`, `"findings": ["quote_request"]` and the `plan` they
+    asked about. Write `found` as what they asked for and why; pick an
+    `infographic` key from config.json if one fits (optional). For Critter
+    Control, exclusion is included unless the tech says it isn't needed.
+    Same checks (covered, open offer, Catchy Club, business). $0 bonus.
+  - For anything else (mosquito, bed bugs, a one-time treatment):
+    `"action": "quote_request"`, a task for the office to quote it, nothing
+    to the customer.
 - **quote**: everything else. One decision per plan (carpenter bees + a
   wasp nest are one Signature quote; termites + droppings are two).
 
@@ -115,6 +124,10 @@ Messages:
   Solutions: "Dustin here, I did your service Friday and noticed ...". Name
   the visit day (`visit.date`'s weekday), never "yesterday". Never mention
   AI or automation.
+- **Quote request text**: "When I did your service Friday you asked about
+  termite protection, so I had the office put together a quote. We can
+  protect your home for $718 (details in the picture). Reply YES and the
+  office will get you scheduled."
 - **Text**: short, confident, assumes the sale. The problem, then the
   initial fee only (`prices.<plan>.initial`, or `prices.critter_no_exclusion`),
   then "(details in the picture)". No 12-month plan, no monthly fee. End:

@@ -35,9 +35,9 @@
 <body><div class="page">
   <header><img src="{{logoUrl}}" alt="Catchy Pest Solutions"><div class="meta">Prepared for {{customerName}}<br>{{address}}<br>{{date}}</div></header>
   <h1 class="heavy">{{headline}}</h1>
-  <p class="sub">Found by {{techName}} during {{visitPhrase}}, {{visitLong}}.</p>
-  <div class="photos">{{#photos}}<figure><img src="{{url}}" alt=""><figcaption>{{caption}}</figcaption></figure>{{/photos}}</div>
-  <h2>What {{techName}} found</h2>
+  <p class="sub">{{#request}}Requested during {{visitPhrase}} with {{techName}}, {{visitLong}}.{{/request}}{{^request}}Found by {{techName}} during {{visitPhrase}}, {{visitLong}}.{{/request}}</p>
+  {{#hasPhotos}}<div class="photos">{{#photos}}<figure><img src="{{url}}" alt=""><figcaption>{{caption}}</figcaption></figure>{{/photos}}</div>{{/hasPhotos}}
+  <h2>{{foundTitle}}</h2>
   {{#found}}<p>{{.}}</p>{{/found}}
   {{#hasWhy}}<h2>Why it matters</h2><ul>{{#why}}<li>{{.}}</li>{{/why}}</ul>{{/hasWhy}}
   {{#hasChecked}}<h2>What looked fine</h2><p>{{checkedSentence}}</p>{{/hasChecked}}

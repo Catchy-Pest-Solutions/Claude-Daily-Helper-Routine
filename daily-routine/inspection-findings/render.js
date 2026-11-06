@@ -78,15 +78,16 @@ async function renderQuote(chrome, decision, post, config, today, outDir) {
   const chosen = (decision.photos?.length ? decision.photos : post.photos.map((_, i) => ({ index: i + 1 })))
     .map((p) => ({ ...p, photo: post.photos[p.index - 1] }))
     .filter((p) => p.photo);
-  if (!chosen.length) throw new Error(`${model.key}: no photos to use`);
+  if (!chosen.length && !model.request) throw new Error(`${model.key}: no photos to use`);
   const stamped = [];
   for (const [i, p] of chosen.entries()) stamped.push({ ...(await stampPhoto(chrome, p.photo, model, dir, i + 1)), caption: p.caption || '', index: p.index });
-  const cardPhoto = chosen.findIndex((p) => p.index === (decision.cardPhoto || chosen[0].index));
-  const cardSrc = chosen[Math.max(0, cardPhoto)].photo.path;
+  const cardPhoto = chosen.findIndex((p) => p.index === (decision.cardPhoto || chosen[0]?.index));
+  // A quote request has no photo: the card shows a plain branded panel.
+  const cardSrc = chosen.length ? chosen[Math.max(0, cardPhoto)].photo.path : null;
 
   // Quote card.
   const cardHtml = path.join(dir, 'card.html');
-  fs.writeFileSync(cardHtml, fill('card.html', { ...model, headline: decision.headline, photoUrl: `file://${cardSrc}`, logoUrl: `file://${LOGO}`, address: model.address, when: model.stampWhen, officePhone: config.officePhone }));
+  fs.writeFileSync(cardHtml, fill('card.html', { ...model, headline: decision.headline, photoUrl: cardSrc ? `file://${cardSrc}` : null, logoUrl: `file://${LOGO}`, address: model.address, when: model.stampWhen, officePhone: config.officePhone, kicker: model.request ? `Your quote from ${model.techName}` : `What ${model.techName} found`, fixLabel: model.request ? 'Your price' : 'Fix it for' }));
   const card = await chrome.open(cardHtml, CARD);
   const overflows = () => card.evaluate(`(() => { const m = document.querySelector('main'); return m.scrollHeight > m.clientHeight + 1; })()`);
   if (await overflows()) {
@@ -100,12 +101,15 @@ async function renderQuote(chrome, decision, post, config, today, outDir) {
   fs.writeFileSync(cardPath, cardJpg);
 
   // Proposal PDF.
-  const infographic = config.infographics?.[config.findings.find((f) => f.key === decision.findings[0])?.infographic];
-  const photoCols = stamped.length >= 3 ? 3 : stamped.length;
+  // decision.infographic (a config.infographics key) picks one for a quote request.
+  const infographic = config.infographics?.[decision.infographic || config.findings.find((f) => f.key === decision.findings[0])?.infographic];
+  const photoCols = Math.max(1, stamped.length >= 3 ? 3 : stamped.length);
   const pdfHtml = path.join(dir, 'proposal.html');
   fs.writeFileSync(pdfHtml, fill('proposal.html', {
     ...model,
-    headline: decision.pdfHeadline || `What ${model.techName} found at ${model.street}`,
+    headline: decision.pdfHeadline || (model.request ? `Your quote for ${model.street}` : `What ${model.techName} found at ${model.street}`),
+    foundTitle: model.request ? 'What you asked about' : `What ${model.techName} found`,
+    hasPhotos: stamped.length > 0,
     logoUrl: `file://${LOGO}`,
     date: Q.longDate(today),
     photos: stamped.map((s) => ({ url: `file://${s.path}`, caption: s.caption })),

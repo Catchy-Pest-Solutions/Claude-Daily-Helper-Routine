@@ -303,3 +303,7 @@ leads; set a real minimum after 2-3 weeks of data.
 - Office: when a customer cancels one plan, their other plan goes back to
   its regular price (done by hand, part of cancellation procedures). The
   credit is booked by entering the lower price.
+- **Quote requests** for one of the three plans are priced and sent like
+  a finding, just without photos (card shows a plain "Your quote" panel;
+  email subject "Your quote for <street>"). $0 bonus. Requests for other
+  services still become a task for the office.

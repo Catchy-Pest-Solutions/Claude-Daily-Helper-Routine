@@ -13,6 +13,8 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 const longDate = (ymd) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric' });
 const shortDate = (ymd) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
 
+const isQuoteRequest = (d) => d.action === 'quote' && (d.findings || []).length === 1 && d.findings[0] === 'quote_request';
+
 function leadKey(decision) {
   return decision.plan ? `${decision.ts}:${decision.plan}` : String(decision.ts);
 }
@@ -30,7 +32,12 @@ function checkDecision(decision, post, config) {
   }
   if (decision.action === 'quote_request') return errs;
   if (!findings.length) errs.push('needs findings');
-  const plans = [...new Set(findings.map((k) => config.findings.find((f) => f.key === k)?.plan).filter(Boolean))];
+  // A quote request ("Quote request", nothing to photograph) for one of our
+  // plans is quoted like a finding, without photos: findings
+  // ["quote_request"] plus the plan the customer asked about.
+  const request = isQuoteRequest(decision);
+  if (request && !config.plans[decision.plan]) errs.push(`a quote request needs plan: one of ${Object.keys(config.plans).join(', ')} (anything else: action "quote_request", a task for the office)`);
+  const plans = request ? [decision.plan] : [...new Set(findings.map((k) => config.findings.find((f) => f.key === k)?.plan).filter(Boolean))];
   if (plans.length !== 1) errs.push(`findings must all point at one plan (got ${plans.join(', ') || 'none'}); write one decision per plan`);
   if (decision.plan && plans[0] && decision.plan !== plans[0]) errs.push(`plan "${decision.plan}" doesn't match the findings (${plans[0]})`);
   if (decision.action === 'commercial') return errs;
@@ -42,7 +49,7 @@ function checkDecision(decision, post, config) {
   if ((post.checks?.priorOfferPlans || []).includes(plan) && !decision.allowRepeat) errs.push(`${plan} was already quoted and the offer is still open: skip`);
   if (post.checks?.commercial) errs.push('business: use action "commercial"');
   if (!post.visit) errs.push('no matching visit');
-  if (!post.photos?.length) errs.push('no photos');
+  if (!post.photos?.length && !request) errs.push('no photos');
 
   const t = String(decision.text?.body || '');
   if (!t.trim()) errs.push('needs text.body');
@@ -60,14 +67,16 @@ function checkDecision(decision, post, config) {
 
 // Everything the templates and messages need for a quote decision.
 function quoteModel(decision, post, config, { today }) {
+  const request = isQuoteRequest(decision);
   const plan = decision.plan || config.findings.find((f) => f.key === decision.findings[0]).plan;
-  const exclusion = plan === 'critter' ? pricing.exclusionFor(decision.findings, { techSaysNoExclusion: Boolean(decision.techSaysNoExclusion) }, config) : null;
+  const exclusion = plan !== 'critter' ? null : request ? !decision.techSaysNoExclusion : pricing.exclusionFor(decision.findings, { techSaysNoExclusion: Boolean(decision.techSaysNoExclusion) }, config);
   const price = pricing.priceFor(plan, post.plans, config, { exclusion: exclusion ?? true });
   const creditExpires = pricing.creditExpiry(today, config);
   const bonus = pricing.bonusFor(decision.findings, { visitCategory: post.visit?.category }, config);
   const visitDate = post.visit?.date || post.postDate;
   return {
     key: leadKey({ ...decision, plan }),
+    request,
     plan,
     planName: price.planName,
     exclusion,
@@ -126,4 +135,4 @@ function checkedSentence(items, visitPhrase = 'the visit') {
   return `During ${visitPhrase} I didn't see any signs of ${joined}.`;
 }
 
-module.exports = { ACTIONS, checkDecision, quoteModel, checkTextPrice, checkDayNames, checkedSentence, leadKey, money, longDate, shortDate };
+module.exports = { isQuoteRequest, ACTIONS, checkDecision, quoteModel, checkTextPrice, checkDayNames, checkedSentence, leadKey, money, longDate, shortDate };

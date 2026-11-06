@@ -186,3 +186,22 @@ test('office task: customer ID first, customer notes and custom-quote alert when
   assert.doesNotMatch(text, /slack|appointment|drive\.google/i);
   assert.doesNotMatch(taskDescription({ decision, post, model: m, results: { email: 'sent', text: 'sent' }, action: 'quote', sentAtMs: Date.now() }), /Customer notes/);
 });
+
+test('quote request for one of our plans is priced like a finding, without photos, $0 bonus', () => {
+  const req = {
+    ts: '1.1', action: 'quote', findings: ['quote_request'], plan: 'termite', headline: 'Termite protection',
+    found: ['Asked about termite protection.'], email: { intro: ['Hi Pat,'] },
+    text: { body: 'Hi Pat, it\'s Dustin. When I did your service Friday you asked about termite protection. We can protect your home for $550 (details in the picture). Reply YES and the office will get you scheduled.' },
+  };
+  const noPhotos = { ...post, photos: [] };
+  assert.deepEqual(Q.checkDecision(req, noPhotos, config), []);
+  const m = Q.quoteModel(req, noPhotos, config, { today: '2026-11-06' });
+  assert.deepEqual([m.request, m.plan, m.initial, m.bonus], [true, 'termite', '$550', 0]);
+  assert.equal(Q.checkTextPrice(req.text.body, m), null);
+  // Critter requests include exclusion unless the tech says otherwise.
+  assert.equal(Q.quoteModel({ ...req, plan: 'critter' }, noPhotos, config, { today: '2026-11-06' }).exclusion, true);
+  assert.equal(Q.quoteModel({ ...req, plan: 'critter', techSaysNoExclusion: true }, noPhotos, config, { today: '2026-11-06' }).exclusion, false);
+  // Needs one of our plans; a finding still needs photos.
+  assert.match(Q.checkDecision({ ...req, plan: 'mosquito' }, noPhotos, config).join(), /quote request needs plan/);
+  assert.match(Q.checkDecision(decision, noPhotos, config).join(), /no photos/);
+});
