@@ -151,8 +151,10 @@ async function main() {
     };
     posts.push(post);
     if (!parsed.customerId) {
-      // Daniel's own chatter in the channel isn't a post to judge.
-      if (post.postedByDaniel && !photos.length) {
+      // Conversation in the channel (no customer ID and no photos, from
+      // anyone: "Is that not bat guano?") isn't a post to judge or answer.
+      // A post with photos but no ID is kept so the routine can ask.
+      if (!photos.length && !parsed.quoteRequest) {
         posts.pop();
         continue;
       }

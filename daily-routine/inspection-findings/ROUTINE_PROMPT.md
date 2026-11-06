@@ -130,8 +130,10 @@ again. Look at each `quote-card.jpg` under `$S/quotes/` before sending.
 `sheet`). Re-running is safe: logged leads come back `already_sent`.
 
 Then, in Slack (from Daniel's account, the Slack connector), reply in each
-skip/ask post's thread with its `techMessage`. In test mode, the posts are
-Daniel's, so the replies go to him.
+skip/ask post's thread with its `techMessage`. This happens in test mode
+too: techs are in the channel, so keep notes short and friendly. Plain
+conversation in the channel (no customer ID, no photos) is left out by
+collect.js; never reply to it.
 
 ## Step 5: Thursdays only
 
