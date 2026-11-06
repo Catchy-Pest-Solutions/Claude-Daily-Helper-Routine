@@ -7,7 +7,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { width: 8.5in; height: 11in; font-family: Arial, Helvetica, "Liberation Sans", sans-serif; color: #000; background: #fff; }
   .heavy { font-family: "Arial Black", "Arial Bold", Arial, "Liberation Sans", sans-serif; font-weight: 900; }
-  .page { padding: 0.4in 0.5in 0.3in; height: 11in; display: flex; flex-direction: column; }
+  .page { padding: 0.38in 0.5in 0.25in; height: 11in; display: flex; flex-direction: column; }
   .page > * { flex-shrink: 0; }
   header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 10px; }
   header img { height: 46px; filter: grayscale(1) contrast(1.4); }
@@ -24,7 +24,7 @@
   .item { flex: 1; padding: 8px 14px 10px; border-right: 1.5px dashed #000; }
   .item:last-child { border-right: none; }
   .item .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-  .item svg { width: 48px; height: 48px; flex-shrink: 0; }
+  .item svg { width: 40px; height: 40px; flex-shrink: 0; }
   .item .name { font-size: 15.5px; font-weight: 700; line-height: 1.2; }
   .item .what { font-size: 12px; line-height: 1.3; margin-top: 3px; }
   .item .pay { font-size: 40px; line-height: 1; }
@@ -39,14 +39,23 @@
   .steps h2 { font-size: 16px; letter-spacing: 2.5px; text-transform: uppercase; display: flex; justify-content: space-between; }
   .steps h2 span { letter-spacing: 0; text-transform: none; font-size: 13px; }
   .row { display: flex; gap: 10px; margin-top: 8px; }
-  .step { flex: 1; border: 1.5px solid #000; border-radius: 12px; padding: 7px 8px 9px; text-align: center; }
-  .step .n { width: 30px; height: 30px; border-radius: 50%; background: #fff; color: #000; border: 2px solid #000; font-size: 16px; line-height: 26px; margin: 0 auto 4px; }
-  .step svg { width: 38px; height: 38px; display: block; margin: 0 auto 4px; }
-  .step p { font-size: 15.5px; font-weight: 700; line-height: 1.2; }
+  .step { flex: 1; border: 1.5px solid #000; border-radius: 12px; padding: 6px 8px 8px; display: grid; grid-template-columns: auto auto; justify-content: center; align-items: center; column-gap: 10px; row-gap: 4px; text-align: center; }
+  .step > :nth-child(n+3) { grid-column: 1 / -1; }
+  .step .n { width: 30px; height: 30px; border-radius: 50%; background: #fff; color: #000; border: 2px solid #000; font-size: 16px; line-height: 26px; margin: 0; text-align: center; }
+  .step svg { width: 32px; height: 32px; display: block; margin: 0; flex-shrink: 0; }
+  .step p { font-size: 14.5px; font-weight: 700; line-height: 1.2; }
+  .step p.small { font-size: 12px; font-weight: 400; margin-top: 2px; }
   .post { margin-top: 8px; display: flex; gap: 10px; align-items: stretch; }
-  .post .ex { flex: 1.4; border: 1.5px dashed #000; border-radius: 10px; padding: 8px 12px; font-size: 13px; line-height: 1.4; }
-  .post .ex code { font-family: "Courier New", monospace; font-size: 14px; font-weight: 700; }
-  .post .q { flex: 1; border: 1.5px solid #000; border-radius: 10px; padding: 8px 12px; font-size: 12.5px; line-height: 1.35; }
+  .post .ex { flex: 2.1; border: 2.5px solid #000; border-radius: 10px; padding: 8px 12px 9px; }
+  .post .must { font-size: 17px; font-weight: 900; font-family: "Arial Black", "Arial Bold", Arial, sans-serif; line-height: 1.15; }
+  .post .how { font-size: 12.5px; line-height: 1.35; margin-top: 3px; }
+  .post .msg { margin-top: 6px; border: 1.5px dashed #000; border-radius: 8px; padding: 6px 10px; }
+  .post .first { font-family: "Courier New", monospace; font-size: 16px; font-weight: 700; }
+  .post .pics { display: flex; gap: 6px; margin: 4px 0; }
+  .post .pics span { border: 1.5px solid #000; border-radius: 4px; font-size: 10px; padding: 6px 12px; }
+  .post .desc { font-size: 11.5px; line-height: 1.3; }
+  .post .warn { font-size: 13px; font-weight: 700; margin-top: 5px; }
+  .post .q { flex: 1; border: 1.5px solid #000; border-radius: 10px; padding: 8px 12px; font-size: 12.5px; line-height: 1.4; align-self: flex-start; }
   footer { margin-top: 8px; font-size: 10.5px; text-align: center; }
 </style></head>
 <body><div class="page">
@@ -54,7 +63,7 @@
     <img src="../../lead-followup/assets/logo-print.png" alt="Catchy Pest Solutions">
     <div class="title"><h1 class="heavy">INSPECTION FINDINGS</h1><p>Technician field guide</p></div>
   </header>
-  <p class="tag"><b>Find it. Photograph it. Post it. Get paid.</b> The office sends the customer a quote the next morning, signed with your name.</p>
+  <p class="tag"><b>Find it. Photograph it. Post it. Get paid.</b> The customer gets a quote the next morning, signed with your name.</p>
 
   <!-- TERMITES -->
   <section class="cat">
@@ -137,7 +146,7 @@
   </section>
 
   <div class="extras">
-    <div class="extra big"><b>1.5x on Inspection &amp; One Time visits</b>Inspection / Consultation and One Time Service visits pay 1.5x. Example: $4 becomes $6.</div>
+    <div class="extra big"><b>1.5x on Inspection &amp; One Time</b>Inspection / Consultation and One Time Service visits pay 1.5x. Example: $4 becomes $6.</div>
     <div class="extra"><b>One lead per plan</b>Carpenter bees + a wasp nest = one Signature lead, paid at the higher amount.</div>
     <div class="extra"><b>Doesn't count</b>Apartments, mobile homes, already covered by their plan, or quoted in the last 90 days.</div>
   </div>
@@ -156,11 +165,20 @@
         <p>Voice-to-text what you see</p></div>
       <div class="step"><div class="n heavy">4</div>
         <svg viewBox="0 0 64 64" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 30 58 8 46 56 30 38z"/><path d="M30 38 58 8"/><path d="M30 38v16l8-9"/></svg>
-        <p>Post it before you leave</p></div>
+        <div><p>Post it before you leave</p><p class="small">Name + ID first</p></div></div>
     </div>
     <div class="post">
-      <div class="ex">Post in <b>#inspection-findings</b>, all in one post. Start with:<br><code>Customer: Jane Smith #12345</code><br>then the photos and your description.</div>
-      <div class="q"><b>Quote request?</b> If the customer asks for a quote and there's nothing to photograph, start the post with <b>"Quote request"</b>. No bonus.</div>
+      <div class="ex">
+        <div class="must">Every post starts with the customer's <u>name</u> and <u>ID</u></div>
+        <div class="how">Copy and paste both from your technician app into your Slack message in <b>#inspection-findings</b>. Then add the photos and your description, all in one post.</div>
+        <div class="msg">
+          <div class="first">Customer: Jane Smith #12345</div>
+          <div class="pics"><span>photo</span><span>photo</span></div>
+          <div class="desc">4 carpenter bee holes on the fascia above the back deck, fresh sawdust...</div>
+        </div>
+        <div class="warn">No name and ID = no quote and no bonus.</div>
+      </div>
+      <div class="q"><b>Quote request?</b> If the customer asks for a quote and there's nothing to photograph, start the post with the name and ID, then <b>"Quote request"</b> and what they want. No bonus.</div>
     </div>
   </section>
   <footer>Paid weekly with payroll, for every lead that counts &middot; Questions? Ask Daniel</footer>
