@@ -287,3 +287,19 @@ leads; set a real minimum after 2-3 weeks of data.
 - Who counts as having "another active plan" can only be decided per
   customer ID across all their properties. The coverage and pricing checks
   must read every service on the customer, not just the visited address.
+
+## Later decisions (Daniel, Nov 6)
+
+- **Exclusion needed** counts only for a specific gap a mouse could fit
+  through that our normal exclusion work can fix: in scope, not
+  unreasonably small or big, and fixing it actually helps the customer.
+- **Bats** (rare) count as rodent droppings: same Critter Control quote,
+  plus a one-line alert to #office-only (`C09LNB93MQW`) for a custom quote.
+- **Customer notes** (preferences, deadlines, who to call) from the tech's
+  post go on the office task under "Customer notes", never to the customer.
+- Bonuses are paid for every lead that counts, whether or not the customer
+  buys, on the normal Thursday/Friday payroll. The old $25/$50 upsell
+  bonuses end when this rolls out.
+- Office: when a customer cancels one plan, their other plan goes back to
+  its regular price (done by hand, part of cancellation procedures). The
+  credit is booked by entering the lower price.

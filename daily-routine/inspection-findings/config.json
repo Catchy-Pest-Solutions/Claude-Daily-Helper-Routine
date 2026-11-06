@@ -8,6 +8,7 @@
 
   "channelId": "C0CF6R073M4",
   "danielSlackUserId": "U09LQDUPQTC",
+  "officeChannelId": "C09LNB93MQW",
   "lookbackDays": 8,
   "lateDays": 1,
   "clarificationNudgeDays": 3,
@@ -83,7 +84,7 @@
     { "key": "termites", "label": "Signs of termites (damage or activity)", "plan": "termite", "bonus": 4, "infographic": "signs-of-termites" },
     { "key": "rodent_droppings", "label": "Rodent or wildlife droppings in the attic, crawl space or home", "plan": "critter", "bonus": 3, "infographic": "rodent-droppings", "exclusionDefault": true },
     { "key": "carpenter_bees", "label": "Carpenter bee burrows", "plan": "signature", "bonus": 2, "infographic": "carpenter-bee-damage" },
-    { "key": "exclusion_needed", "label": "Exclusion needed (a gap a mouse could fit through)", "plan": "critter", "bonus": 2, "infographic": "exclusion-needed", "exclusionDefault": true },
+    { "key": "exclusion_needed", "label": "Exclusion needed (a specific gap a mouse could fit through that our exclusion work can fix)", "plan": "critter", "bonus": 2, "infographic": "exclusion-needed", "exclusionDefault": true },
     { "key": "wood_to_ground", "label": "Wood or siding touching the ground", "plan": "termite", "bonus": 2, "infographic": "termite-entry-points" },
     { "key": "stinging_nest", "label": "Wasp, hornet or yellow jacket nest", "plan": "signature", "bonus": 1, "infographic": "stinging-insects" },
     { "key": "yard_burrows", "label": "Mole, vole or groundhog burrows in the yard", "plan": "critter", "bonus": 1, "infographic": "yard-burrowing", "exclusionDefault": false },

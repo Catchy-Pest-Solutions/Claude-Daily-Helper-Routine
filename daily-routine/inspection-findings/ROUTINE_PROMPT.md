@@ -69,10 +69,25 @@ or attic mean exclusion unless the tech says it isn't needed. "No entry
 points" counts as saying it isn't needed: set `"techSaysNoExclusion": true`.
 Yard burrows never get exclusion.
 
-**Bats** are not rodents and not on Critter Control. Droppings piled in one
-line under a roof edge or porch ceiling may be bats: ask the tech instead
-of quoting. (Nov 6 test posts are an exception: Daniel said to treat them
-as mice.)
+**"Exclusion needed"** (the finding on its own, Daniel Nov 6) counts only
+for a specific gap a mouse could fit through (about pencil width or
+bigger) that we can fix with our normal exclusion work: in our scope, not
+unreasonably small or big, and fixing it actually helps the customer. A
+vague "could use exclusion", a hairline crack, or a job beyond our
+exclusion work (a missing wall, a roof repair) doesn't count: skip or ask.
+
+**Bats** (rare): quote them like rodent droppings (`rodent_droppings`,
+Critter Control, same price rules) and also post one line to #office-only
+(`C09LNB93MQW`, Slack connector) so the office can work up a custom quote:
+put it in the decision's `officeAlert`, e.g. "Possible bats at Jane Smith
+#12345 (Dustin, Nov 12): droppings piled under the porch ceiling. Critter
+quote sent; needs a custom bat quote." Use it when the tech says bats or
+the droppings are piled in one line under a roof edge or porch ceiling.
+
+**Customer notes**: anything the customer asked for or prefers (a day or
+deadline, "wants it before Thanksgiving", "call my wife", "only the back
+deck") goes in `customerNotes`. It shows on the office task; never in the
+customer's messages.
 
 ## Step 3: write `$S/decisions.json`
 
@@ -88,6 +103,7 @@ as mice.)
     "checkedOk": ["things the tech says he checked and didn't see"],
     "text": { "body": "..." },
     "email": { "intro": ["Hi Jane,", "..."], "body": ["..."], "closing": ["...", "Dustin"] },
+    "customerNotes": "", "officeAlert": "",
     "missingSteps": [], "techMessage": "", "reason": "" },
   { "ts": "...", "action": "skip", "reason": "already has Critter Control", "techMessage": "..." }
 ] }
@@ -128,6 +144,9 @@ Both refuse to run on a bad decision and say what to fix; fix it and run
 again. Look at each `quote-card.jpg` under `$S/quotes/` before sending.
 `send.js` prints one result per decision (`text`, `email`, `log`, `task`,
 `sheet`). Re-running is safe: logged leads come back `already_sent`.
+
+Post each decision's `officeAlert` (if any) to #office-only
+(`C09LNB93MQW`) as one message.
 
 Then, in Slack (from Daniel's account, the Slack connector), reply in each
 skip/ask post's thread with its `techMessage`. This happens in test mode
