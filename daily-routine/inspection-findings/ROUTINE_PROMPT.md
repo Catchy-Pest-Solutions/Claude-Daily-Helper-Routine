@@ -42,7 +42,7 @@ action per post per plan:
   visit by this tech that day or the day before (`visit` null); apartment
   or mobile home (from the wide photo or the description); not one of the
   seven findings; already covered (`checks.covered[plan]`, or Catchy Club:
-  skip without a quote); already quoted and still open (`priorOffers`); the
+  skip without a quote); already quoted and still open (`priorOffers`; a finding posted after that quote went out earns no extra bonus, Daniel Nov 10); the
   photos don't show what the tech described; no photos.
 - A quote can still go out when the tech skipped a step (no close-up, no
   wide photo, no description of where, or posted after leaving), but all
@@ -68,6 +68,18 @@ action per post per plan:
     to the customer.
 - **quote**: everything else. One decision per plan (carpenter bees + a
   wasp nest are one Signature quote; termites + droppings are two).
+- **One quote per customer per plan, even across posts** (Daniel, Nov 10):
+  when separate posts for the same customer point at the same plan (a
+  carpenter bee post and a wasp nest post; an entry point post and a mole
+  burrow post), write one decision on the first post and list the others
+  in `"alsoPosts": [{ "ts": "<other post ts>", "findings": ["stinging_nest"], "missingSteps": [] }]`.
+  `findings` on the decision is the first post's own. Pick photos from
+  any of them (`{ "ts": "<other ts>", "index": 1 }`; no `ts` means the
+  decision's own post). The quote covers every finding (Critter with an
+  entry point includes exclusion, even with burrows), and every post's
+  tech is paid for each of its findings. Don't write a separate decision
+  for a merged post. Each merged post's tech gets a `techMessage` only if
+  something's missing; reply in that post's thread.
 
 Findings keys (config.json `findings`): `termites`, `rodent_droppings`,
 `carpenter_bees`, `exclusion_needed`, `wood_to_ground`, `stinging_nest`,
@@ -105,7 +117,7 @@ customer's messages.
   { "ts": "<post ts>", "action": "quote", "findings": ["rodent_droppings"], "plan": "critter",
     "techSaysNoExclusion": false,
     "headline": "Rodent droppings in your crawl space",          // card, <= 70 chars
-    "photos": [{ "index": 2, "caption": "..." }, { "index": 1, "caption": "..." }],  // 1-based, best first
+    "photos": [{ "index": 2, "caption": "..." }, { "index": 1, "caption": "..." }],  // 1-based, best first; { "ts", "index" } for an alsoPosts photo
     "cardPhoto": 2,                                               // the close-up
     "found": ["What was found and exactly where, how much, active or old."],
     "why": ["Claims from KNOWLEDGE_BASE.md only, with the source in brackets."],
@@ -126,18 +138,31 @@ Messages:
   AI or automation.
 - **Quote request text**: "When I did your service Friday you asked about
   termite protection, so I had the office put together a quote. We can
-  protect your home for $718 (details in the picture). Reply YES and the
-  office will get you scheduled."
+  protect your home for $718, which covers the soil treatment and bait
+  stations, with a damage warranty (details in the picture). Reply YES and
+  the office will get you scheduled."
 - **Text**: short, confident, assumes the sale. The problem, then the
   initial fee only (`prices.<plan>.initial`, or `prices.critter_no_exclusion`),
-  then "(details in the picture)". No 12-month plan, no monthly fee. End:
-  "Reply YES and the office will get you scheduled." The script refuses a
-  text with any other price or the wrong weekday.
+  then what it covers in the fixed words, then "(details in the picture)":
+  "We can take care of it for $174, which covers foaming the carpenter bee
+  holes and your first 3 treatments (details in the picture)." No 12-month plan, no monthly fee. End: "Reply YES and the
+  office will get you scheduled." The script refuses a text with any other
+  price, the wrong weekday, or without the covers words.
+- **What the price covers** (`config.json` `priceCovers`; Daniel, Nov 10):
+  the scripts put the "Price covers" list on the card and the PDF and the
+  "How we fix it" paragraphs in the email and PDF, the same words every
+  time, the tech's findings at the top. Your only part is the text's
+  covers words: every `priceCovers.<plan>.text` piece that matches the
+  findings (and, for Critter, with or without exclusion), joined "a, b
+  and c". If you get it wrong, render.js prints the exact words to use. Don't describe the
+  service in your own words anywhere else: no list of what's included in
+  `email.body`, never promise a payout or coverage of existing termite
+  damage.
 - **Email**: intro (greeting + what I found), photos go after the intro
   automatically, body (where, how much, why it's worth fixing now), then the
-  script adds "Why it matters", the fix box (price, 3-month warranty,
-  credit, terms), closing, the infographic and the video. Subject is
-  automatic: "What I found at <street>".
+  script adds "Why it matters", the fix box (price, what it covers, how we
+  fix it, credit, terms), closing, the infographic and the video. Subject
+  is automatic: "What I found at <street>".
 - **checkedOk**: only what the tech actually says he checked. Never write
   "no termites" or "no wood-boring beetles" unless he says he inspected for
   them.

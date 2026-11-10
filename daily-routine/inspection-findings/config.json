@@ -90,6 +90,71 @@
     { "key": "yard_burrows", "label": "Mole, vole or groundhog burrows in the yard", "plan": "critter", "bonus": 1, "infographic": "yard-burrowing", "exclusionDefault": false },
     { "key": "quote_request", "label": "Quote request with nothing to photograph", "plan": null, "bonus": 0 }
   ],
+  "priceCovers": {
+    "_doc": "What the initial fee covers, filled in by the scripts (lib/quote.js priceCovers). lines: the card's and the PDF's \"Price covers\" list; the script adds \"Then $X a month, starting month 4\" at the end. text: the pieces of the customer's text (\"...$174, which covers <pieces joined: a, b and c> (details in the picture)\"). details: the \"How we fix it\" paragraphs in the email and PDF. finePrint: under the fix in the email and PDF. An item with findings shows only for those findings (one quote can merge several) and goes to the top; exclusion true/false shows only on the price with/without exclusion; topFor moves it to the top for those findings.",
+    "signature": {
+      "lines": [
+        { "text": "Every carpenter bee hole foamed, plus all outside wood treated to prevent new damage", "findings": ["carpenter_bees"] },
+        { "text": "Active nests treated and removed, plus an outside treatment that prevents new nests", "findings": ["stinging_nest"] },
+        { "text": "First 3 treatments in 3 months, the first two 2 weeks apart" },
+        { "text": "30+ pests covered, inside and out" },
+        { "text": "Free return visits between treatments" }
+      ],
+      "text": [
+        { "text": "foaming the carpenter bee holes", "findings": ["carpenter_bees"] },
+        { "text": "removing the nests", "findings": ["stinging_nest"] },
+        { "text": "your first 3 treatments" }
+      ],
+      "details": [
+        { "text": "We foam every carpenter bee hole and treat the outside wood to prevent new ones.", "findings": ["carpenter_bees"] },
+        { "text": "We treat and remove every active nest, then treat the outside of your home to prevent new ones.", "findings": ["stinging_nest"] },
+        { "text": "Your first 3 treatments come in the first 3 months, the first two 2 weeks apart. Signature covers 30+ pests inside and out, with free return visits between treatments." }
+      ],
+      "finePrint": []
+    },
+    "critter": {
+      "lines": [
+        { "text": "Entry points sealed with foam and copper mesh", "exclusion": true, "topFor": ["exclusion_needed"] },
+        { "text": "Inspection, traps and stations set up" },
+        { "text": "7 days of daily visits to remove animals" },
+        { "text": "Two-week follow-up visit" },
+        { "text": "Granular repellent around the home" },
+        { "text": "Free return visits for 3 months" }
+      ],
+      "text": [
+        { "text": "sealing the entry points", "exclusion": true },
+        { "text": "7 days of daily visits" },
+        { "text": "a granular repellent" }
+      ],
+      "details": [
+        { "text": "We seal the entry points around your foundation with foam, copper mesh and hardware cloth. We don't do construction repairs (foundation, siding or roofing).", "exclusion": true, "topFor": ["exclusion_needed"] },
+        { "text": "We identify the animal, set traps and stations, and visit daily for 7 days to remove them. A follow-up visit at two weeks checks that they're gone." },
+        { "text": "We also apply a granular repellent, and you get free return visits for 3 months." }
+      ],
+      "finePrint": []
+    },
+    "termite": {
+      "lines": [
+        { "text": "Wood-to-ground areas treated directly", "findings": ["wood_to_ground"] },
+        { "text": "Termite activity treated directly", "findings": ["termites"] },
+        { "text": "Liquid soil treatment around the home" },
+        { "text": "Bait stations installed around the home" },
+        { "text": "Retreatment and damage warranty" }
+      ],
+      "text": [
+        { "text": "the soil treatment and bait stations, with a damage warranty" }
+      ],
+      "details": [
+        { "text": "We treat the soil directly where wood touches the ground.", "findings": ["wood_to_ground"] },
+        { "text": "We treat the termite activity directly with foam and a soil treatment.", "findings": ["termites"] },
+        { "text": "Then we install bait stations around the house, about every 15 to 20 feet." }
+      ],
+      "finePrint": [
+        "The damage warranty covers new termite damage while your plan is active, not damage that's already there."
+      ]
+    }
+  },
+
   "infographics": {
     "signs-of-termites": "assets/infographics/signs-of-termites.jpg",
     "termite-entry-points": "assets/infographics/termite-entry-points.jpg",
