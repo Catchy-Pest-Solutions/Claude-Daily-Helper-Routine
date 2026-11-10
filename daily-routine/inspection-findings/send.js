@@ -115,19 +115,19 @@ function emailPlain(decision, model) {
     `The fix: ${model.fixLine}${model.credit ? ` Includes your ${model.credit} credit, good through ${model.creditExpiresLong}.` : ''}`,
     ...(model.coversDetails.length ? ['How we fix it:', ...model.coversDetails] : []),
     ...model.finePrint,
-    `Details: ${model.planName}, 12-month plan. ${model.initial} covers the first 3 months, then ${model.monthly} a month (billed every 4 weeks) starting month 4. No annual commitment: ${model.noAnnualInitial} initial, same monthly fee. The full quote is attached as a PDF.`,
+    `Details: ${model.planName}, 12-month plan, billed every 4 weeks. No annual commitment: ${model.noAnnualInitial} initial, same monthly fee. The full quote is attached as a PDF.`,
     ...(decision.email.closing || []),
     `Short video about ${model.planName}: ${model.video}`,
   ].join('\n\n');
 }
 
-function logBody({ prefix, kind, key, model, post, status, recipient, whenMs, sendAtMs, message, subject, pdfUrl, today }) {
+function logBody({ prefix, kind, key, model, post, status, recipient, whenMs, sendAtMs, message, subject, pdfUrl, today, alsoLinks = [] }) {
   const when = status === 'scheduled' && sendAtMs ? `scheduled for ${cal.formatDay(sendAtMs)} ${cal.formatTime(sendAtMs)}` : `${cal.formatDay(whenMs)} ${cal.formatTime(whenMs)}`;
   return [
     `${prefix} ${kind} ${status}${prefix === TEST_LOG_PREFIX && ['sent', 'scheduled'].includes(status) ? ` to the test ${kind === 'Text' ? 'phone' : 'inbox'} only` : ''}`,
     `Customer ${prefix === TEST_LOG_PREFIX ? 'contact' : 'to'}: ${recipient}`,
     `When: ${when}`,
-    `Found by: ${model.techName} (Slack post ${post.link})`,
+    `Found by: ${model.techName} (Slack post ${post.link}${alsoLinks.length ? `, also ${alsoLinks.join(', ')}` : ''})`,
     `Plan: ${model.planName}${model.exclusion === false ? ' (no exclusion)' : model.exclusion ? ' (with exclusion)' : ''}`,
     `Plan key: ${model.plan}`,
     `Price: ${model.initial} initial (12-month plan), then ${model.monthly} a month. No annual commitment: ${model.noAnnualInitial}.`,
@@ -203,6 +203,29 @@ function sheetRow({ decision, post, model, status, counted, reason, bonus, confi
   };
 }
 
+// Posts merged into a quote (alsoPosts): one sheet row each, so each post
+// is settled and its tech is paid for its own findings. The quote and
+// credit stay on the first post's row only, so totals don't double count.
+function mergedRows({ decision: d, model, posts, config }) {
+  return (d.alsoPosts || []).map((a) => {
+    const other = posts.find((x) => x.ts === a.ts);
+    const missing = (a.missingSteps || []).filter(Boolean);
+    const plan = model?.plan || d.plan || config.findings.find((f) => f.key === a.findings[0])?.plan;
+    const bonus = require('./lib/pricing').bonusFor(a.findings, { visitCategory: other.visit?.category }, config).perPlan[plan] ?? 0;
+    const row = sheetRow({
+      decision: { ...d, ts: a.ts, findings: a.findings, plan },
+      post: other,
+      model: model && { ...model, visitDate: other.visit?.date || other.postDate },
+      status: d.action === 'quote' ? 'quoted' : 'task for office',
+      counted: !missing.length,
+      reason: [`same quote as post ${d.ts}`, missing.length ? `no bonus: missing ${missing.join(', ')}` : ''].filter(Boolean).join('; '),
+      bonus: missing.length ? 0 : bonus,
+      config,
+    });
+    return { ...row, Quote: '', Credit: '' };
+  });
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2), { values: ['posts', 'decisions', 'now'], flags: ['preview', 'no-sheet', 'resend'] });
   if (args.resend && loadConfig().testMode === false) throw new Error('--resend only works in test mode');
@@ -225,7 +248,7 @@ async function main() {
   const problems = [];
   for (const d of decisions) {
     const post = collected.posts.find((p) => p.ts === d.ts);
-    const errs = Q.checkDecision(d, post, config);
+    const errs = [...Q.checkDecision(d, post, config, collected.posts), ...Q.checkMerges(d, decisions, config)];
     if (d.action === 'quote' && !errs.length) {
       const m = Q.quoteModel(d, post, config, { today });
       const e1 = Q.checkTextPrice(d.text.body, m) || Q.checkTextCovers(d.text.body, m);
@@ -279,7 +302,7 @@ async function main() {
       const subjectBase = model.request ? `Your quote for ${model.street}` : `What I found at ${model.street}`;
       const subject = test ? `[TEST for ${who}] ${subjectBase}` : subjectBase;
       const photos = rend.photos;
-      const infoPath = config.infographics?.[d.infographic || config.findings.find((f) => f.key === d.findings[0])?.infographic];
+      const infoPath = config.infographics?.[d.infographic || config.findings.find((f) => f.key === Q.allFindings(d)[0])?.infographic];
       const infographic = infoPath && fs.existsSync(path.join(__dirname, infoPath)) ? path.join(__dirname, infoPath) : null;
       const html = emailHtml({ decision: d, model, subject, photos, config, infographic });
       const textBody = d.text.body.trim();
@@ -335,7 +358,7 @@ async function main() {
         const phoneId = customer.primaryPhone?.contactMethodId;
         const emailId = customer.primaryEmail?.contactMethodId;
         const date = cal.easternIso(nowMs);
-        const common = { prefix, key, model, post, today, pdfUrl: rend.pdfUrl };
+        const common = { prefix, key, model, post, today, pdfUrl: rend.pdfUrl, alsoLinks: (d.alsoPosts || []).map((a) => collected.posts.find((x) => x.ts === a.ts)?.link).filter(Boolean) };
         if (targets.length || numbers.length) {
           await createLogEntry(brio, post.customer.id, { subject: `${prefix} Text`, communicationTypeId: 'SMS', date, content: logBody({ ...common, kind: 'Text', status: r.text, recipient: numbers.map(formatPhone).join(', '), whenMs: nowMs, sendAtMs, message: textBody }) }, phoneId || emailId);
         }
@@ -387,6 +410,8 @@ async function main() {
       bonus: missing.length ? 0 : bonus,
       config,
     }));
+
+    rows.push(...mergedRows({ decision: d, model, posts: collected.posts, config }));
   }
 
   if (!args.preview && !args['no-sheet'] && sheetId && rows.length) {
@@ -408,4 +433,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { textSendAt, taskDue, textNumbers, logBody, taskDescription };
+module.exports = { textSendAt, taskDue, textNumbers, logBody, taskDescription, mergedRows };

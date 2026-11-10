@@ -91,67 +91,66 @@
     { "key": "quote_request", "label": "Quote request with nothing to photograph", "plan": null, "bonus": 0 }
   ],
   "priceCovers": {
-    "_doc": "What the initial fee covers, filled in by the scripts (lib/quote.js priceCovers). lines: the card's and the PDF's \"Price covers\" list; the script adds \"Then $X a month, starting month 4\" at the end. text: the phrase the customer's text must contain (\"...$174, which covers <text> (details in the picture)\"). details: the \"How we fix it\" paragraphs in the email and PDF. finePrint: under the fix in the email and PDF. An item with findings shows only for those findings and goes to the top; exclusion true/false shows only on the price with/without exclusion; topFor moves it to the top for those findings. The first matching text wins.",
+    "_doc": "What the initial fee covers, filled in by the scripts (lib/quote.js priceCovers). lines: the card's and the PDF's \"Price covers\" list; the script adds \"Then $X a month, starting month 4\" at the end. text: the pieces of the customer's text (\"...$174, which covers <pieces joined: a, b and c> (details in the picture)\"). details: the \"How we fix it\" paragraphs in the email and PDF. finePrint: under the fix in the email and PDF. An item with findings shows only for those findings (one quote can merge several) and goes to the top; exclusion true/false shows only on the price with/without exclusion; topFor moves it to the top for those findings.",
     "signature": {
       "lines": [
         { "text": "Every carpenter bee hole foamed, plus all outside wood treated to prevent new damage", "findings": ["carpenter_bees"] },
-        { "text": "Active nests treated and removed, plus a full outside treatment that prevents new nests", "findings": ["stinging_nest"] },
-        { "text": "Your first 3 treatments over 3 months, the first two 2 weeks apart" },
-        { "text": "Covers and treats 30+ pests, inside and out" },
-        { "text": "Free return visits if pests come back between treatments" }
+        { "text": "Active nests treated and removed, plus an outside treatment that prevents new nests", "findings": ["stinging_nest"] },
+        { "text": "First 3 treatments in 3 months, the first two 2 weeks apart" },
+        { "text": "30+ pests covered, inside and out" },
+        { "text": "Free return visits between treatments" }
       ],
       "text": [
-        { "text": "foaming every carpenter bee hole and treating your outside wood to prevent new damage", "findings": ["carpenter_bees"] },
-        { "text": "treating and removing the nests, plus an outside treatment that prevents new ones", "findings": ["stinging_nest"] },
-        { "text": "your first 3 treatments over the next 3 months" }
+        { "text": "foaming the carpenter bee holes", "findings": ["carpenter_bees"] },
+        { "text": "removing the nests", "findings": ["stinging_nest"] },
+        { "text": "your first 3 treatments" }
       ],
       "details": [
-        { "text": "We foam every carpenter bee hole with an expanding insecticide foam that seals the tunnel, then treat all the exposed wood on the outside of your home to prevent new holes.", "findings": ["carpenter_bees"] },
-        { "text": "We treat every active nest and remove it from your home, then do a full outside treatment that prevents new nests all year.", "findings": ["stinging_nest"] },
-        { "text": "Your first 3 treatments come over the first 3 months. The first two are 2 weeks apart to knock out what you're seeing, and the third usually comes right before the monthly fee starts in month 4. Signature covers 30+ pests inside and out, with free return visits if they come back between treatments." }
+        { "text": "We foam every carpenter bee hole and treat the outside wood to prevent new ones.", "findings": ["carpenter_bees"] },
+        { "text": "We treat and remove every active nest, then treat the outside of your home to prevent new ones.", "findings": ["stinging_nest"] },
+        { "text": "Your first 3 treatments come in the first 3 months, the first two 2 weeks apart. Signature covers 30+ pests inside and out, with free return visits between treatments." }
       ],
       "finePrint": []
     },
     "critter": {
       "lines": [
-        { "text": "Inspection, plus full trap and station setup" },
-        { "text": "7 days of daily visits: animals removed, traps and bait reset" },
+        { "text": "Entry points sealed with foam and copper mesh", "exclusion": true, "topFor": ["exclusion_needed"] },
+        { "text": "Inspection, traps and stations set up" },
+        { "text": "7 days of daily visits to remove animals" },
         { "text": "Two-week follow-up visit" },
-        { "text": "Entry points sealed with foam, copper mesh and hardware cloth", "exclusion": true, "topFor": ["exclusion_needed"] },
-        { "text": "Granular repellent applied around your home and yard" },
-        { "text": "3 months of coverage: free return visits if they come back" }
+        { "text": "Granular repellent around the home" },
+        { "text": "Free return visits for 3 months" }
       ],
       "text": [
-        { "text": "sealing the entry points, 7 days of daily visits to remove the animals and a granular repellent", "findings": ["exclusion_needed"], "exclusion": true },
-        { "text": "7 days of daily visits to remove them, a granular repellent and sealing the entry points", "exclusion": true },
-        { "text": "7 days of daily visits to remove them and a granular repellent" }
+        { "text": "sealing the entry points", "exclusion": true },
+        { "text": "7 days of daily visits" },
+        { "text": "a granular repellent" }
       ],
       "details": [
-        { "text": "We seal the entry points around the outside foundation of your home where pests and rodents get in, using expanding foam, copper mesh and steel hardware cloth. This isn't construction work: we don't repair foundations or replace siding, shingles or roofing.", "exclusion": true, "topFor": ["exclusion_needed"] },
-        { "text": "We identify the animal from the signs it left, set traps and stations around your home, and come out every day for 7 days to check them, remove the animals from the property and reset the traps and bait. A two-week follow-up visit checks that the activity has stopped and covers prevention around your home.", "findings": ["rodent_droppings", "exclusion_needed", "quote_request"] },
-        { "text": "We identify which animal is digging, then come out every day for 7 days to treat the active burrows with stations and traps and remove the animals from the property. A two-week follow-up visit focuses on prevention and checking that the activity has stopped.", "findings": ["yard_burrows"] },
-        { "text": "We also apply a granular repellent around your home and yard to help keep them away, and you have 3 months of coverage: free return visits if they come back." }
+        { "text": "We seal the entry points around your foundation with foam, copper mesh and hardware cloth. We don't do construction repairs (foundation, siding or roofing).", "exclusion": true, "topFor": ["exclusion_needed"] },
+        { "text": "We identify the animal, set traps and stations, and visit daily for 7 days to remove them. A follow-up visit at two weeks checks that they're gone." },
+        { "text": "We also apply a granular repellent, and you get free return visits for 3 months." }
       ],
       "finePrint": []
     },
     "termite": {
       "lines": [
         { "text": "Wood-to-ground areas treated directly", "findings": ["wood_to_ground"] },
-        { "text": "Termite activity treated directly with foam and a soil treatment", "findings": ["termites"] },
+        { "text": "Termite activity treated directly", "findings": ["termites"] },
         { "text": "Liquid soil treatment around the home" },
-        { "text": "Termite bait station system, installed" },
+        { "text": "Bait stations installed around the home" },
         { "text": "Retreatment and damage warranty" }
       ],
       "text": [
         { "text": "the soil treatment and bait stations, with a damage warranty" }
       ],
       "details": [
-        { "text": "We treat the soil directly where wood touches the ground with our liquid termite treatment, to protect those spots and eliminate the colony.", "findings": ["wood_to_ground"] },
-        { "text": "We treat the signs of termites directly, with a foam application into the affected wood and a liquid treatment in the soil, to eliminate the colony.", "findings": ["termites"] },
-        { "text": "We then install our termite bait station system around the outside of your home, about every 15 to 20 feet, to protect the whole house and back your warranty." }
+        { "text": "We treat the soil directly where wood touches the ground.", "findings": ["wood_to_ground"] },
+        { "text": "We treat the termite activity directly with foam and a soil treatment.", "findings": ["termites"] },
+        { "text": "Then we install bait stations around the house, about every 15 to 20 feet." }
       ],
       "finePrint": [
-        "The damage warranty covers new termite damage while your plan is active. It doesn't cover damage that's already there."
+        "The damage warranty covers new termite damage while your plan is active, not damage that's already there."
       ]
     }
   },

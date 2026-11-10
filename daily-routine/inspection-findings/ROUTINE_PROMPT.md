@@ -68,6 +68,18 @@ action per post per plan:
     to the customer.
 - **quote**: everything else. One decision per plan (carpenter bees + a
   wasp nest are one Signature quote; termites + droppings are two).
+- **One quote per customer per plan, even across posts** (Daniel, Nov 10):
+  when separate posts for the same customer point at the same plan (a
+  carpenter bee post and a wasp nest post; an entry point post and a mole
+  burrow post), write one decision on the first post and list the others
+  in `"alsoPosts": [{ "ts": "<other post ts>", "findings": ["stinging_nest"], "missingSteps": [] }]`.
+  `findings` on the decision is the first post's own. Pick photos from
+  any of them (`{ "ts": "<other ts>", "index": 1 }`; no `ts` means the
+  decision's own post). The quote covers every finding (Critter with an
+  entry point includes exclusion, even with burrows), and every post's
+  tech is paid for each of its findings. Don't write a separate decision
+  for a merged post. Each merged post's tech gets a `techMessage` only if
+  something's missing; reply in that post's thread.
 
 Findings keys (config.json `findings`): `termites`, `rodent_droppings`,
 `carpenter_bees`, `exclusion_needed`, `wood_to_ground`, `stinging_nest`,
@@ -105,7 +117,7 @@ customer's messages.
   { "ts": "<post ts>", "action": "quote", "findings": ["rodent_droppings"], "plan": "critter",
     "techSaysNoExclusion": false,
     "headline": "Rodent droppings in your crawl space",          // card, <= 70 chars
-    "photos": [{ "index": 2, "caption": "..." }, { "index": 1, "caption": "..." }],  // 1-based, best first
+    "photos": [{ "index": 2, "caption": "..." }, { "index": 1, "caption": "..." }],  // 1-based, best first; { "ts", "index" } for an alsoPosts photo
     "cardPhoto": 2,                                               // the close-up
     "found": ["What was found and exactly where, how much, active or old."],
     "why": ["Claims from KNOWLEDGE_BASE.md only, with the source in brackets."],
@@ -132,17 +144,17 @@ Messages:
 - **Text**: short, confident, assumes the sale. The problem, then the
   initial fee only (`prices.<plan>.initial`, or `prices.critter_no_exclusion`),
   then what it covers in the fixed words, then "(details in the picture)":
-  "We can take care of it for $174, which covers <covers> (details in the
-  picture)." No 12-month plan, no monthly fee. End: "Reply YES and the
+  "We can take care of it for $174, which covers foaming the carpenter bee
+  holes and your first 3 treatments (details in the picture)." No 12-month plan, no monthly fee. End: "Reply YES and the
   office will get you scheduled." The script refuses a text with any other
   price, the wrong weekday, or without the covers words.
 - **What the price covers** (`config.json` `priceCovers`; Daniel, Nov 10):
   the scripts put the "Price covers" list on the card and the PDF and the
   "How we fix it" paragraphs in the email and PDF, the same words every
-  time, the tech's finding at the top. Your only part is the text's
-  covers words: the first `priceCovers.<plan>.text` entry that matches the
-  findings (and, for Critter, with or without exclusion). If you get it
-  wrong, render.js prints the exact words to use. Don't describe the
+  time, the tech's findings at the top. Your only part is the text's
+  covers words: every `priceCovers.<plan>.text` piece that matches the
+  findings (and, for Critter, with or without exclusion), joined "a, b
+  and c". If you get it wrong, render.js prints the exact words to use. Don't describe the
   service in your own words anywhere else: no list of what's included in
   `email.body`, never promise a payout or coverage of existing termite
   damage.

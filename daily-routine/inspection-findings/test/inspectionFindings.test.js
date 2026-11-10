@@ -62,8 +62,9 @@ test('exclusion: assumed for rodent signs unless the tech says no; never for yar
   assert.equal(pricing.exclusionFor(['termites'], {}, config), null);
 });
 
-test('bonus: one lead per plan at the higher amount, 1.5x on inspection / one-time visits', () => {
-  assert.deepEqual(pricing.bonusFor(['carpenter_bees', 'stinging_nest'], {}, config).perPlan, { signature: 2 });
+test('bonus: every finding is paid, even on one quote; 1.5x on inspection / one-time visits', () => {
+  assert.deepEqual(pricing.bonusFor(['carpenter_bees', 'stinging_nest'], {}, config).perPlan, { signature: 3 });
+  assert.deepEqual(pricing.bonusFor(['exclusion_needed', 'yard_burrows'], {}, config).perPlan, { critter: 3 });
   assert.equal(pricing.bonusFor(['rodent_droppings'], { visitCategory: '12504' }, config).total, 4.5);
   assert.equal(pricing.bonusFor(['termites', 'rodent_droppings'], { visitCategory: 'GPCONETIME' }, config).total, 7);
 });
@@ -217,7 +218,7 @@ test('price covers: the tech\'s finding goes to the top, exclusion only on the w
   const gap = Q.priceCovers('critter', ['exclusion_needed'], true, '$49', config);
   assert.match(gap.lines[0], /^Entry points sealed/);
   assert.match(gap.text, /^sealing the entry points/);
-  assert.match(gap.details[0], /don't repair foundations/);
+  assert.match(gap.details[0], /don't do construction repairs/);
 
   const burrows = Q.priceCovers('critter', ['yard_burrows'], false, '$49', config);
   assert.ok(!burrows.lines.some((l) => /Entry points/.test(l)));
@@ -232,7 +233,7 @@ test('price covers: the tech\'s finding goes to the top, exclusion only on the w
   const termite = Q.priceCovers('termite', ['wood_to_ground'], null, '$29', config);
   assert.equal(termite.lines[0], 'Wood-to-ground areas treated directly');
   assert.equal(termite.text, 'the soil treatment and bait stations, with a damage warranty');
-  assert.match(termite.finePrint.join(' '), /doesn't cover damage that's already there/);
+  assert.match(termite.finePrint.join(' '), /not damage that's already there/);
   const request = Q.priceCovers('termite', ['quote_request'], null, '$29', config);
   assert.ok(request.items.every((i) => !i.top));
 });
@@ -244,4 +245,42 @@ test('the text must say what the price covers in the fixed words', () => {
   const good = decision.text.body.replace('$200 (details', `$200, which covers ${m.coversText} (details`);
   assert.equal(Q.checkTextCovers(good, m), null);
   assert.equal(Q.checkTextCovers(good.replace('7 days', '7  Days'), m), null);
+});
+
+test('one quote per plan: text pieces join, and other posts merge in with their own findings', () => {
+  assert.equal(Q.priceCovers('signature', ['carpenter_bees', 'stinging_nest'], null, '$44', config).text, 'foaming the carpenter bee holes, removing the nests and your first 3 treatments');
+  assert.equal(Q.priceCovers('critter', ['exclusion_needed', 'yard_burrows'], true, '$49', config).text, 'sealing the entry points, 7 days of daily visits and a granular repellent');
+
+  // Entry points in one post, mole burrows in another: one Critter quote with exclusion.
+  const gapPost = { ...post, ts: '1.1' };
+  const burrowPost = { ...post, ts: '2.2' };
+  const merged = { ...decision, findings: ['exclusion_needed'], techSaysNoExclusion: false, alsoPosts: [{ ts: '2.2', findings: ['yard_burrows'] }] };
+  assert.deepEqual(Q.checkDecision(merged, gapPost, config, [gapPost, burrowPost]), []);
+  assert.deepEqual(Q.allFindings(merged), ['exclusion_needed', 'yard_burrows']);
+  const m = Q.quoteModel(merged, gapPost, config, { today: '2026-11-06' });
+  assert.equal(m.exclusion, true);
+  assert.equal(m.bonus, 3); // this post's own finding ($2 x 1.5 one-time visit); the burrow post is paid on its own row
+
+  const stranger = { ...burrowPost, customer: { ...post.customer, id: '11111' } };
+  assert.match(Q.checkDecision(merged, gapPost, config, [gapPost, stranger]).join(), /different customer/);
+  assert.match(Q.checkDecision(merged, gapPost, config, [gapPost]).join(), /no collected post/);
+  assert.match(Q.checkMerges(merged, [merged, { ts: '2.2', action: 'quote', findings: ['yard_burrows'] }], config).join(), /can't have its own critter decision/);
+  assert.deepEqual(Q.checkMerges(merged, [merged, { ts: '2.2', action: 'quote', findings: ['termites'] }], config), []);
+});
+
+test('a merged post gets its own sheet row: its findings, its bonus, no second quote', () => {
+  const { mergedRows } = require('../send');
+  const other = { ...post, ts: '2.2', tech: { name: 'Aaron', fullName: 'Aaron W' }, visit: { date: '2026-11-06', category: 'RODENT' } };
+  const merged = { ...decision, findings: ['exclusion_needed'], techSaysNoExclusion: false, alsoPosts: [{ ts: '2.2', findings: ['yard_burrows'] }] };
+  const m = Q.quoteModel(merged, post, config, { today: '2026-11-06' });
+  const [row] = mergedRows({ decision: merged, model: m, posts: [post, other], config });
+  assert.equal(row['Post ID'], '2.2:critter');
+  assert.equal(row.Tech, 'Aaron W');
+  assert.equal(row.Bonus, 1);
+  assert.equal(row.Quote, '');
+  assert.equal(row.Status, 'quoted');
+  assert.match(row.Finding, /burrows/);
+  assert.match(row.Notes, /same quote as post 1\.1/);
+  const [noBonus] = mergedRows({ decision: { ...merged, alsoPosts: [{ ts: '2.2', findings: ['yard_burrows'], missingSteps: ['wide photo'] }] }, model: m, posts: [post, other], config });
+  assert.deepEqual([noBonus.Bonus, noBonus.Counted], [0, 'no']);
 });

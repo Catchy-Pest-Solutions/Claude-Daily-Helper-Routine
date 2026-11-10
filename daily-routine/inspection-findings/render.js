@@ -70,24 +70,30 @@ async function stampPhoto(chrome, photo, model, dir, n) {
   return { path: out, width, height, bytes: jpg.length };
 }
 
-async function renderQuote(chrome, decision, post, config, today, outDir) {
+async function renderQuote(chrome, decision, post, config, today, outDir, allPosts = [post]) {
   const model = Q.quoteModel(decision, post, config, { today });
   const dir = path.join(outDir, 'quotes', model.key.replace(/[^\w]/g, '_'));
   fs.mkdirSync(dir, { recursive: true });
 
-  const chosen = (decision.photos?.length ? decision.photos : post.photos.map((_, i) => ({ index: i + 1 })))
-    .map((p) => ({ ...p, photo: post.photos[p.index - 1] }))
+  // A photo is { index } on the decision's own post, or { ts, index } on a
+  // post merged in through alsoPosts. Default: every photo of every post.
+  const postOf = (ts) => (!ts || ts === post.ts ? post : allPosts.find((x) => x.ts === ts));
+  const defaults = [post, ...(decision.alsoPosts || []).map((a) => postOf(a.ts)).filter(Boolean)].flatMap((x) => x.photos.map((_, i) => ({ ts: x.ts, index: i + 1 })));
+  const chosen = (decision.photos?.length ? decision.photos : defaults)
+    .map((p) => ({ ...p, ts: p.ts || post.ts, photo: postOf(p.ts)?.photos?.[p.index - 1] }))
     .filter((p) => p.photo);
   if (!chosen.length && !model.request) throw new Error(`${model.key}: no photos to use`);
   const stamped = [];
-  for (const [i, p] of chosen.entries()) stamped.push({ ...(await stampPhoto(chrome, p.photo, model, dir, i + 1)), caption: p.caption || '', index: p.index });
-  const cardPhoto = chosen.findIndex((p) => p.index === (decision.cardPhoto || chosen[0]?.index));
+  for (const [i, p] of chosen.entries()) stamped.push({ ...(await stampPhoto(chrome, p.photo, { ...model, stampWhen: Q.stampWhen(postOf(p.ts)) }, dir, i + 1)), caption: p.caption || '', index: p.index, ts: p.ts });
+  // cardPhoto: an index on the decision's own post, or { ts, index }.
+  const want = typeof decision.cardPhoto === 'object' && decision.cardPhoto ? decision.cardPhoto : { ts: post.ts, index: decision.cardPhoto || chosen[0]?.index };
+  const cardPhoto = chosen.findIndex((p) => p.index === want.index && p.ts === (want.ts || post.ts));
   // A quote request has no photo: the card shows a plain branded panel.
   const cardSrc = chosen.length ? chosen[Math.max(0, cardPhoto)].photo.path : null;
 
   // Quote card.
   const cardHtml = path.join(dir, 'card.html');
-  fs.writeFileSync(cardHtml, fill('card.html', { ...model, headline: decision.headline, photoUrl: cardSrc ? `file://${cardSrc}` : null, logoUrl: `file://${LOGO}`, address: model.address, when: model.stampWhen, officePhone: config.officePhone, kicker: model.request ? `Your quote from ${model.techName}` : `What ${model.techName} found`, fixLabel: model.request ? 'Your price' : 'Fix it for' }));
+  fs.writeFileSync(cardHtml, fill('card.html', { ...model, headline: decision.headline, photoUrl: cardSrc ? `file://${cardSrc}` : null, logoUrl: `file://${LOGO}`, address: model.address, when: Q.stampWhen(cardSrc ? postOf(chosen[Math.max(0, cardPhoto)].ts) : post), officePhone: config.officePhone, kicker: model.request ? `Your quote from ${model.techName}` : `What ${model.techName} found`, fixLabel: model.request ? 'Your price' : 'Fix it for' }));
   const card = await chrome.open(cardHtml, CARD);
   // The photo takes whatever height the text leaves; too much text pushes the footer off the card.
   const overflows = () => card.evaluate(`document.querySelector('footer').getBoundingClientRect().bottom > ${CARD.height} + 1`);
@@ -103,7 +109,7 @@ async function renderQuote(chrome, decision, post, config, today, outDir) {
 
   // Proposal PDF.
   // decision.infographic (a config.infographics key) picks one for a quote request.
-  const infographic = config.infographics?.[decision.infographic || config.findings.find((f) => f.key === decision.findings[0])?.infographic];
+  const infographic = config.infographics?.[decision.infographic || config.findings.find((f) => f.key === Q.allFindings(decision)[0])?.infographic];
   const photoCols = Math.max(1, stamped.length >= 3 ? 3 : stamped.length);
   const pdfHtml = path.join(dir, 'proposal.html');
   const infographicUrl = infographic && fs.existsSync(path.join(__dirname, infographic)) ? `file://${path.join(__dirname, infographic)}` : null;
@@ -172,7 +178,7 @@ async function main() {
   const quotes = decisions.filter((d) => d.action === 'quote');
   for (const d of quotes) {
     const post = collected.posts.find((p) => p.ts === d.ts);
-    const errs = Q.checkDecision(d, post, config);
+    const errs = [...Q.checkDecision(d, post, config, collected.posts), ...Q.checkMerges(d, decisions, config)];
     if (!errs.length) {
       const m = Q.quoteModel(d, post, config, { today });
       const priceErr = Q.checkTextPrice(d.text.body, m) || Q.checkTextCovers(d.text.body, m);
@@ -187,7 +193,7 @@ async function main() {
   const rendered = [];
   const chrome = await launch();
   try {
-    for (const d of quotes) rendered.push(await renderQuote(chrome, d, collected.posts.find((p) => p.ts === d.ts), config, today, outDir));
+    for (const d of quotes) rendered.push(await renderQuote(chrome, d, collected.posts.find((p) => p.ts === d.ts), config, today, outDir, collected.posts));
   } finally {
     await chrome.close();
   }

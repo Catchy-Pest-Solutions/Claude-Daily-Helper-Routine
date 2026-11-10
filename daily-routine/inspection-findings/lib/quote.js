@@ -13,6 +13,13 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 const longDate = (ymd) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric' });
 const shortDate = (ymd) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
 
+// "Mon, Nov 9, 2026, 11:55 AM": the Slack post time stamped on its photos.
+const stampWhen = (post) => `${new Date(post.postedAt).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}, ${post.postTime}`;
+
+// Every finding on a quote: its own post's plus any other posts merged into
+// it (alsoPosts: same customer, same plan, one quote).
+const allFindings = (d) => [...new Set([...(d.findings || []), ...(d.alsoPosts || []).flatMap((a) => a.findings || [])])];
+
 const isQuoteRequest = (d) => d.action === 'quote' && (d.findings || []).length === 1 && d.findings[0] === 'quote_request';
 
 function leadKey(decision) {
@@ -20,11 +27,21 @@ function leadKey(decision) {
 }
 
 // Problems with a decision; empty when it can go ahead.
-function checkDecision(decision, post, config) {
+// allPosts (every collected post) is needed to check alsoPosts.
+function checkDecision(decision, post, config, allPosts = []) {
   const errs = [];
   if (!ACTIONS.includes(decision.action)) errs.push(`action must be one of ${ACTIONS.join(', ')}`);
   if (!post) return [`no collected post with ts ${decision.ts}`];
-  const findings = decision.findings || [];
+  const findings = allFindings(decision);
+  for (const a of decision.alsoPosts || []) {
+    const other = allPosts.find((p) => p.ts === a.ts);
+    if (!['quote', 'commercial'].includes(decision.action)) errs.push('alsoPosts only goes on a quote or commercial decision');
+    else if (!other) errs.push(`alsoPosts: no collected post with ts ${a.ts}`);
+    else if (a.ts === decision.ts) errs.push('alsoPosts lists the decision\'s own post');
+    else if (String(other.customer?.id) !== String(post.customer?.id)) errs.push(`alsoPosts ${a.ts} is a different customer`);
+    else if (!(a.findings || []).length || a.findings.includes('quote_request')) errs.push(`alsoPosts ${a.ts} needs its findings`);
+    else if (!other.photos?.length) errs.push(`alsoPosts ${a.ts} has no photos`);
+  }
   for (const k of findings) if (!config.findings.some((f) => f.key === k)) errs.push(`unknown finding "${k}"`);
   if (['skip', 'ask'].includes(decision.action)) {
     if (!String(decision.techMessage || '').trim()) errs.push(`${decision.action} needs techMessage (the note to the tech)`);
@@ -65,6 +82,18 @@ function checkDecision(decision, post, config) {
   return errs;
 }
 
+// A post merged into another post's quote (alsoPosts) can't get its own
+// decision for that plan, and can only be merged once.
+function checkMerges(decision, decisions, config) {
+  const errs = [];
+  const planOf = (d) => d.plan || config.findings.find((f) => f.key === (d.findings || [])[0])?.plan || null;
+  for (const a of decision.alsoPosts || []) {
+    if (decisions.some((d) => d !== decision && d.ts === a.ts && ['quote', 'commercial'].includes(d.action) && planOf(d) === planOf(decision))) errs.push(`post ${a.ts} is merged into this quote, so it can't have its own ${planOf(decision)} decision`);
+    if (decisions.some((d) => d !== decision && (d.alsoPosts || []).some((x) => x.ts === a.ts) && planOf(d) === planOf(decision))) errs.push(`post ${a.ts} is merged into two quotes`);
+  }
+  return errs;
+}
+
 // What the initial fee covers (config.priceCovers), for this plan, these
 // findings and with/without exclusion. Items for the tech's findings go to
 // the top; the list always ends with the monthly fee.
@@ -79,8 +108,9 @@ function priceCovers(plan, findings, exclusion, monthly, config) {
     return [...list.filter(top), ...list.filter((i) => !top(i))];
   };
   const pick = (items) => sorted(items).map((i) => i.text);
-  const text = (def.text || []).find(applies)?.text;
-  if (!text) throw new Error(`config.priceCovers.${plan}.text has nothing for ${findings.join(', ')}`);
+  const pieces = pick(def.text);
+  if (!pieces.length) throw new Error(`config.priceCovers.${plan}.text has nothing for ${findings.join(', ')}`);
+  const text = pieces.length > 1 ? `${pieces.slice(0, -1).join(', ')} and ${pieces[pieces.length - 1]}` : pieces[0];
   // The tech's specific concern (a finding's own line) shows in bold.
   const items = sorted(def.lines).map((i) => ({ text: i.text, top: top(i) && !findings.includes('quote_request') }));
   return { lines: items.map((i) => i.text), items, monthlyLine: `Then ${monthly} a month, starting month 4`, text, details: pick(def.details), finePrint: def.finePrint || [] };
@@ -89,13 +119,14 @@ function priceCovers(plan, findings, exclusion, monthly, config) {
 // Everything the templates and messages need for a quote decision.
 function quoteModel(decision, post, config, { today }) {
   const request = isQuoteRequest(decision);
-  const plan = decision.plan || config.findings.find((f) => f.key === decision.findings[0]).plan;
-  const exclusion = plan !== 'critter' ? null : request ? !decision.techSaysNoExclusion : pricing.exclusionFor(decision.findings, { techSaysNoExclusion: Boolean(decision.techSaysNoExclusion) }, config);
+  const findings = allFindings(decision);
+  const plan = decision.plan || config.findings.find((f) => f.key === findings[0]).plan;
+  const exclusion = plan !== 'critter' ? null : request ? !decision.techSaysNoExclusion : pricing.exclusionFor(findings, { techSaysNoExclusion: Boolean(decision.techSaysNoExclusion) }, config);
   const price = pricing.priceFor(plan, post.plans, config, { exclusion: exclusion ?? true });
   const creditExpires = pricing.creditExpiry(today, config);
   const bonus = pricing.bonusFor(decision.findings, { visitCategory: post.visit?.category }, config);
   const visitDate = post.visit?.date || post.postDate;
-  const covers = priceCovers(plan, decision.findings || [], exclusion, money(price.monthly), config);
+  const covers = priceCovers(plan, findings, exclusion, money(price.monthly), config);
   return {
     key: leadKey({ ...decision, plan }),
     request,
@@ -123,7 +154,7 @@ function quoteModel(decision, post, config, { today }) {
     visitPhrase: post.visit?.category === '12501' ? 'your inspection' : 'your service',
     address: post.customer?.serviceAddress || '',
     street: post.customer?.street || post.customer?.serviceAddress || '',
-    stampWhen: `${new Date(post.postedAt).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}, ${post.postTime}`,
+    stampWhen: stampWhen(post),
     customerName: [post.customer?.firstName, post.customer?.lastName].filter(Boolean).join(' '),
     video: config.plans[plan].video,
     coversLines: covers.lines,
@@ -170,4 +201,4 @@ function checkedSentence(items, visitPhrase = 'the visit') {
   return `During ${visitPhrase} I didn't see any signs of ${joined}.`;
 }
 
-module.exports = { isQuoteRequest, ACTIONS, checkDecision, quoteModel, priceCovers, checkTextPrice, checkTextCovers, checkDayNames, checkedSentence, leadKey, money, longDate, shortDate };
+module.exports = { allFindings, stampWhen, checkMerges, isQuoteRequest, ACTIONS, checkDecision, quoteModel, priceCovers, checkTextPrice, checkTextCovers, checkDayNames, checkedSentence, leadKey, money, longDate, shortDate };

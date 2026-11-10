@@ -103,8 +103,13 @@ together for a few days, aiming to go live the week of Nov 9, 2026.
 
 - Leads from an **Inspection / Consultation (12501)** or **One Time Service
   (12504)** visit pay **1.5x** (extra-thorough inspections on those visits).
-- **One lead per customer per plan**: carpenter bees plus a wasp nest is one
-  Signature lead, paid at the higher amount.
+- **One quote per customer per plan, every finding paid** (Nov 10):
+  carpenter bees plus a wasp nest is one Signature quote, even when they
+  came in separate posts, and the tech is paid for both ($2 + $1). Same for
+  TermiteShield and Critter Control (an entry point plus yard burrows is
+  one Critter quote with exclusion, $2 + $1). A merged post gets its own
+  sheet row (its findings and bonus, "same quote as post ..."); the price
+  stays on the first post's row only.
 - No weekly cap for now.
 - Future findings (not yet): crawl space encapsulation, attic insulation
   removal/replacement, vent covers, moisture readings over 20%, standing
