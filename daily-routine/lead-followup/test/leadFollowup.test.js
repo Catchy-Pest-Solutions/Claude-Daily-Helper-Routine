@@ -12,7 +12,7 @@ const { parseAtsCommunication } = require('../lib/briostack');
 const { parseVoicemailEmail, subjectPhone } = require('../lib/voicemail');
 const { renderString, escapeHtml } = require('../lib/template');
 const { buildMime } = require('../lib/google');
-const { viewModel, money } = require('../render');
+const { viewModel, money, programFor } = require('../render');
 const { emailBlocks, logContent, findUnknownContactMethod, createLogEntry, TEST_PREFIX } = require('../send');
 
 const et = (date, time) => cal.easternToMs(date, time);
@@ -265,9 +265,37 @@ test('render: prices become whole dollars, discounts need was-prices, one option
   assert.strictEqual(vm1.options[0].price, '$247');
   assert.strictEqual(vm1.closeDaysText, 'tomorrow or Thursday');
   assert.throws(() => viewModel({ ...base, discount: { percent: 10, reason: 'r' } }, config), /wasPrice/);
-  const vm2 = viewModel({ ...base, discount: { percent: 10, reason: 'Seasonal discount' }, options: [{ name: 'X', price: '$222', wasPrice: '$247' }] }, config);
+  const vm2 = viewModel({ ...base, discount: { percent: 10, reason: 'Seasonal discount' }, options: [{ name: 'One Time Service', price: '$222', wasPrice: '$247' }] }, config);
   assert.strictEqual(vm2.discountBadge, '10% off — Seasonal discount');
   assert.throws(() => viewModel({ ...base, options: [] }, config), /one or two options/);
+});
+
+test('render: each option gets the approved "first fee covers" lines from programs.json', () => {
+  const config = { officePhone: '(828) 263-4804', senderEmail: 'office@x.com', company: { name: 'C', address: 'A', website: 'w' } };
+  assert.strictEqual(programFor('HomeShield - Signature Pest Control').key, 'signature');
+  assert.strictEqual(programFor('One Time Service').key, 'oneTime');
+  assert.throws(() => programFor('Bed Bug Treatment'), /no program/);
+  const sig = viewModel({ closeDays: ['tomorrow'], options: [
+    { name: 'HomeShield - Signature Pest Control', price: '$347', priceNote: '12-month agreement' },
+    { name: 'HomeShield - Signature Pest Control', price: '$397', priceNote: 'No annual commitment' },
+  ] }, config);
+  assert.strictEqual(sig.groups.length, 1, 'same program shares one covers box');
+  assert.strictEqual(sig.groups[0].rows.length, 2);
+  assert.ok(sig.groups[0].covers.some((l) => /30\+ pests/.test(l)));
+  assert.strictEqual(sig.groups[0].monthlyLine, 'Then $59 a month, starting month 4');
+  const crit = viewModel({ closeDays: ['tomorrow'], options: [
+    { name: 'HomeShield - Critter Control', price: '$647', priceNote: '12-month agreement', exclusion: true, includes: ['Stations away from the dogs'] },
+    { name: 'HomeShield - Critter Control', price: '$447', priceNote: '12-month agreement', exclusion: false },
+  ] }, config);
+  assert.strictEqual(crit.groups.length, 2, 'with and without exclusion are different boxes');
+  assert.ok(crit.groups[0].covers.includes('Entry points sealed'));
+  assert.ok(!crit.groups[1].covers.includes('Entry points sealed'));
+  assert.deepStrictEqual(crit.options[0].pdfCovers.slice(-2), ['Stations away from the dogs', 'Then $49 a month, starting month 4']);
+  const ots = viewModel({ closeDays: ['tomorrow'], options: [{ name: 'One Time Service', price: '$247', priceNote: 'One visit' }] }, config);
+  assert.strictEqual(ots.groups[0].monthlyLine, null);
+  const addOn = viewModel({ closeDays: ['tomorrow'], options: [{ name: 'HomeShield - Signature Pest Control', price: '$174', monthly: 44, priceNote: 'Added plan, 12-month agreement' }] }, config);
+  assert.strictEqual(addOn.groups[0].monthlyLine, 'Then $44 a month, starting month 4');
+  assert.throws(() => viewModel({ closeDays: ['tomorrow'], options: [{ name: 'One Time Service', price: '$247', priceNote: 'First 3 months included, then $49 a month. 12-month agreement.' }] }, config), /too long/);
 });
 
 test('email: card goes after the second paragraph, not counting a greeting line', () => {

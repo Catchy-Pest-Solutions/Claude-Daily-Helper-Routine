@@ -36,7 +36,8 @@ and writes the messages. Claude never writes HTML or calls an API by hand.
 | `prepare.js` | Step 1: gathers the customer, services, call and transcript |
 | `render.js` | Step 3b: quote card + PDF, uploaded and shared |
 | `send.js` | Step 5: text, email and Briostack log |
-| `templates/` | `card.html` (1080x1350 picture), `quote.html` (letter PDF), `email.html` |
+| `templates/` | `card.html` (1080 wide, 1350-1620 tall picture), `quote.html` (letter PDF), `email.html` |
+| `programs.json` | What each program's first fee covers: the fixed lines on the card and PDF (Daniel, Nov 10) |
 | `assets/` | `logo.png` (trimmed, transparent), smaller copies for print and email |
 | `relay/Code.gs` | The Apps Script relay between Briostack and the routine |
 | `lib/` | Shared code (Briostack, Google, Chromium, schedule, templates) |
@@ -158,9 +159,13 @@ and checks that the picture link serves a JPG. Prints one JSON line:
 `https://lh3.googleusercontent.com/d/FILE_ID` (Textable fetches it as a
 picture). `pdfUrl` is the normal Drive share link.
 
-- Card: 1080x1350 JPG, kept under 300 KB (about 140-160 KB in practice). If
-  the text doesn't fit, it switches to a compact layout, then fails with a
-  message saying what to shorten.
+- Card: 1080 wide JPG, as tall as the content needs between 1350 and 1620
+  (two Critter options are the tallest), kept under 300 KB (about 150-190 KB
+  in practice). Each option shows its price, the agreement (`priceNote`) and
+  "Your first fee covers" lines from `programs.json`, picked by the option's
+  name; two options for the same program share one box. If it doesn't fit, it
+  switches to a compact layout, then fails with a message saying what to
+  shorten. An option name that matches no program fails too.
 - PDF: letter, one page (two at most, else it fails).
 - Prices are normalized to whole dollars (`"647"` -> `$647`). A `discount`
   needs `wasPrice` on every option. One option lays out on its own.

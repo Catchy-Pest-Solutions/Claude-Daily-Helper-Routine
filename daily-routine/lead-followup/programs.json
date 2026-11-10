@@ -1,0 +1,63 @@
+{
+  "_about": "What each program's first fee covers, shown on the quote card and PDF (Daniel, Nov 10, 2026). render.js picks the program from the option name. Lines marked exclusionOnly show only when the option includes exclusion. monthly is the recurring charge from month 4; an option can override it (multi-plan prices, KB Section 8).",
+  "programs": {
+    "signature": {
+      "match": ["signature"],
+      "name": "HomeShield - Signature Pest Control",
+      "coversTitle": "Your first fee covers",
+      "covers": [
+        "Your first 3 treatments, over the first 3 months",
+        "First two are 2 weeks apart to knock out what you're seeing",
+        "Covers and treats 30+ pests, inside and out",
+        "Free return visits if pests come back between treatments"
+      ],
+      "monthly": 59
+    },
+    "critter": {
+      "match": ["critter"],
+      "name": "HomeShield - Critter Control",
+      "coversTitle": "Your first fee covers",
+      "covers": [
+        "Inspection, plus full trap and station setup",
+        "7 days of daily visits: remove animals, reset bait, clean traps",
+        "Two-week follow-up visit",
+        { "text": "Entry points sealed", "exclusionOnly": true },
+        "3 months of coverage: free return visits if they come back"
+      ],
+      "monthly": 49
+    },
+    "termite": {
+      "match": ["termite"],
+      "name": "Carolina TermiteShield",
+      "coversTitle": "Your first fee covers",
+      "covers": [
+        "Liquid soil treatment around the home",
+        "Termite bait station system, installed",
+        "Retreatment and damage warranty"
+      ],
+      "monthly": 29
+    },
+    "catchyClub": {
+      "match": ["catchy club"],
+      "name": "Catchy Club",
+      "coversTitle": "Your first fee covers",
+      "covers": [
+        "Pest, critter and termite protection in one plan",
+        "First two treatments 2 weeks apart, then a visit every month",
+        "Seasonal mosquito treatments included",
+        "Free return visits between treatments"
+      ],
+      "monthly": 149
+    },
+    "oneTime": {
+      "match": ["one time", "one-time"],
+      "name": "One Time Service",
+      "coversTitle": "Covers",
+      "covers": [
+        "One targeted visit for one or two pests",
+        "The full price goes toward any plan if you upgrade"
+      ],
+      "monthly": null
+    }
+  }
+}

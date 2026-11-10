@@ -105,26 +105,34 @@ Write a text and an email following PLAYBOOK Section 8 (Booked). No prices, disc
   "options": [
     {
       "name": "HomeShield - Critter Control",
+      "exclusion": true,
       "bestFor": "Getting rid of the mice and keeping them out",
-      "includes": ["4 to 6 short lines from the KB and PLAYBOOK"],
-      "schedule": "Daily visits for 7 business days, then a two-week follow-up",
+      "includes": [],
+      "schedule": "Daily visits for 7 business days, a two-week follow-up, then preventive visits about every 10 weeks",
       "guarantee": "Free return visits as needed; money-back guarantee on annual plans",
-      "price": "$647",
-      "wasPrice": null,
-      "priceNote": "First 3 months included, then $49 a month. 12-month agreement."
+      "price": "$582",
+      "wasPrice": "$647",
+      "priceNote": "12-month agreement"
     }
   ],
-  "discount": null,
+  "discount": {"percent": 10, "reason": "Tech in your neighborhood Thu & Fri"},
   "closeDays": ["tomorrow", "Thursday"]
 }
 ```
-`discount` is usually `{"percent": 10, "reason": "Tech in your neighborhood Thu & Fri"}` (keep it this short; it goes on the card's badge), or `null` when there's no discount. In `includes`, describe coverage as included and treated, e.g. "Covers and treats 30+ pests, including carpenter bees and stink bugs", never "if you need us to" (KB 0.17). Then run:
+- **What the first fee covers is fixed** (Daniel, Nov 10): `render.js` takes those lines from `programs.json` by the option's `name` (Briostack service name) and puts them on the card and the PDF, ending with "Then $49 a month, starting month 4." Don't write them yourself.
+- `priceNote` is only the agreement, a few words: "12-month agreement", "No annual commitment" or "One visit". `render.js` refuses anything long.
+- `exclusion`: Critter Control only. `false` for the without-exclusion price, so the card doesn't say entry points are sealed.
+- `monthly`: leave it out, except for an added plan at the multi-plan price (KB 0.19), e.g. `44` for Signature.
+- `includes`: usually empty. At most two short lines specific to this call (they show on the PDF only), never a repeat of the fixed lines. Describe coverage as included and treated (KB 0.17).
+- `discount` is usually `{"percent": 10, "reason": "..."}` (keep the reason this short; it goes on the card's badge), or `null` when there's no discount.
+
+Then run:
 ```
 node daily-routine/lead-followup/render.js --quote $S/quote.json --out $S
 ```
 It prints `cardPath`, `pdfPath`, `cardUrl` (picture link for the text) and `pdfUrl` (Drive link to the PDF).
 
-**Write the text and email** following PLAYBOOK Sections 2–8: one or two personal specifics, both options with prices (and the 10% off with its reason), **one** tool for their objection, the either/or close using `schedule.closeDays`, and a one-word quick reply. You may add the `pdfUrl` at the end of the text as "Full details: [link]".
+**Write the text and email** following PLAYBOOK Sections 2–8: one or two personal specifics, both options with prices (and the 10% off with its reason), a few words on what the first fee covers (PLAYBOOK Section 8: many leads never give us an email, so the text and card may be all they see), **one** tool for their objection, the either/or close using `schedule.closeDays`, and a one-word quick reply. You may add the `pdfUrl` at the end of the text as "Full details: [link]".
 
 ## Step 3c. NOTE
 
@@ -146,7 +154,7 @@ Fix anything that fails. If you can't fix it, Slack Daniel and stop.
 - One discount at most (the 10% or the rep's own discount, never both) plus at most one other tool. No discount or pitch for booked customers. No prices or discount in a note.
 - No banned words: safe, non-toxic, harmless, chemical-free, all-natural, "every 4 weeks", guaranteed or automatic refund, fake urgency.
 - No video Briostack already sends this lead (PLAYBOOK Section 6).
-- Text length: 40–100 words unbooked, 25–70 booked, 20–60 note. Unbooked ends with the either/or close and a quick reply.
+- Text length: 40–110 words unbooked, 25–70 booked, 20–60 note. Unbooked ends with the either/or close and a quick reply.
 - Booked only when the history shows a confirmed booking (Step 2); a commercial category alone is never enough. Day offers are for a first treatment, never a free look or inspection.
 - Signed by the person Step 2 picked. Every statement about calls and voicemails matches the history, and no message (booked confirmations included) claims a conversation that didn't happen. Nothing mentions AI, transcripts, recordings or notes.
 - Any technician named is on `config.json` `technicians`, spelled exactly that way (KB 0.8), and only in a booked confirmation. `send.js` refuses a message that calls someone off the roster a tech; fix the name or say "the tech", then run it again.

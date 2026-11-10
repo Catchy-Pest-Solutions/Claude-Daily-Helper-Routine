@@ -123,23 +123,28 @@ A friendly person at the office, texting from their phone.
 
 ## 8. Message shapes
 
-### Unbooked — text (40–100 words, plus the quote card picture)
+### Unbooked — text (40–110 words, plus the quote card picture)
 
 1. "Hi [name], it's [rep] from Catchy Pest."
 2. One personal line from the call.
-3. The two options with prices (the card shows details), with the 10% off and its reason.
+3. The two options with prices, with the 10% off and its reason, and **a few words on what the first fee covers** (Daniel, Nov 10: many leads never give us an email, so the text and card may be all they see). The card lists the details; the text just names the big one:
+   - Signature: "which covers your first three treatments over the next three months"
+   - Critter Control: "which covers the setup and a week of daily trapping visits" (add "and sealing the entry points" only with exclusion)
+   - TermiteShield: "which covers the soil treatment and bait stations, with a damage warranty"
+   - Catchy Club: "which covers pest, critter and termite protection, mosquitoes included"
+   - One Time Service: "one visit, and it goes toward any plan if you upgrade"
 4. One tool for their objection.
 5. The close + quick reply.
 
-> Hi Karen, it's Steve from Catchy Pest. Thanks for calling about the mice in the pantry, especially with the baby crawling around now. I've actually got a tech in your neighborhood tomorrow and Thursday, so I can take 10% off: Critter Control would be $582 to start, or a one-time visit is $222. There are no cancellation fees before your first service, so I can hold a spot while you talk it over with Mike. Would tomorrow or Thursday work better? Just reply with the day, or NO if you're all set.
+> Hi Karen, it's Steve from Catchy Pest. Thanks for calling about the mice in the pantry, especially with the baby crawling around now. I've actually got a tech in your neighborhood tomorrow and Thursday, so I can take 10% off: Critter Control would be $582 to start, which covers the setup and a week of daily trapping visits, or a one-time visit is $222. There are no cancellation fees before your first service, so I can hold a spot while you talk it over with Mike. Would tomorrow or Thursday work better? Just reply with the day, or NO if you're all set.
 
-> Hi, it's Shelley from Catchy Pest. I know the price was on your mind for the ants in the kitchen. I've got a tech just down the road from you Wednesday and Thursday, so I can take 10% off: Signature Pest would be $312 to start, or $357 with no annual commitment. Would Wednesday or Thursday work better? Just reply with the day, or NO if you're all set.
+> Hi, it's Shelley from Catchy Pest. I know the price was on your mind for the ants in the kitchen. I've got a tech just down the road from you Wednesday and Thursday, so I can take 10% off: Signature Pest would be $312 to start, which covers your first three treatments over the next three months, or $357 with no annual commitment. Would Wednesday or Thursday work better? Just reply with the day, or NO if you're all set.
 
 ### Unbooked — email (short; the quote card shows inline and the PDF is attached)
 
 - Subject: short and personal, e.g. "Your quote for the mice, Karen" or "Following up on the ants." No emojis, no ALL CAPS.
 - Paragraph 1: thanks + one or two specifics from the call.
-- Paragraph 2: the two options in a sentence each, with prices and the 10% off and its reason. Point to the attached PDF for details.
+- Paragraph 2: the two options in a sentence each, with prices, the 10% off and its reason, and what the first fee covers (the same few words as the text). Point to the attached PDF for details.
 - Paragraph 3: the one tool for their objection.
 - Close: the either/or + "Just reply to this email or text me at (828) 263-4804."
 - Signature: "[Rep]\nCatchy Pest Solutions\n(828) 263-4804"

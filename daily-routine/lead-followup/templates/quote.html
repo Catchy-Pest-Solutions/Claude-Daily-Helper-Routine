@@ -129,9 +129,7 @@
       </div>
       <div class="opt-body">
         {{#bestFor}}<div class="field"><div class="k">Best for</div><p>{{bestFor}}</p></div>{{/bestFor}}
-        {{#includes.length}}
-        <div class="field"><div class="k">What's included</div><ul>{{#includes}}<li>{{.}}</li>{{/includes}}</ul></div>
-        {{/includes.length}}
+        <div class="field"><div class="k">{{coversTitle}}</div><ul>{{#pdfCovers}}<li>{{.}}</li>{{/pdfCovers}}</ul></div>
         {{#schedule}}<div class="field"><div class="k">Visit schedule</div><p>{{schedule}}</p></div>{{/schedule}}
         {{#guarantee}}<div class="field"><div class="k">Guarantee</div><p>{{guarantee}}</p></div>{{/guarantee}}
       </div>
