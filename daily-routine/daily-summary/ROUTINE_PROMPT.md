@@ -373,6 +373,8 @@ For every customer with at least one list-3a appointment that is NOT trapping
 Call Reference D. Keep only services where statusId is exactly `CSC_ACTIVE`
 (exclude `CSC_PENDING` and every other status), AND:
 
+- the service is not trapping (serviceCategoryId `11004`). Trapping runs as a
+  planned series of visits and is never a same-day add-on, and
 - the service's category is not the category of any of this customer's
   appointments today (any tech, statusId not NOT HAPPENING), and
 - the service doesn't already have an appointment today (its serviceId isn't on
@@ -383,6 +385,10 @@ Use nextAppointmentDate as the due date; if it's missing, skip the service. A
 service qualifies if it's due today or earlier, or within the next 30 days.
 Exception: if the qualifying service is Mosquito Plus (12505), it only qualifies
 if it's past due or due within the next 3 days.
+
+**Due phrase** (used in Steps 5B, 7B and 9): "past due" if the due date is
+before today, "due today" if it's today, "due tomorrow" if it's tomorrow,
+otherwise "due in N days". Never write "1 days".
 
 For each qualifying service, call Reference C for that serviceId (one record is
 enough) and compare its serviceAddress to the address of today's appointment.
@@ -415,7 +421,7 @@ same task.
     Step 4B
   - description:
     > [Tech] is already at [address] today for [today's category]. This customer
-    > also has [service category] due [date] (past due / due in N days). Please
+    > also has [service category] due [date] ([due phrase]). Please
     > add it to today's route. The tech has been notified in their office
     > channel to expect it and complete it while on site.
 
@@ -524,11 +530,12 @@ messages.
 Format:
 
 ```
-<@[tech Slack ID]> Heads-up: [Customer Name] at [Address] also has [Service category short name] due ([past due / due in N days]). You're already going there today for [today's category], so the office is adding that service to your schedule for today. Please refresh Briostack, look for the new appointment, and complete that service while you're on site. Let us know if you have any questions.
+<@[tech Slack ID]> Heads-up: [Customer Name] at [Address] also has [Service category short name] ([due phrase]). You're already going there today for [today's category], so the office is adding that service to your schedule for today. Please refresh Briostack, look for the new appointment, and complete that service while you're on site. Let us know if you have any questions.
 ```
 
-(If two services: "...also has [Service 1] ([past due / due in N days]) and
-[Service 2] ([past due / due in N days]) due...")
+(If two services: "...also has [Service 1] ([due phrase]) and [Service 2] ([due
+phrase]). You're...". Example: "also has Termite (due in 16 days)." — "due"
+appears only once.)
 
 If a send fails, don't stop the routine. Add "(tech NOT notified, please message
 them)" to that customer's Section F line instead of "(tech notified in
@@ -601,7 +608,7 @@ Format:
 📋 Office Daily Check — [Today's Date] <@U09NPRFAENS> <@U09NNDKSB4M>
 
 ➕ Other Services Due at Same Address (Shelley)              ← Section F
-• [Customer] — [Address] — [Service category] due [date] ([past due / due in N days]). Please add it to today's route; the tech has been told to expect it. (task created for Shelley) (tech notified in #[channel])
+• [Customer] — [Address] — [Service category] due [date] ([due phrase]). Please add it to today's route; the tech has been told to expect it. (task created for Shelley) (tech notified in #[channel])
 
 👤 Appointments Under Daniel W.                               ← Section E
 • [Customer] — [Category] (Appt [Id]). Daniel doesn't service appointments; please fix billing or assign a technician.
