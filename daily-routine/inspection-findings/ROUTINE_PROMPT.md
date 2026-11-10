@@ -42,7 +42,7 @@ action per post per plan:
   visit by this tech that day or the day before (`visit` null); apartment
   or mobile home (from the wide photo or the description); not one of the
   seven findings; already covered (`checks.covered[plan]`, or Catchy Club:
-  skip without a quote); already quoted and still open (`priorOffers`); the
+  skip without a quote); already quoted and still open (`priorOffers`; a finding posted after that quote went out earns no extra bonus, Daniel Nov 10); the
   photos don't show what the tech described; no photos.
 - A quote can still go out when the tech skipped a step (no close-up, no
   wide photo, no description of where, or posted after leaving), but all

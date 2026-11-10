@@ -110,6 +110,9 @@ together for a few days, aiming to go live the week of Nov 9, 2026.
   one Critter quote with exclusion, $2 + $1). A merged post gets its own
   sheet row (its findings and bonus, "same quote as post ..."); the price
   stays on the first post's row only.
+  A finding posted after the quote already went out (offer still open)
+  isn't added and earns no extra bonus; the tech gets the "already quoted"
+  note.
 - No weekly cap for now.
 - Future findings (not yet): crawl space encapsulation, attic insulation
   removal/replacement, vent covers, moisture readings over 20%, standing
