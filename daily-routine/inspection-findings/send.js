@@ -11,6 +11,9 @@
 //                  BID_FOLLOWUP task, and a Leads sheet row.
 //   commercial     task to price it (no message to the customer), sheet row
 //                  (the tech still earns the bonus).
+//   custom_quote   same, for a custom job on a customer we'd otherwise
+//                  skip (bats on a Critter Control customer: bats aren't
+//                  covered); the tech earns the bonus.
 //   quote_request  task for the office to quote it, sheet row ($0 bonus).
 //   skip / ask     sheet row only ("didn't count" / "waiting"); the routine
 //                  sends the tech's note in Slack itself.
@@ -174,6 +177,8 @@ function taskDescription({ decision, post, model, results, action, sentAtMs }) {
       ],
       ['Next:', '1. Check for a YES reply first.', '2. Call to close it.', '3. Note what happened here and close the task.'],
     );
+  } else if (action === 'custom_quote') {
+    blocks.push(['Custom quote: no automatic price.', 'Nothing was sent to the customer.'], ['Next:', '1. Price it (see the Slack post and photos).', '2. Call the customer.', '3. Note what happened here and close the task.']);
   } else if (action === 'commercial') {
     blocks.push(['Business: no automatic price.', 'Nothing was sent to the customer.'], ['Next:', '1. Price it.', '2. Call the customer.', '3. Note what happened here and close the task.']);
   } else {
@@ -181,6 +186,14 @@ function taskDescription({ decision, post, model, results, action, sentAtMs }) {
   }
   return blocks.map((b) => b.join('\n')).join('\n\n');
 }
+
+// The sheet's Post ID always has a ":" so Google Sheets keeps it as text:
+// a bare Slack ts ("1794243334.617239") is read as a number and rounded,
+// and collect.js would no longer see the post as handled.
+const sheetPostId = (decision) => {
+  const key = Q.leadKey(decision);
+  return key.includes(':') ? key : `${key}:none`;
+};
 
 function sheetRow({ decision, post, model, status, counted, reason, bonus, config }) {
   const labels = (decision.findings || []).map((k) => config.findings.find((f) => f.key === k)?.label || k);
@@ -199,7 +212,7 @@ function sheetRow({ decision, post, model, status, counted, reason, bonus, confi
     Notes: reason || '',
     Status: status,
     'Credit good through': model ? model.creditExpiresYmd : '',
-    'Post ID': Q.leadKey(decision),
+    'Post ID': sheetPostId(decision),
   };
 }
 
@@ -383,7 +396,7 @@ async function main() {
       try {
         const title = d.action === 'quote'
           ? `${test ? 'TEST ' : ''}Inspection finding: ${model.planName} quote — ${model.customerName}`
-          : `${test ? 'TEST ' : ''}${d.action === 'commercial' ? 'Price inspection finding (business)' : 'Quote request from tech'} — ${[post.customer?.firstName, post.customer?.lastName].filter(Boolean).join(' ')}`;
+          : `${test ? 'TEST ' : ''}${{ commercial: 'Price inspection finding (business)', custom_quote: 'Custom quote needed (inspection finding)' }[d.action] || 'Quote request from tech'} — ${[post.customer?.firstName, post.customer?.lastName].filter(Boolean).join(' ')}`;
         const created = await brio.createTask({
           title: title.slice(0, 120),
           taskTypeId: config.taskTypeId,
@@ -400,11 +413,11 @@ async function main() {
       }
     }
 
-    const bonus = d.action === 'quote' ? model.bonus : d.action === 'commercial' ? require('./lib/pricing').bonusFor(d.findings, { visitCategory: post.visit?.category }, config).total : 0;
+    const bonus = d.action === 'quote' ? model.bonus : ['commercial', 'custom_quote'].includes(d.action) ? require('./lib/pricing').bonusFor(d.findings, { visitCategory: post.visit?.category }, config).total : 0;
     const missing = (d.missingSteps || []).filter(Boolean);
     rows.push(sheetRow({
       decision: d, post, model,
-      status: d.action === 'quote' ? 'quoted' : d.action === 'commercial' ? 'task for office' : 'quote request',
+      status: d.action === 'quote' ? 'quoted' : ['commercial', 'custom_quote'].includes(d.action) ? 'task for office' : 'quote request',
       counted: d.action !== 'quote_request' && !missing.length,
       reason: missing.length ? `no bonus: missing ${missing.join(', ')}` : d.reason || (model?.request ? 'quote request (no bonus)' : ''),
       bonus: missing.length ? 0 : bonus,
@@ -433,4 +446,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { textSendAt, taskDue, textNumbers, logBody, taskDescription, mergedRows };
+module.exports = { textSendAt, taskDue, textNumbers, logBody, taskDescription, mergedRows, sheetPostId };
