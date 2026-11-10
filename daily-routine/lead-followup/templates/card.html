@@ -2,10 +2,10 @@
 <html>
 <head>
 <meta charset="utf-8">
-<!-- Quote card picture for the text: 1080x1350, filled by render.js from quote.json. -->
+<!-- Quote card picture for the text: 1080 wide, 1350-1620 tall (fits the content), filled by render.js from quote.json. -->
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 1080px; height: 1350px; overflow: hidden; }
+  html, body { width: 1080px; height: 1620px; overflow: hidden; }
   body {
     background: #ffffff;
     color: #0E120E;
@@ -32,14 +32,19 @@
     border-radius: 999px;
     text-wrap: balance;
   }
-  .option { background: #EEF1EE; border-radius: 30px; padding: 30px 46px 34px; border-left: 14px solid #15BA0D; }
-  .label { font-size: 26px; font-weight: 700; letter-spacing: 4px; color: #11960B; text-transform: uppercase; }
-  .name { margin-top: 6px; font-size: 46px; font-weight: 700; line-height: 1.15; }
-  .row { margin-top: 14px; display: flex; align-items: center; gap: 36px; }
-  .prices { display: flex; flex-direction: column; flex-shrink: 0; }
-  .was { font-size: 38px; color: #6B756C; text-decoration: line-through; text-decoration-thickness: 4px; line-height: 1; margin-bottom: 6px; }
-  .price { font-size: 124px; line-height: 0.92; letter-spacing: -3px; }
-  .line { font-size: 34px; line-height: 1.3; color: #333B34; }
+  .group { background: #EEF1EE; border-radius: 30px; padding: 30px 46px 32px; border-left: 14px solid #15BA0D; }
+  .name { font-size: 44px; font-weight: 700; line-height: 1.15; }
+  .rows { margin-top: 12px; display: flex; gap: 44px; }
+  .opt { display: flex; flex-direction: column; }
+  .label { font-size: 24px; font-weight: 700; letter-spacing: 4px; color: #11960B; text-transform: uppercase; }
+  .prices { display: flex; align-items: baseline; gap: 16px; margin-top: 4px; }
+  .was { font-size: 38px; color: #6B756C; text-decoration: line-through; text-decoration-thickness: 4px; }
+  .price { font-size: 100px; line-height: 0.95; letter-spacing: -3px; }
+  .term { margin-top: 6px; font-size: 28px; line-height: 1.25; color: #333B34; font-weight: 700; }
+  .covers-title { margin-top: 22px; padding-top: 18px; border-top: 3px solid #D5DBD5; font-size: 24px; font-weight: 700; letter-spacing: 4px; color: #11960B; text-transform: uppercase; }
+  ul.covers { list-style: none; margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  ul.covers li { position: relative; padding-left: 48px; font-size: 32px; line-height: 1.28; color: #222A23; }
+  ul.covers li::before { content: ""; position: absolute; left: 4px; top: 9px; width: 22px; height: 12px; border-left: 6px solid #15BA0D; border-bottom: 6px solid #15BA0D; transform: rotate(-45deg); }
   footer {
     background: #0E120E;
     color: #ffffff;
@@ -56,20 +61,25 @@
   footer .dot { font-size: 24px; }
   footer .dot { color: #15BA0D; }
   footer .phone { white-space: nowrap; }
+  /* render.js adds .measure for a moment to read the content's natural height. */
+  .measure, html:has(.measure) { height: auto !important; }
+  .measure main { flex: none; }
   /* render.js adds .compact when the normal layout overflows (long names, discount). */
-  .compact header { padding-top: 40px; }
-  .compact header img { height: 124px; }
-  .compact .rule { margin-top: 26px; }
-  .compact h1 { font-size: 66px; }
-  .compact .address { font-size: 32px; }
-  .compact main { gap: 20px; padding: 24px 72px 26px; }
-  .compact .option { padding: 24px 42px 28px; }
-  .compact .name { font-size: 42px; }
-  .compact .price { font-size: 112px; }
-  .compact .line { font-size: 32px; }
+  .compact header { padding-top: 36px; }
+  .compact header img { height: 116px; }
+  .compact .rule { margin-top: 22px; }
+  .compact h1 { font-size: 64px; }
+  .compact .address { font-size: 31px; }
+  .compact main { gap: 18px; padding: 22px 72px 24px; }
+  .compact .group { padding: 24px 40px 26px; }
+  .compact .name { font-size: 40px; }
+  .compact .price { font-size: 88px; }
+  .compact .covers-title { margin-top: 16px; padding-top: 14px; }
+  .compact ul.covers { gap: 5px; }
+  .compact ul.covers li { font-size: 29px; }
   /* One option only: give it more room. */
-  .single .option { padding: 48px 52px 54px; }
-  .single .price { font-size: 150px; }
+  .single .group { padding: 44px 52px 48px; }
+  .single .price { font-size: 140px; }
 </style>
 </head>
 <body>
@@ -81,19 +91,25 @@
   </section>
   <main class="{{layout}}">
     {{#discountBadge}}<div class="badge">{{discountBadge}}</div>{{/discountBadge}}
-    {{#options}}
-    <div class="option">
-      <div class="label">{{label}}</div>
+    {{#groups}}
+    <div class="group">
       <div class="name">{{name}}</div>
-      <div class="row">
-        <div class="prices">
-          {{#wasPrice}}<span class="was">{{wasPrice}}</span>{{/wasPrice}}
-          <span class="price heavy">{{price}}</span>
+      <div class="rows">
+        {{#rows}}
+        <div class="opt">
+          <div class="label">{{label}}</div>
+          <div class="prices">
+            <span class="price heavy">{{price}}</span>
+            {{#wasPrice}}<span class="was">{{wasPrice}}</span>{{/wasPrice}}
+          </div>
+          {{#term}}<div class="term">{{term}}</div>{{/term}}
         </div>
-        <div class="line">{{cardLine}}</div>
+        {{/rows}}
       </div>
+      <div class="covers-title">{{coversTitle}}</div>
+      <ul class="covers">{{#covers}}<li>{{.}}</li>{{/covers}}{{#monthlyLine}}<li class="last">{{monthlyLine}}</li>{{/monthlyLine}}</ul>
     </div>
-    {{/options}}
+    {{/groups}}
   </main>
   <footer>
     <span>Reply with the day that works</span><span class="dot">&#9679;</span><span class="phone">{{officePhone}}</span>

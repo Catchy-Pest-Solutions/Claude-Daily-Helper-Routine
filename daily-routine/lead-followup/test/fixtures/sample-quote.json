@@ -8,34 +8,27 @@
     {
       "name": "HomeShield - Critter Control",
       "bestFor": "Getting rid of the mice and keeping them out",
+      "exclusion": true,
       "includes": [
-        "Daily visits for 7 business days to trap and remove the mice",
-        "Traps checked, cleaned, reset and reported every visit",
-        "Entry points sealed when needed",
-        "Repellent granules and tamper-resistant stations",
-        "Preventive visits about every 10 weeks after that"
+        "Tamper-resistant stations, placed away from little hands"
       ],
-      "schedule": "Daily visits for 7 business days, then a two-week follow-up",
+      "schedule": "Daily visits for 7 business days, a two-week follow-up, then preventive visits about every 10 weeks",
       "guarantee": "Free return visits as needed; money-back guarantee on annual plans",
-      "price": "$647",
-      "wasPrice": null,
-      "priceNote": "First 3 months included, then $49 a month. 12-month agreement."
+      "price": "$582",
+      "wasPrice": "$647",
+      "priceNote": "12-month agreement"
     },
     {
       "name": "One Time Service",
-      "bestFor": "A quick, one-time treatment",
-      "includes": [
-        "One targeted visit, about 45 minutes",
-        "We inspect the problem areas and treat for the mice",
-        "What you pay goes toward a plan if you upgrade within 90 days"
-      ],
-      "schedule": "One visit",
+      "bestFor": "A quick, one-time treatment to get started",
+      "includes": [],
+      "schedule": "One visit, about 45 minutes",
       "guarantee": "No warranty or follow-up visits",
-      "price": "$247",
-      "wasPrice": null,
-      "priceNote": "One visit, no warranty. Goes toward a plan within 90 days."
+      "price": "$222",
+      "wasPrice": "$247",
+      "priceNote": "One visit"
     }
   ],
-  "discount": null,
+  "discount": { "percent": 10, "reason": "Tech in your neighborhood Wed & Thu" },
   "closeDays": ["tomorrow", "Thursday"]
 }

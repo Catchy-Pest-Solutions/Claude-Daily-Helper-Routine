@@ -18,8 +18,31 @@ const { render } = require('./lib/template');
 const { launch, pdfPageCount } = require('./lib/chrome');
 const google = require('./lib/google');
 
-const CARD = { width: 1080, height: 1350, maxBytes: 300 * 1024 };
+const CARD = { width: 1080, minHeight: 1350, maxHeight: 1620, maxBytes: 300 * 1024 };
 const LOGO = path.join(__dirname, 'assets', 'logo-print.png');
+const PROGRAMS = JSON.parse(fs.readFileSync(path.join(__dirname, 'programs.json'), 'utf8')).programs;
+
+// The program an option is for, from its name ("HomeShield - Critter Control",
+// "One Time Service"...). The card's "what your first fee covers" lines come
+// from programs.json, never from quote.json, so they stay as Daniel approved.
+function programFor(name) {
+  const n = String(name || '').toLowerCase();
+  for (const [key, p] of Object.entries(PROGRAMS)) {
+    if (p.match.some((m) => n.includes(m))) return { key, ...p };
+  }
+  throw new Error(`no program in programs.json matches "${name}" (use the Briostack service name)`);
+}
+
+// Lines for one option: exclusion-only lines drop out when exclusion is false,
+// and the monthly line ends the list ("Then $59 a month, starting month 4").
+function coverLines(program, option) {
+  const lines = program.covers
+    .filter((c) => typeof c === 'string' || !c.exclusionOnly || option.exclusion !== false)
+    .map((c) => (typeof c === 'string' ? c : c.text));
+  const monthly = option.monthly != null ? money(option.monthly, 'monthly') : program.monthly != null ? money(program.monthly, 'monthly') : null;
+  if (monthly) lines.push(`Then ${monthly} a month, starting month 4`);
+  return lines;
+}
 
 // "$647", "647", 647, "$1,047.00" -> "$647" / "$1,047"; null stays null.
 function money(value, field) {
@@ -46,11 +69,23 @@ function viewModel(quote, config) {
     const price = money(o.price, `options[${i}].price`);
     if (!price) throw new Error(`option ${i + 1} has no price`);
     const wasPrice = money(o.wasPrice, `options[${i}].wasPrice`);
+    const program = programFor(o.name);
+    const covers = coverLines(program, o);
     return {
+      programKey: program.key,
+      coversTitle: program.coversTitle,
+      covers,
+      coversKey: covers.join('|'),
       label: options.length > 1 ? `Option ${String.fromCharCode(65 + i)}` : 'Your option',
       name: String(o.name).trim(),
       bestFor: o.bestFor || null,
-      includes: Array.isArray(o.includes) ? o.includes.filter(Boolean) : [],
+      // PDF: the fixed lines, then any call-specific extras from quote.json
+      // `includes`, with the monthly line last.
+      pdfCovers: (() => {
+        const extra = Array.isArray(o.includes) ? o.includes.filter(Boolean) : [];
+        const last = covers.length && /^Then \$/.test(covers[covers.length - 1]);
+        return last ? [...covers.slice(0, -1), ...extra, covers[covers.length - 1]] : [...covers, ...extra];
+      })(),
       schedule: o.schedule || null,
       guarantee: o.guarantee || null,
       price,
@@ -58,9 +93,21 @@ function viewModel(quote, config) {
       // rep's own call discount can sit next to an undiscounted option.
       wasPrice: wasPrice && wasPrice !== price ? wasPrice : null,
       priceNote: o.priceNote || null,
-      cardLine: o.priceNote || o.bestFor || '',
+      term: o.priceNote || '',
     };
   });
+  // Card: options for the same program with the same lines (annual vs. no
+  // annual commitment) share one "covers" box with a price row each.
+  const groups = [];
+  for (const o of opts) {
+    const g = groups.find((x) => x.coversKey === o.coversKey);
+    if (g) g.rows.push(o);
+    else {
+      const monthly = o.covers.length && /^Then \$/.test(o.covers[o.covers.length - 1]) ? o.covers[o.covers.length - 1] : null;
+      groups.push({ coversKey: o.coversKey, name: o.name, coversTitle: o.coversTitle, covers: monthly ? o.covers.slice(0, -1) : o.covers, monthlyLine: monthly, rows: [o] });
+    }
+  }
+  for (const o of opts) if (o.term.length > 60) throw new Error(`priceNote is too long for the card (keep it to the agreement, e.g. "12-month agreement"): ${o.term}`);
   if (discount && opts.some((o) => !o.wasPrice)) throw new Error('a discount needs wasPrice on every option');
   const closeDays = Array.isArray(quote.closeDays) ? quote.closeDays.filter(Boolean) : [];
   if (!closeDays.length) throw new Error('quote.json has no closeDays');
@@ -74,6 +121,7 @@ function viewModel(quote, config) {
     concern: quote.concern || '',
     date: longDate(),
     options: opts,
+    groups,
     optionCount: opts.length,
     optionCountText: opts.length > 1 ? 'Two options' : 'One option',
     layout: opts.length > 1 ? 'double' : 'single',
@@ -95,15 +143,22 @@ async function renderFiles(vm, outDir) {
 
   const chrome = await launch();
   try {
-    const card = await chrome.open(cardHtml, CARD);
-    const overflows = () =>
+    const card = await chrome.open(cardHtml, { width: CARD.width, height: CARD.maxHeight });
+    // The card is as tall as its content needs, between minHeight and
+    // maxHeight (two Critter options need the most room, one option the least).
+    const natural = () =>
       card.evaluate(
-        `(() => { const m = document.querySelector('main'); return m.scrollHeight > m.clientHeight + 1 || document.body.scrollHeight > ${CARD.height}; })()`,
+        `(() => { const b = document.body; b.classList.add('measure'); const h = b.scrollHeight; b.classList.remove('measure'); return h; })()`,
       );
-    if (await overflows()) {
+    let h = await natural();
+    if (h > CARD.maxHeight) {
       await card.evaluate(`document.body.classList.add('compact')`);
-      if (await overflows()) throw new Error('card text is too long to fit; shorten the option names or priceNote');
+      h = await natural();
+      if (h > CARD.maxHeight) throw new Error('card text is too long to fit; shorten the option names or priceNote');
     }
+    const height = Math.max(CARD.minHeight, Math.min(CARD.maxHeight, h));
+    await card.evaluate(`document.documentElement.style.height = document.body.style.height = '${height}px'`);
+    await card.setHeight(height);
     let jpg;
     for (const q of [90, 84, 78, 70, 60, 50]) {
       jpg = await card.screenshotJpeg(q);
@@ -127,7 +182,7 @@ async function renderFiles(vm, outDir) {
     if (pages > 2) throw new Error(`quote PDF is ${pages} pages; shorten the includes lists`);
     fs.writeFileSync(pdfPath, pdf);
     await page.close();
-    return { cardPath, pdfPath, cardBytes: jpg.length, pdfPages: pages };
+    return { cardPath, pdfPath, cardBytes: jpg.length, cardHeight: height, pdfPages: pages };
   } finally {
     await chrome.close();
   }
@@ -170,4 +225,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { viewModel, money, orList, longDate };
+module.exports = { viewModel, money, orList, longDate, programFor, coverLines };
