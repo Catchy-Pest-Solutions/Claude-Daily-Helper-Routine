@@ -162,7 +162,7 @@ picture). `pdfUrl` is the normal Drive share link.
 - Card: 1080 wide JPG, as tall as the content needs between 1350 and 1620
   (two Critter options are the tallest), kept under 300 KB (about 150-190 KB
   in practice). Each option shows its price, the agreement (`priceNote`) and
-  "Your first fee covers" lines from `programs.json`, picked by the option's
+  "Price covers" lines from `programs.json`, picked by the option's
   name; two options for the same program share one box. If it doesn't fit, it
   switches to a compact layout, then fails with a message saying what to
   shorten. An option name that matches no program fails too.

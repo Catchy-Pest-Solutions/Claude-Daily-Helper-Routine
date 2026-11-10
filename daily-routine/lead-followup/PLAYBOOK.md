@@ -138,7 +138,7 @@ A friendly person at the office, texting from their phone.
 
 > Hi Karen, it's Steve from Catchy Pest. Thanks for calling about the mice in the pantry, especially with the baby crawling around now. I've actually got a tech in your neighborhood tomorrow and Thursday, so I can take 10% off: Critter Control would be $582 to start, which covers the setup and a week of daily trapping visits, or a one-time visit is $222. There are no cancellation fees before your first service, so I can hold a spot while you talk it over with Mike. Would tomorrow or Thursday work better? Just reply with the day, or NO if you're all set.
 
-> Hi, it's Shelley from Catchy Pest. I know the price was on your mind for the ants in the kitchen. I've got a tech just down the road from you Wednesday and Thursday, so I can take 10% off: Signature Pest would be $312 to start, which covers your first three treatments over the next three months, or $357 with no annual commitment. Would Wednesday or Thursday work better? Just reply with the day, or NO if you're all set.
+> Hi, it's Shelley from Catchy Pest. I know the price was on your mind for the ants in the kitchen. I've got a tech just down the road from you Wednesday and Thursday, so I can take 10% off: Signature Pest would be $312 to start, which covers your first three treatments over the next three months, or a one-time visit is $222. Would Wednesday or Thursday work better? Just reply with the day, or NO if you're all set.
 
 ### Unbooked — email (short; the quote card shows inline and the PDF is attached)
 

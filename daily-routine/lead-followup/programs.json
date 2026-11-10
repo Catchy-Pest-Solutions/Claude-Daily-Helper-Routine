@@ -4,7 +4,7 @@
     "signature": {
       "match": ["signature"],
       "name": "HomeShield - Signature Pest Control",
-      "coversTitle": "Your first fee covers",
+      "coversTitle": "Price covers",
       "covers": [
         "Your first 3 treatments, over the first 3 months",
         "First two are 2 weeks apart to knock out what you're seeing",
@@ -16,7 +16,7 @@
     "critter": {
       "match": ["critter"],
       "name": "HomeShield - Critter Control",
-      "coversTitle": "Your first fee covers",
+      "coversTitle": "Price covers",
       "covers": [
         "Inspection, plus full trap and station setup",
         "7 days of daily visits: remove animals, reset bait, clean traps",
@@ -29,7 +29,7 @@
     "termite": {
       "match": ["termite"],
       "name": "Carolina TermiteShield",
-      "coversTitle": "Your first fee covers",
+      "coversTitle": "Price covers",
       "covers": [
         "Liquid soil treatment around the home",
         "Termite bait station system, installed",
@@ -40,7 +40,7 @@
     "catchyClub": {
       "match": ["catchy club"],
       "name": "Catchy Club",
-      "coversTitle": "Your first fee covers",
+      "coversTitle": "Price covers",
       "covers": [
         "Pest, critter and termite protection in one plan",
         "First two treatments 2 weeks apart, then a visit every month",
@@ -52,7 +52,7 @@
     "oneTime": {
       "match": ["one time", "one-time"],
       "name": "One Time Service",
-      "coversTitle": "Covers",
+      "coversTitle": "Price covers",
       "covers": [
         "One targeted visit for one or two pests",
         "The full price goes toward any plan if you upgrade"

@@ -76,7 +76,7 @@ Write a text and an email following PLAYBOOK Section 8 (Booked). No prices, disc
 ## Step 3b. UNBOOKED
 
 **Pick two options.**
-- **Option A** = the program the rep recommended, on the 12-month agreement. If the customer objected to a contract, use the no-annual-commitment version instead.
+- **Option A** = the program the rep recommended, on the 12-month agreement. If the customer objected to a contract, use the no-annual-commitment version instead. The usual pair (Daniel, Nov 10): Signature Pest Control on the 12-month agreement as option A, the One Time Service as option B.
 - **Option B** = the $247 One Time Service by default, even if it didn't come up on the call. It should be option B in most quotes. It's eligible for insects, mice and rats (wood rats included), and moles, voles and chipmunks. It's **not** eligible for termites, bed bugs, bats, or larger wildlife: squirrels, flying squirrels, raccoons, opossums, groundhogs, skunks and snakes. Pitch it as a way to get started: we recommend follow-up visits, and the $247 is always credited toward any plan they upgrade to. Skip it only when it isn't eligible or clearly doesn't fit the call (for example, the customer already said no to a one-time visit). Otherwise, use the alternative that best answers their objection (PLAYBOOK Section 3):
   - Contract objection: same program, no annual commitment (+$50).
   - Unsure whether exclusion is needed: Critter Control with vs. without exclusion.
@@ -182,19 +182,25 @@ node daily-routine/lead-followup/send.js --plan $S/plan.json
 It sends the text (Textable, from 828-263-4804, scheduled if `sendAt` is set) and the email (Gmail API, from office@ as "[signedAs] at Catchy Pest Solutions," branded template), then logs both on the customer's Briostack Communications tab. It handles test mode.
 
 - Text `opted_out` (the customer texted STOP before): normal. Never retry. Mention it in your summary.
-- **Permission denied** (the `send.js` command itself is blocked, so it never ran): nothing went out. Don't retry it and don't look for another way to send. Slack Daniel the **Send blocked** message (Step 7), then stop.
+- **Permission denied** (the `send.js` command itself is blocked, so it never ran): nothing went out. Don't retry it and don't look for another way to send. Send Daniel the **Send blocked** notification (Step 7) and stop. He opens the run in the Claude app and replies there; then follow **Sending after Daniel replies** below.
 - Any other failure: Slack Daniel with what failed. Don't retry a send that may have gone through.
 - After a successful send, Slack Daniel a copy (Step 7).
+
+**Sending after Daniel replies** (he answers a Send blocked notification in this run, e.g. "send it"): his reply is the approval. Before sending:
+1. Run `prepare.js` again (same command as Step 1). `already_sent`: tell him it already went out, and stop.
+2. Read the history again. If something new happened (they called back, booked, texted), redo Step 2 with it and tell him what changed before sending.
+3. Fix anything time has made wrong: day words ("this afternoon", "just tried calling", "yesterday") and the offered days (use the new `schedule.closeDays`; update `quote.json` and run `render.js` again if the days are on the card). Set `text.sendAt` to null if it has passed. Run the Step 4 checks.
+4. Write the updated `plan.json` and run `send.js` (same command as Step 5). Reply in the run with what went out (and what you changed), then Slack Daniel the **Sent** copy.
 
 ## Step 6. Finish
 
 End with one line: customer, booked/unbooked/note/skipped, what was sent, signed as, and (if skipped) why.
 
-## Step 7. Slack messages
+## Step 7. Messages to Daniel
 
-Send direct messages with the Slack connector. Most go to Daniel (`danielSlackUserId` in `config.json`):
+Send direct messages with the Slack connector (except **Send blocked**, which is a Claude app notification). Most go to Daniel (`danielSlackUserId` in `config.json`):
 
-- **Send blocked:** start the message with "SEND BLOCKED:" so it stands out on his phone. Then: customer name, phone, Briostack ID, booked/unbooked/note, signed as, that nothing was sent or logged, the text message itself as a quote (plus the email subject, if there is one), the card and PDF links, and the plan file path. End with: "Reply in the routine's session with: send the follow-up for [customer name]."
+- **Send blocked** (Daniel, Nov 10: a Claude app notification, not Slack): send it with the PushNotification tool, inside `<routine_summary>` tags. First sentence (the phone banner): "SEND BLOCKED: follow-up for [customer name] not sent. Open this run and reply "send it" to send." Then: phone, Briostack ID, booked/unbooked/note, signed as, that nothing was sent or logged, the text message itself as a quote (plus the email subject, if there is one), and the card and PDF links. Also end your reply in the run with the same details, so he can read them when he opens it.
 - **Skipped or failed:** 2–3 lines: customer name, phone, Briostack ID, what happened, and that nothing was sent. Example: "New customer Karen Smith, (828) 555-0100, Briostack 12345: no matching call in ATS. Phone may be mistyped. Nothing sent."
 - **Commercial lead:** the information for an individual quote: business and contact name, address, phone, email, Briostack ID, the pest problem and where, what the rep quoted or booked, and the next step promised on the call. End with what was sent (the note, quoted) or "Nothing sent."
 - **Sent:** customer name, phone, Briostack ID, booked/unbooked/note (for a note, why), signed as (and `signer.reason` if there was no conversation), options and prices (and discount) if unbooked, whether the text was scheduled or opted out, then the text message itself as a quote. If you sent an Email check, say so in one line.
