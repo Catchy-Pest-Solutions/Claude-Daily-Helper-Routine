@@ -13,7 +13,7 @@ const { parseVoicemailEmail, subjectPhone } = require('../lib/voicemail');
 const { renderString, escapeHtml } = require('../lib/template');
 const { buildMime } = require('../lib/google');
 const { viewModel, money, programFor } = require('../render');
-const { emailBlocks, logContent, findUnknownContactMethod, createLogEntry, TEST_PREFIX } = require('../send');
+const { emailBlocks, logContent, stagedLog, findUnknownContactMethod, createLogEntry, TEST_PREFIX, LIVE_PREFIX } = require('../send');
 
 const et = (date, time) => cal.easternToMs(date, time);
 const NOT_BOOKED = ['Leads Marketing', 'Quote - Critter Control', 'Quote - Signature Pest', 'Quote - TermiteShield'];
@@ -333,8 +333,10 @@ test('log entry: starts with the prefix and holds the exact message', () => {
 });
 
 // The Apps Script relay, run against mocked Google services.
-function loadRelay({ props, fetchResponses }) {
+function loadRelay({ props, fetchResponses, files = {} }) {
   const cache = new Map();
+  const mail = [];
+  const trashed = [];
   const triggers = [];
   const fetched = [];
   const logs = [];
@@ -350,6 +352,14 @@ function loadRelay({ props, fetchResponses }) {
     },
     CacheService: { getScriptCache: () => ({ get: (k) => cache.get(k) ?? null, put: (k, v) => cache.set(k, v), remove: (k) => cache.delete(k) }) },
     LockService: { getScriptLock: () => ({ waitLock: () => {}, releaseLock: () => {} }) },
+    DriveApp: {
+      getFileById: (id) => {
+        if (!(id in files)) throw new Error('not found');
+        return { getBlob: () => ({ getDataAsString: () => files[id] }), setTrashed: () => trashed.push(id) };
+      },
+    },
+    GmailApp: { sendEmail: (to, subject, body, opts) => mail.push({ to, subject, body, opts }) },
+    HtmlService: { createHtmlOutput: (html) => ({ html, setTitle() { return this; }, addMetaTag() { return this; } }) },
     UrlFetchApp: {
       fetch: (url, opts) => {
         fetched.push({ url, opts });
@@ -363,6 +373,9 @@ function loadRelay({ props, fetchResponses }) {
       Charset: { UTF_8: 'utf8' },
       computeDigest: (alg, text) => [...crypto.createHash('sha256').update(text).digest()],
       base64EncodeWebSafe: (bytes) => Buffer.from(bytes).toString('base64url'),
+      base64Decode: (b64) => [...Buffer.from(b64, 'base64')],
+      newBlob: (bytes, mimeType, name) => ({ bytes, mimeType, name }),
+      formatDate: (d) => d.toISOString(),
     },
     ContentService: { MimeType: { TEXT: 'text' }, createTextOutput: (t) => ({ text: t, setMimeType() { return this; } }) },
     ScriptApp: {
@@ -373,7 +386,7 @@ function loadRelay({ props, fetchResponses }) {
   };
   vm.createContext(sandbox);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'relay', 'Code.gs'), 'utf8'), sandbox);
-  return { sandbox, fetched, triggers, logs, props };
+  return { sandbox, fetched, triggers, logs, props, mail, trashed };
 }
 
 test('relay: wrong key is ignored, right key forwards the raw body once', () => {
@@ -466,4 +479,79 @@ test('technician names: only roster names, spelled the roster way', () => {
   assert.throws(() => checkTechnicianNames([['text.body', 'ok'], ['email.bodyText', 'Our tech Justin will be out Thursday.']], roster), /email\.bodyText.*"Justin" \(did the call mean Dustin\?\)/);
   // The shipped config has the roster.
   assert.deepStrictEqual(require('../config.json').technicians, roster);
+});
+
+function stagedPackage({ token, testMode = false }) {
+  const plan = { customerId: '19852', signedAs: 'Steve', summary: 'Note: voicemail, two callbacks', pdfUrl: null };
+  const prefix = testMode ? TEST_PREFIX : LIVE_PREFIX;
+  return {
+    version: 1, token, stagedAt: Date.now() - 5 * 3600000, customerId: '19852', customerName: 'Debbie Sapp', signedAs: 'Steve', testMode, briostackBaseUrl: 'https://b.example/rest/v1/',
+    text: { from: '+18282634804', to: '+18286273373', message: 'Hi Debbie, it\'s Steve <from> Catchy Pest.', mediaUrl: null, sendAtMs: null,
+      log: stagedLog({ prefix, kind: 'Text', plan, recipient: '(828) 627-3373', sendAtMs: null, body: 'Hi Debbie', communicationTypeId: 'SMS', ids: ['u1', '37932'] }) },
+    email: { to: 'd@example.com', fromName: 'Steve at Catchy Pest Solutions', subject: 'Sorry I missed you', bodyText: 'Hi Debbie', html: '<p>Hi</p>',
+      inline: [{ cid: 'catchy-logo', filename: 'l.png', mimeType: 'image/png', data: 'aGk=' }], attachments: [{ filename: 'q.pdf', mimeType: 'application/pdf', data: 'aGk=' }],
+      log: stagedLog({ prefix, kind: 'Email', plan, recipient: 'd@example.com', sendAtMs: null, body: 'Hi Debbie', subject: 'Sorry I missed you', communicationTypeId: 'EMAIL_COMMUNICATION', ids: ['u1', null] }) },
+  };
+}
+
+test('staged log: the same lines as the normal log entry, split for the relay', () => {
+  const l = stagedPackage({ token: 'x' }).text.log;
+  assert.strictEqual(l.subject, '[AI FOLLOW-UP] Text');
+  assert.strictEqual(l.recipientLine, 'To: (828) 627-3373');
+  assert.strictEqual(l.rest[0], 'Signed as: Steve');
+  assert.ok(l.rest.includes('Hi Debbie'));
+  assert.deepStrictEqual(l.contactMethodIds, ['u1', '37932']);
+});
+
+test('relay one-tap: opening the link only shows it; Send sends, logs once and removes the file', () => {
+  const token = 'a'.repeat(48);
+  const props = { RELAY_SECRET: 'k', ROUTINE_URL: 'u', ROUTINE_TOKEN: 't', TEXTABLE_ACCOUNT_UID: 'uid', TEXTABLE_API_TOKEN: 'tt', BRIOSTACK_API_KEY: 'bk' };
+  const files = { FILE_ID_123456: JSON.stringify(stagedPackage({ token })) };
+  const r = loadRelay({ props, files, fetchResponses: [
+    { code: 200, body: '[]' }, // Briostack: no follow-up logged yet
+    { code: 200, body: '{"status":true}' }, // Textable
+    { code: 200, body: '{"communicationId":"c1"}' }, // text log
+    { code: 200, body: '{"communicationId":"c2"}' }, // email log
+    { code: 200, body: '{}' }, // PDF on the email log
+  ] });
+  assert.match(r.sandbox.doGet({ parameter: { approve: 'FILE_ID_123456', t: 'b'.repeat(48) } }).html, /Link not found/);
+  const page = r.sandbox.doGet({ parameter: { approve: 'FILE_ID_123456', t: token } }).html;
+  assert.match(page, /Debbie Sapp/);
+  assert.match(page, /Steve &lt;from&gt; Catchy Pest/, 'message is escaped');
+  assert.match(page, /written 5 hours ago/);
+  assert.strictEqual(r.fetched.length, 0, 'opening the page sends nothing');
+
+  const out = r.sandbox.sendStaged('FILE_ID_123456', token);
+  assert.match(out, /^Text sent, email sent, Briostack logged/);
+  const textCall = r.fetched[1];
+  assert.strictEqual(textCall.url, 'https://atscall-txb.textable.app/api/send');
+  assert.strictEqual(textCall.opts.headers.Authorization, 'Bearer uid:tt');
+  assert.deepStrictEqual(JSON.parse(textCall.opts.payload), { to: '+18286273373', from: '+18282634804', message: 'Hi Debbie, it\'s Steve <from> Catchy Pest.' });
+  const textLog = JSON.parse(r.fetched[2].opts.payload);
+  assert.strictEqual(r.fetched[2].url, 'https://b.example/rest/v1/customers/19852/communications');
+  assert.strictEqual(textLog.subject, '[AI FOLLOW-UP] Text');
+  assert.match(textLog.content, /^\[AI FOLLOW-UP\] Text sent\nTo: \(828\) 627-3373\nWhen: .*one-tap approval\)\nSigned as: Steve/);
+  assert.deepStrictEqual(textLog.contactMethods, [{ contactMethodId: 'u1' }]);
+  assert.strictEqual(r.fetched[4].url, 'https://b.example/rest/v1/customers/19852/communications/c2/documents');
+  assert.strictEqual(r.mail.length, 1);
+  assert.strictEqual(r.mail[0].opts.name, 'Steve at Catchy Pest Solutions');
+  assert.ok(r.mail[0].opts.inlineImages['catchy-logo']);
+  assert.deepStrictEqual(r.trashed, ['FILE_ID_123456']);
+  // A second tap (or a double tap) sends nothing.
+  assert.match(r.sandbox.sendStaged('FILE_ID_123456', token), /^Already sent/);
+  assert.strictEqual(r.fetched.length, 5);
+  assert.match(r.sandbox.doGet({ parameter: { approve: 'FILE_ID_123456', t: token } }).html, /Already sent/);
+});
+
+test('relay one-tap: refuses when Briostack already has a follow-up logged, or properties are missing', () => {
+  const token = 'c'.repeat(48);
+  const files = { FILE_ID_ABCDEF: JSON.stringify(stagedPackage({ token })) };
+  const props = { TEXTABLE_ACCOUNT_UID: 'uid', TEXTABLE_API_TOKEN: 'tt', BRIOSTACK_API_KEY: 'bk' };
+  const r = loadRelay({ props, files, fetchResponses: [{ code: 200, body: '[{"subject":"[AI FOLLOW-UP] Text"}]' }] });
+  assert.match(r.sandbox.sendStaged('FILE_ID_ABCDEF', token), /already has a follow-up logged/);
+  assert.strictEqual(r.fetched.length, 1);
+  assert.strictEqual(r.mail.length, 0);
+  const r2 = loadRelay({ props: {}, files, fetchResponses: [] });
+  assert.throws(() => r2.sandbox.sendStaged('FILE_ID_ABCDEF', token), /missing Script Properties/);
+  assert.match(r2.sandbox.doGet({ parameter: {} }).text, /One-tap send is off/);
 });

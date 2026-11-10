@@ -52,8 +52,8 @@ async function google(method, url, { json, body, headers = {} } = {}) {
 
 const randomName = (prefix, ext) => `${prefix}-${crypto.randomBytes(16).toString('hex')}.${ext}`;
 
-// Uploads a file into the folder and shares it "Anyone with the link" (view).
-async function uploadShared({ folderId, name, mimeType, data }) {
+// Uploads a file into the folder, not shared with anyone (office@ only).
+async function uploadPrivate({ folderId, name, mimeType, data }) {
   const boundary = `b${crypto.randomBytes(12).toString('hex')}`;
   const meta = JSON.stringify({ name, parents: [folderId], mimeType });
   const body = Buffer.concat([
@@ -65,10 +65,16 @@ async function uploadShared({ folderId, name, mimeType, data }) {
     body,
     headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
   });
-  await google('POST', `https://www.googleapis.com/drive/v3/files/${file.id}/permissions?sendNotificationEmail=false`, {
+  return file.id;
+}
+
+// Uploads a file into the folder and shares it "Anyone with the link" (view).
+async function uploadShared({ folderId, name, mimeType, data }) {
+  const id = await uploadPrivate({ folderId, name, mimeType, data });
+  await google('POST', `https://www.googleapis.com/drive/v3/files/${id}/permissions?sendNotificationEmail=false`, {
     json: { role: 'reader', type: 'anyone', allowFileDiscovery: false },
   });
-  return file.id;
+  return id;
 }
 
 // Direct image link Textable can fetch: returns the JPG itself, no redirect.
@@ -194,4 +200,4 @@ async function getMessage(id, { subjectOnly = false } = {}) {
   return { id, internalDate: Number(msg.internalDate), subject: header('subject'), html: body('text/html') || body('text/plain') };
 }
 
-module.exports = { listMessages, getMessage, accessToken, uploadShared, imageUrl, shareUrl, checkPublicImage, randomName, buildMime, sendMail, encodeHeader };
+module.exports = { listMessages, getMessage, accessToken, uploadPrivate, uploadShared, imageUrl, shareUrl, checkPublicImage, randomName, buildMime, sendMail, encodeHeader };
