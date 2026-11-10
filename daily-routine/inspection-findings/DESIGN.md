@@ -309,6 +309,14 @@ leads; set a real minimum after 2-3 weeks of data.
   unreasonably small or big, and fixing it actually helps the customer.
 - **Bats** (rare) count as rodent droppings: same Critter Control quote,
   plus a one-line alert to #office-only (`C09LNB93MQW`) for a custom quote.
+  Nov 10: any evidence (seen, heard, droppings) earns the $3 bonus, even
+  with thin photos, and even when the customer has Critter Control: bats
+  aren't covered by it, so a Critter customer gets a `custom_quote` task
+  for the office instead of a skip. The tech is asked for more photos.
+- **Covered yard burrows** (Nov 10): no bonus, but the tech is told
+  they're covered and to treat them as part of Critter Control service.
+- **Sheet Post IDs** always contain a ":" (`<ts>:<plan>` or `<ts>:none`):
+  Google Sheets rounds a bare Slack ts as a number.
 - **Customer notes** (preferences, deadlines, who to call) from the tech's
   post go on the office task under "Customer notes", never to the customer.
 - Bonuses are paid for every lead that counts, whether or not the customer

@@ -97,13 +97,28 @@ unreasonably small or big, and fixing it actually helps the customer. A
 vague "could use exclusion", a hairline crack, or a job beyond our
 exclusion work (a missing wall, a roof repair) doesn't count: skip or ask.
 
-**Bats** (rare): quote them like rodent droppings (`rodent_droppings`,
-Critter Control, same price rules) and also post one line to #office-only
-(`C09LNB93MQW`, Slack connector) so the office can work up a custom quote:
-put it in the decision's `officeAlert`, e.g. "Possible bats at Jane Smith
-#12345 (Dustin, Nov 12): droppings piled under the porch ceiling. Critter
-quote sent; needs a custom bat quote." Use it when the tech says bats or
-the droppings are piled in one line under a roof edge or porch ceiling.
+**Bats** (rare): any evidence counts (seen, heard, or droppings piled in
+one line under a roof edge or porch ceiling) as `rodent_droppings`, the
+$3 bonus (Daniel, Nov 10). Bats aren't covered by Critter Control (we set
+up a Critter Control service for the exclusion and cleanup, but it's a
+custom quote), so having Critter Control doesn't skip it:
+- No Critter Control: quote Critter Control like rodent droppings.
+- Has Critter Control: `"action": "custom_quote"`, `"plan": "critter"`:
+  a task for the office to price it, nothing to the customer.
+- A business: `commercial` as usual.
+Every time: post one line to #office-only (`C09LNB93MQW`, Slack
+connector) through the decision's `officeAlert`, e.g. "Possible bats at
+Jane Smith #12345 (Dustin, Nov 12): droppings piled under the porch
+ceiling. Critter quote sent; needs a custom bat quote." Missing photos
+don't cancel the bat bonus (no `missingSteps`), but the office needs as
+much as possible for the quote, so the `techMessage` tells the tech it
+counts for $3 and asks for more photos: close-ups of the droppings and
+where they get in, and a wide shot of that side of the building.
+
+**Covered yard burrows**: mole, vole or groundhog burrows on a Critter
+Control customer are skipped (no bonus), but the `techMessage` tells the
+tech they're covered and to treat them as part of the Critter Control
+service, even if that wasn't the customer's first concern.
 
 **Customer notes**: anything the customer asked for or prefers (a day or
 deadline, "wants it before Thanksgiving", "call my wife", "only the back

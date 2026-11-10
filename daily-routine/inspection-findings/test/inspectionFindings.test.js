@@ -284,3 +284,16 @@ test('a merged post gets its own sheet row: its findings, its bonus, no second q
   const [noBonus] = mergedRows({ decision: { ...merged, alsoPosts: [{ ts: '2.2', findings: ['yard_burrows'], missingSteps: ['wide photo'] }] }, model: m, posts: [post, other], config });
   assert.deepEqual([noBonus.Bonus, noBonus.Counted], [0, 'no']);
 });
+
+test('sheet Post IDs always keep a ":" so Google Sheets doesn\'t round the Slack ts', () => {
+  const { sheetPostId } = require('../send');
+  assert.equal(sheetPostId({ ts: '1794243334.617239', action: 'skip' }), '1794243334.617239:none');
+  assert.equal(sheetPostId({ ts: '1794251167.644139', action: 'quote', plan: 'termite' }), '1794251167.644139:termite');
+});
+
+test('bats on a Critter Control customer: custom_quote, a task for the office, no coverage stop', () => {
+  const covered = { ...post, checks: { covered: { critter: 'HomeShield - Critter Control' }, priorOfferPlans: [] } };
+  const bats = { ts: '1.1', action: 'custom_quote', findings: ['rodent_droppings'], plan: 'critter', officeAlert: 'Possible bats.' };
+  assert.deepEqual(Q.checkDecision(bats, covered, config), []);
+  assert.match(Q.checkDecision({ ...bats, action: 'quote' }, covered, config).join(), /already covered/);
+});

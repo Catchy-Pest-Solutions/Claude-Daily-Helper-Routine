@@ -6,7 +6,7 @@
 const pricing = require('./pricing');
 const cal = require('../../src/callReview/calendar');
 
-const ACTIONS = ['quote', 'commercial', 'quote_request', 'skip', 'ask'];
+const ACTIONS = ['quote', 'commercial', 'custom_quote', 'quote_request', 'skip', 'ask'];
 const money = (n) => `$${Number(n).toLocaleString('en-US')}`;
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -35,7 +35,7 @@ function checkDecision(decision, post, config, allPosts = []) {
   const findings = allFindings(decision);
   for (const a of decision.alsoPosts || []) {
     const other = allPosts.find((p) => p.ts === a.ts);
-    if (!['quote', 'commercial'].includes(decision.action)) errs.push('alsoPosts only goes on a quote or commercial decision');
+    if (!['quote', 'commercial', 'custom_quote'].includes(decision.action)) errs.push('alsoPosts only goes on a quote, commercial or custom_quote decision');
     else if (!other) errs.push(`alsoPosts: no collected post with ts ${a.ts}`);
     else if (a.ts === decision.ts) errs.push('alsoPosts lists the decision\'s own post');
     else if (String(other.customer?.id) !== String(post.customer?.id)) errs.push(`alsoPosts ${a.ts} is a different customer`);
@@ -57,7 +57,9 @@ function checkDecision(decision, post, config, allPosts = []) {
   const plans = request ? [decision.plan] : [...new Set(findings.map((k) => config.findings.find((f) => f.key === k)?.plan).filter(Boolean))];
   if (plans.length !== 1) errs.push(`findings must all point at one plan (got ${plans.join(', ') || 'none'}); write one decision per plan`);
   if (decision.plan && plans[0] && decision.plan !== plans[0]) errs.push(`plan "${decision.plan}" doesn't match the findings (${plans[0]})`);
-  if (decision.action === 'commercial') return errs;
+  // A task for the office to price, nothing to the customer: a business,
+  // or a custom job (bats) on a customer who already has the plan.
+  if (['commercial', 'custom_quote'].includes(decision.action)) return errs;
 
   // Hard stops the routine should already have caught.
   const plan = decision.plan || plans[0];
@@ -88,7 +90,7 @@ function checkMerges(decision, decisions, config) {
   const errs = [];
   const planOf = (d) => d.plan || config.findings.find((f) => f.key === (d.findings || [])[0])?.plan || null;
   for (const a of decision.alsoPosts || []) {
-    if (decisions.some((d) => d !== decision && d.ts === a.ts && ['quote', 'commercial'].includes(d.action) && planOf(d) === planOf(decision))) errs.push(`post ${a.ts} is merged into this quote, so it can't have its own ${planOf(decision)} decision`);
+    if (decisions.some((d) => d !== decision && d.ts === a.ts && ['quote', 'commercial', 'custom_quote'].includes(d.action) && planOf(d) === planOf(decision))) errs.push(`post ${a.ts} is merged into this quote, so it can't have its own ${planOf(decision)} decision`);
     if (decisions.some((d) => d !== decision && (d.alsoPosts || []).some((x) => x.ts === a.ts) && planOf(d) === planOf(decision))) errs.push(`post ${a.ts} is merged into two quotes`);
   }
   return errs;
