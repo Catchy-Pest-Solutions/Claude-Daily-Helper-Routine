@@ -182,11 +182,7 @@ node daily-routine/lead-followup/send.js --plan $S/plan.json
 It sends the text (Textable, from 828-263-4804, scheduled if `sendAt` is set) and the email (Gmail API, from office@ as "[signedAs] at Catchy Pest Solutions," branded template), then logs both on the customer's Briostack Communications tab. It handles test mode.
 
 - Text `opted_out` (the customer texted STOP before): normal. Never retry. Mention it in your summary.
-- **Permission denied** (the `send.js` command itself is blocked, so it never ran): nothing went out. Don't retry the send and don't look for another way to send. Instead, stage it for Daniel's one-tap approval (Daniel, Nov 10), as its own command:
-  ```
-  node daily-routine/lead-followup/send.js --plan $S/plan.json --stage
-  ```
-  It sends nothing. It saves the finished text and email privately on Drive and prints `{"staged": true, "approveUrl": "..."}`. Then Slack Daniel the **Send blocked** message (Step 7) with that link, and stop. If staging fails or is blocked too, send the same message without a link.
+- **Permission denied** (the `send.js` command itself is blocked, so it never ran): nothing went out. Don't retry it and don't look for another way to send. Slack Daniel the **Send blocked** message (Step 7), then stop.
 - Any other failure: Slack Daniel with what failed. Don't retry a send that may have gone through.
 - After a successful send, Slack Daniel a copy (Step 7).
 
@@ -198,7 +194,7 @@ End with one line: customer, booked/unbooked/note/skipped, what was sent, signed
 
 Send direct messages with the Slack connector. Most go to Daniel (`danielSlackUserId` in `config.json`):
 
-- **Send blocked:** start the message with "SEND BLOCKED:" so it stands out on his phone. Then: customer name, phone, Briostack ID, booked/unbooked/note, signed as, that nothing was sent or logged yet, the text message itself as a quote (plus the email subject, if there is one), and the card and PDF links. With an `approveUrl`, end with: "Tap to review and send: [approveUrl]" (it opens a page showing the message; nothing goes out until he taps Send). Without one, end with the plan file path and: "Reply in the routine's session with: send the follow-up for [customer name]."
+- **Send blocked:** start the message with "SEND BLOCKED:" so it stands out on his phone. Then: customer name, phone, Briostack ID, booked/unbooked/note, signed as, that nothing was sent or logged, the text message itself as a quote (plus the email subject, if there is one), the card and PDF links, and the plan file path. End with: "Reply in the routine's session with: send the follow-up for [customer name]."
 - **Skipped or failed:** 2–3 lines: customer name, phone, Briostack ID, what happened, and that nothing was sent. Example: "New customer Karen Smith, (828) 555-0100, Briostack 12345: no matching call in ATS. Phone may be mistyped. Nothing sent."
 - **Commercial lead:** the information for an individual quote: business and contact name, address, phone, email, Briostack ID, the pest problem and where, what the rep quoted or booked, and the next step promised on the call. End with what was sent (the note, quoted) or "Nothing sent."
 - **Sent:** customer name, phone, Briostack ID, booked/unbooked/note (for a note, why), signed as (and `signer.reason` if there was no conversation), options and prices (and discount) if unbooked, whether the text was scheduled or opted out, then the text message itself as a quote. If you sent an Email check, say so in one line.

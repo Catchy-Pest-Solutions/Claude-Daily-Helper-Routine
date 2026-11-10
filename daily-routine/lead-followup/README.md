@@ -232,7 +232,6 @@ Email: `sent`, `skipped (no address)` or `failed: ...`. Log: `logged`,
 | `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` | prepare, render, send | Already set. office@'s token with `gmail.send`, `gmail.readonly` (voicemails) and `drive.file` scopes |
 | `TEXTABLE_ACCOUNT_UID`, `TEXTABLE_API_TOKEN` | send | Set (as `Textable_Account_UID` / `Textable_Token`; names are matched ignoring case, and `TEXTABLE_USER_ID` / `TEXTABLE_TOKEN` also work). Or store them as a network secret for `atscall-txb.textable.app` (header `Authorization`, prefix `Bearer`, value `ACCOUNT_UID:TOKEN`) |
 | `CHROME_PATH` | render | Optional |
-| `RELAY_URL` | send `--stage` | The relay's web app URL (`https://script.google.com/macros/s/.../exec`, no `?key=`). Needed for the one-tap send link |
 
 The routine also needs the **Slack connector** (Step 7 messages Daniel).
 
@@ -312,49 +311,6 @@ without the right `?key=`, forwards the raw body as the fire `text`
 (`anthropic-version: 2023-06-01`), dedupes the same body or customer ID for 6
 hours, and retries a failed forward (429/5xx/network) every minute up to 5
 times.
-
-## One-tap send (when the permission check blocks send.js)
-
-A scheduled run has nobody watching, so the session's safety check sometimes
-blocks `send.js` even with the allow rule (9 of about 30 customers, Nov 5-9).
-The real fix is an `autoMode` entry in the org's managed settings (see
-below). As a backup, the routine stages the message instead:
-
-1. `send.js --plan plan.json --stage` builds the exact text, email and
-   Briostack log entries, saves them as a private JSON file in the "AI
-   Follow-ups" Drive folder (`staged-follow-up-<customer>-<random>.json`), and
-   prints `{"staged": true, "approveUrl"}`. The link is the relay's web app
-   URL with `?approve=<file ID>&t=<48-character one-time token>`.
-2. The routine Slacks Daniel "SEND BLOCKED: ..." with the link.
-3. Opening the link shows the message, recipients and how long ago it was
-   written (with a warning after 3 hours, since "tomorrow" may be stale).
-   Opening it sends nothing, so Slack's link preview can't send it.
-4. Tapping **Send** runs `sendStaged` in the relay as office@: Textable text,
-   Gmail email (same HTML, logo, card and PDF), and the Briostack log entries
-   ("... (sent with Daniel's one-tap approval)"). It refuses if Briostack
-   already has a follow-up logged for the customer, sends at most once per
-   link, then trashes the staged file.
-
-**Setup:**
-1. Update the relay (signed in as office@): open the `Briostack follow-up
-   relay` project, replace all of `Code.gs` with the repo's `relay/Code.gs`,
-   save.
-2. **Project Settings -> Script Properties**, add `TEXTABLE_ACCOUNT_UID`,
-   `TEXTABLE_API_TOKEN` and `BRIOSTACK_API_KEY` (the same values as the
-   routine's environment).
-3. **Deploy -> Manage deployments**, pencil icon on the existing deployment,
-   **Version: New version**, **Deploy**. This keeps the same URL, so the
-   Briostack webhook doesn't change. Authorize again when asked (it now also
-   uses Gmail and Drive).
-4. Open the web app URL: it should end with "One-tap send is ready."
-5. Add `RELAY_URL` (that URL, without `?key=`) to the routine's environment.
-
-**The real fix (managed settings):** an org Owner adds an `autoMode` block
-at claude.ai -> Organization settings -> Claude Code -> Managed settings
-(https://claude.ai/admin-settings/claude-code; Team or Enterprise plans),
-which reaches cloud runs. Project `.claude/settings.json` can't do this: the
-classifier doesn't read `autoMode` from project settings. Docs:
-https://code.claude.com/docs/en/auto-mode-config.md.
 
 ## The Briostack webhook
 

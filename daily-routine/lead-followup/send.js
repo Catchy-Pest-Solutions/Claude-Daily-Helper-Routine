@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Step 5 of the new-customer follow-up (ROUTINE_PROMPT.md).
 //
-//   node send.js --plan $S/plan.json [--no-log] [--preview] [--stage]
+//   node send.js --plan $S/plan.json [--no-log] [--preview]
 //
 // Sends the text (Textable, from 828-263-4804; scheduled if sendAt is set)
 // and the email (Gmail API as office@, From "<signedAs> at Catchy Pest
@@ -20,13 +20,7 @@
 // on the real customer, which keeps duplicate protection working.
 // --no-log skips Briostack (for testing). --preview builds everything into
 // the plan's folder (text-preview.txt, email-preview.html) and sends nothing.
-// --stage (when the permission check blocked the send) sends nothing either:
-// it saves the exact text, email and log entries as a private file in the
-// "AI Follow-ups" Drive folder and prints {"staged": true, "approveUrl"}.
-// Daniel opens the link from Slack, reads it, and taps Send; the relay
-// (relay/Code.gs, running as office@) then sends and logs it.
 require('./lib/proxy');
-const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { loadConfig, parseArgs, requireEnv } = require('./lib/env');
@@ -226,9 +220,8 @@ async function createLogEntry(brio, customerId, body, unknownId, fallbackId) {
 }
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2), { values: ['plan'], flags: ['no-log', 'preview', 'stage'] });
-  if (!args.plan) throw new Error('usage: send.js --plan plan.json [--no-log] [--preview] [--stage]');
-  if (args.stage && (args.preview || args['no-log'])) throw new Error('--stage can\'t be combined with --preview or --no-log');
+  const args = parseArgs(process.argv.slice(2), { values: ['plan'], flags: ['no-log', 'preview'] });
+  if (!args.plan) throw new Error('usage: send.js --plan plan.json [--no-log] [--preview]');
   const config = loadConfig();
   const { plan, text, email, sendAtMs } = loadPlan(args.plan);
   checkTechnicianNames([['text.body', text.body], ['email.subject', email.subject], ['email.bodyText', email.bodyText]], config.technicians);
@@ -270,12 +263,6 @@ async function main() {
     if (textMessage) fs.writeFileSync(path.join(outDir, 'text-preview.txt'), `To: ${textRecipient}\nMedia: ${text.mediaUrl || 'none'}\nSend at: ${sendAtMs ? cal.easternIso(sendAtMs) : 'now'}\n\n${textMessage}\n`);
     if (html) fs.writeFileSync(path.join(outDir, 'email-preview.html'), html.replace('cid:catchy-logo', `file://${LOGO}`).replace('cid:quote-card', card ? `file://${path.resolve(email.inlineCard)}` : ''));
     process.stdout.write(`${JSON.stringify({ text: textMessage ? 'preview' : result.text, email: html ? 'preview' : result.email, log: 'skipped (preview)', testMode: test })}\n`);
-    return;
-  }
-
-  if (args.stage) {
-    const staged = await stage({ config, plan, text, email, sendAtMs, test, who, customer, brio, textTo, textRecipient, textMessage, emailTo, emailRecipient, subject, html, card, pdf });
-    process.stdout.write(`${JSON.stringify(staged)}\n`);
     return;
   }
 
@@ -347,72 +334,6 @@ async function main() {
   process.stdout.write(`${JSON.stringify(result)}\n`);
 }
 
-// The log entry for the relay to post once the message has gone out: the
-// same lines as logContent(), split where the outcome and the time go.
-function stagedLog({ prefix, kind, plan, recipient, sendAtMs, body, subject, communicationTypeId, ids }) {
-  const ref = logContent({ prefix, kind, plan, recipient, status: 'sent', sentAtMs: Date.now(), body, subject }).split('\n');
-  return {
-    subject: `${prefix} ${kind}`,
-    communicationTypeId,
-    head: `${prefix} ${kind}`,
-    recipientLine: ref[1],
-    scheduledFor: sendAtMs ? `${cal.formatDay(sendAtMs)} ${cal.formatTime(sendAtMs)}` : null,
-    rest: ref.slice(3),
-    contactMethodIds: ids.filter(Boolean).map(String),
-  };
-}
-
-async function stage({ config, plan, text, email, sendAtMs, test, who, customer, brio, textTo, textRecipient, textMessage, emailTo, emailRecipient, subject, html, card, pdf }) {
-  const relayUrl = String(process.env.RELAY_URL || config.relayUrl || '').trim();
-  if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(relayUrl)) throw new Error('RELAY_URL isn\'t set to the relay\'s web app URL (https://script.google.com/macros/s/.../exec)');
-  if (!config.driveFolderId) throw new Error('config.json has no driveFolderId');
-  const prefix = test ? TEST_PREFIX : LIVE_PREFIX;
-  const phoneId = [customer.primaryPhone, customer.secondaryPhone].find((p) => p && textTo && normalizePhone(p.number) === normalizePhone(textTo))?.contactMethodId || customer.primaryPhone?.contactMethodId;
-  const emailId = [customer.primaryEmail].find((e) => e && emailTo && String(e.address).trim().toLowerCase() === emailTo.toLowerCase())?.contactMethodId || customer.primaryEmail?.contactMethodId;
-  const unknownId = await findUnknownContactMethod(brio, plan.customerId);
-  const b64 = (buf) => Buffer.from(buf).toString('base64');
-  const token = crypto.randomBytes(24).toString('hex');
-  const pkg = {
-    version: 1,
-    token,
-    stagedAt: Date.now(),
-    customerId: String(plan.customerId),
-    customerName: who,
-    signedAs: plan.signedAs,
-    testMode: test,
-    briostackBaseUrl: process.env.BRIOSTACK_BASE_URL || null,
-    text: textTo ? {
-      from: config.textFrom,
-      to: textRecipient,
-      message: textMessage,
-      mediaUrl: isNull(text.mediaUrl) ? null : text.mediaUrl,
-      sendAtMs,
-      log: stagedLog({ prefix, kind: 'Text', plan, recipient: formatPhone(normalizePhone(textTo)), sendAtMs, body: text.body.trim(), communicationTypeId: 'SMS', ids: [unknownId, phoneId || emailId] }),
-    } : null,
-    email: emailTo ? {
-      to: emailRecipient,
-      fromName: `${plan.signedAs} at ${config.company.name}`,
-      subject,
-      bodyText: email.bodyText.trim(),
-      html,
-      inline: [
-        { cid: 'catchy-logo', filename: 'catchy-pest-solutions.png', mimeType: 'image/png', data: b64(fs.readFileSync(LOGO)) },
-        ...(card ? [{ cid: 'quote-card', filename: 'your-quote.jpg', mimeType: 'image/jpeg', data: b64(card) }] : []),
-      ],
-      attachments: pdf ? [{ filename: 'Catchy Pest Solutions - Your Quote.pdf', mimeType: 'application/pdf', data: b64(pdf) }] : [],
-      log: stagedLog({ prefix, kind: 'Email', plan, recipient: emailTo, sendAtMs: null, body: email.bodyText.trim(), subject: email.subject.trim(), communicationTypeId: 'EMAIL_COMMUNICATION', ids: [unknownId, emailId || phoneId] }),
-    } : null,
-  };
-  if (!pkg.text && !pkg.email) throw new Error('nothing to stage: the plan has no text and no email');
-  const fileId = await google.uploadPrivate({
-    folderId: config.driveFolderId,
-    name: `staged-follow-up-${plan.customerId}-${crypto.randomBytes(8).toString('hex')}.json`,
-    mimeType: 'application/json',
-    data: Buffer.from(JSON.stringify(pkg)),
-  });
-  return { staged: true, approveUrl: `${relayUrl}?approve=${fileId}&t=${token}`, testMode: test };
-}
-
 if (require.main === module) {
   main().catch((err) => {
     process.stdout.write(`${JSON.stringify({ error: err.message })}\n`);
@@ -420,4 +341,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { stagedLog, emailBlocks, loadPlan, technicianNameProblems, checkTechnicianNames, logContent, findUnknownContactMethod, createLogEntry, TEST_PREFIX, LIVE_PREFIX };
+module.exports = { emailBlocks, loadPlan, technicianNameProblems, checkTechnicianNames, logContent, findUnknownContactMethod, createLogEntry, TEST_PREFIX, LIVE_PREFIX };
