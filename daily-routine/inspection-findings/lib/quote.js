@@ -65,6 +65,27 @@ function checkDecision(decision, post, config) {
   return errs;
 }
 
+// What the initial fee covers (config.priceCovers), for this plan, these
+// findings and with/without exclusion. Items for the tech's findings go to
+// the top; the list always ends with the monthly fee.
+function priceCovers(plan, findings, exclusion, monthly, config) {
+  const def = config.priceCovers?.[plan];
+  if (!def) throw new Error(`config.priceCovers has no "${plan}"`);
+  const has = (keys) => (keys || []).some((k) => findings.includes(k));
+  const applies = (item) => (!item.findings || has(item.findings)) && (item.exclusion === undefined || item.exclusion === Boolean(exclusion));
+  const top = (item) => Boolean(item.findings || has(item.topFor));
+  const sorted = (items) => {
+    const list = (items || []).filter(applies);
+    return [...list.filter(top), ...list.filter((i) => !top(i))];
+  };
+  const pick = (items) => sorted(items).map((i) => i.text);
+  const text = (def.text || []).find(applies)?.text;
+  if (!text) throw new Error(`config.priceCovers.${plan}.text has nothing for ${findings.join(', ')}`);
+  // The tech's specific concern (a finding's own line) shows in bold.
+  const items = sorted(def.lines).map((i) => ({ text: i.text, top: top(i) && !findings.includes('quote_request') }));
+  return { lines: items.map((i) => i.text), items, monthlyLine: `Then ${monthly} a month, starting month 4`, text, details: pick(def.details), finePrint: def.finePrint || [] };
+}
+
 // Everything the templates and messages need for a quote decision.
 function quoteModel(decision, post, config, { today }) {
   const request = isQuoteRequest(decision);
@@ -74,6 +95,7 @@ function quoteModel(decision, post, config, { today }) {
   const creditExpires = pricing.creditExpiry(today, config);
   const bonus = pricing.bonusFor(decision.findings, { visitCategory: post.visit?.category }, config);
   const visitDate = post.visit?.date || post.postDate;
+  const covers = priceCovers(plan, decision.findings || [], exclusion, money(price.monthly), config);
   return {
     key: leadKey({ ...decision, plan }),
     request,
@@ -91,7 +113,7 @@ function quoteModel(decision, post, config, { today }) {
     creditExpiresLong: longDate(creditExpires),
     creditExpiresYmd: creditExpires,
     noAnnualInitial: money(price.noAnnualInitial),
-    fixLine: `${money(price.initial)} to take care of it, then ${money(price.monthly)} a month on ${price.planName}.`,
+    fixLine: `${money(price.initial)} covers ${covers.text}. Then ${money(price.monthly)} a month, starting month 4, on ${price.planName}.`,
     bonus: bonus.perPlan[plan] ?? 0,
     bonusMultiplier: bonus.multiplier,
     techName: post.tech?.name || 'your technician',
@@ -104,6 +126,12 @@ function quoteModel(decision, post, config, { today }) {
     stampWhen: `${new Date(post.postedAt).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}, ${post.postTime}`,
     customerName: [post.customer?.firstName, post.customer?.lastName].filter(Boolean).join(' '),
     video: config.plans[plan].video,
+    coversLines: covers.lines,
+    coversItems: covers.items,
+    monthlyLine: covers.monthlyLine,
+    coversText: covers.text,
+    coversDetails: covers.details,
+    finePrint: covers.finePrint,
   };
 }
 
@@ -114,6 +142,13 @@ function checkTextPrice(body, model) {
   if (!amounts.includes(model.price.initial)) return `text.body must quote the initial fee ${model.initial}`;
   const bad = amounts.filter((a) => !allowed.has(a));
   return bad.length ? `text.body has a price that isn't this quote: ${bad.map(money).join(', ')}` : null;
+}
+
+// The text must say what the price covers, in the fixed words from
+// config.priceCovers ("$174, which covers <coversText>").
+function checkTextCovers(body, model) {
+  const norm = (x) => String(x).toLowerCase().replace(/[^a-z0-9$]+/g, ' ').trim();
+  return norm(body).includes(norm(model.coversText)) ? null : `text.body must say what the price covers, in these words: "which covers ${model.coversText}"`;
 }
 
 // A weekday named in a message must be the visit day ("I did your service
@@ -135,4 +170,4 @@ function checkedSentence(items, visitPhrase = 'the visit') {
   return `During ${visitPhrase} I didn't see any signs of ${joined}.`;
 }
 
-module.exports = { isQuoteRequest, ACTIONS, checkDecision, quoteModel, checkTextPrice, checkDayNames, checkedSentence, leadKey, money, longDate, shortDate };
+module.exports = { isQuoteRequest, ACTIONS, checkDecision, quoteModel, priceCovers, checkTextPrice, checkTextCovers, checkDayNames, checkedSentence, leadKey, money, longDate, shortDate };

@@ -126,18 +126,31 @@ Messages:
   AI or automation.
 - **Quote request text**: "When I did your service Friday you asked about
   termite protection, so I had the office put together a quote. We can
-  protect your home for $718 (details in the picture). Reply YES and the
-  office will get you scheduled."
+  protect your home for $718, which covers the soil treatment and bait
+  stations, with a damage warranty (details in the picture). Reply YES and
+  the office will get you scheduled."
 - **Text**: short, confident, assumes the sale. The problem, then the
   initial fee only (`prices.<plan>.initial`, or `prices.critter_no_exclusion`),
-  then "(details in the picture)". No 12-month plan, no monthly fee. End:
-  "Reply YES and the office will get you scheduled." The script refuses a
-  text with any other price or the wrong weekday.
+  then what it covers in the fixed words, then "(details in the picture)":
+  "We can take care of it for $174, which covers <covers> (details in the
+  picture)." No 12-month plan, no monthly fee. End: "Reply YES and the
+  office will get you scheduled." The script refuses a text with any other
+  price, the wrong weekday, or without the covers words.
+- **What the price covers** (`config.json` `priceCovers`; Daniel, Nov 10):
+  the scripts put the "Price covers" list on the card and the PDF and the
+  "How we fix it" paragraphs in the email and PDF, the same words every
+  time, the tech's finding at the top. Your only part is the text's
+  covers words: the first `priceCovers.<plan>.text` entry that matches the
+  findings (and, for Critter, with or without exclusion). If you get it
+  wrong, render.js prints the exact words to use. Don't describe the
+  service in your own words anywhere else: no list of what's included in
+  `email.body`, never promise a payout or coverage of existing termite
+  damage.
 - **Email**: intro (greeting + what I found), photos go after the intro
   automatically, body (where, how much, why it's worth fixing now), then the
-  script adds "Why it matters", the fix box (price, 3-month warranty,
-  credit, terms), closing, the infographic and the video. Subject is
-  automatic: "What I found at <street>".
+  script adds "Why it matters", the fix box (price, what it covers, how we
+  fix it, credit, terms), closing, the infographic and the video. Subject
+  is automatic: "What I found at <street>".
 - **checkedOk**: only what the tech actually says he checked. Never write
   "no termites" or "no wood-boring beetles" unless he says he inspected for
   them.

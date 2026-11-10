@@ -23,13 +23,13 @@ payroll.js  -> Thursday bonus summary (payroll.md, Slacked to Daniel)
 | `DESIGN.md` | The agreed spec and Daniel's answers |
 | `ROUTINE_PROMPT.md` | The routine's instructions and the decisions.json format |
 | `KNOWLEDGE_BASE.md` | The only claims allowed in "Why it matters" (approved by Daniel Nov 6) |
-| `config.json` | Test mode and recipients, techs (Slack ID -> Briostack ID), plans, prices, findings, bonuses, task settings, sheet IDs. No secrets |
+| `config.json` | Test mode and recipients, techs (Slack ID -> Briostack ID), plans, prices, what each price covers (`priceCovers`: card list, text words, "How we fix it"), findings, bonuses, task settings, sheet IDs. No secrets |
 | `lib/pricing.js` | Coverage, price tiers, exclusion rule, bonuses (pure, tested) |
 | `lib/quote.js` | Decision checks and the numbers the messages use |
 | `lib/slack.js` | Read-only Slack client (bot token) and post parsing |
 | `lib/sheet.js` | The Leads sheet through the Drive API (CSV export/upload) |
 | `setup-sheet.js` | Creates the Leads sheet and saves its ID in config.json |
-| `templates/` | `photo.html` (stamp), `card.html` (1080x1350), `proposal.html` (letter PDF), `email.html` |
+| `templates/` | `photo.html` (stamp), `card.html` (1080x1920), `proposal.html` (letter PDF), `email.html` |
 | `test/` | Unit tests (`npm test` in `daily-routine/`) |
 
 It reuses `../lead-followup/lib` (Briostack, Google, Chromium, template

@@ -205,3 +205,43 @@ test('quote request for one of our plans is priced like a finding, without photo
   assert.match(Q.checkDecision({ ...req, plan: 'mosquito' }, noPhotos, config).join(), /quote request needs plan/);
   assert.match(Q.checkDecision(decision, noPhotos, config).join(), /no photos/);
 });
+
+test('price covers: the tech\'s finding goes to the top, exclusion only on the with-exclusion price, monthly line last', () => {
+  const sig = Q.priceCovers('signature', ['stinging_nest'], null, '$44', config);
+  assert.match(sig.lines[0], /^Active nests treated and removed/);
+  assert.ok(!sig.lines.some((l) => /carpenter/i.test(l)));
+  assert.deepEqual(sig.items[0], { text: sig.lines[0], top: true });
+  assert.equal(sig.monthlyLine, 'Then $44 a month, starting month 4');
+  assert.match(sig.text, /removing the nests/);
+
+  const gap = Q.priceCovers('critter', ['exclusion_needed'], true, '$49', config);
+  assert.match(gap.lines[0], /^Entry points sealed/);
+  assert.match(gap.text, /^sealing the entry points/);
+  assert.match(gap.details[0], /don't repair foundations/);
+
+  const burrows = Q.priceCovers('critter', ['yard_burrows'], false, '$49', config);
+  assert.ok(!burrows.lines.some((l) => /Entry points/.test(l)));
+  assert.ok(burrows.lines.some((l) => /Two-week follow-up/.test(l)));
+  assert.ok(!/entry points/.test(burrows.text));
+  assert.match(burrows.text, /granular repellent/);
+
+  const droppings = Q.priceCovers('critter', ['rodent_droppings'], true, '$49', config);
+  assert.ok(droppings.lines.some((l) => /Entry points/.test(l)));
+  assert.match(droppings.text, /sealing the entry points/);
+
+  const termite = Q.priceCovers('termite', ['wood_to_ground'], null, '$29', config);
+  assert.equal(termite.lines[0], 'Wood-to-ground areas treated directly');
+  assert.equal(termite.text, 'the soil treatment and bait stations, with a damage warranty');
+  assert.match(termite.finePrint.join(' '), /doesn't cover damage that's already there/);
+  const request = Q.priceCovers('termite', ['quote_request'], null, '$29', config);
+  assert.ok(request.items.every((i) => !i.top));
+});
+
+test('the text must say what the price covers in the fixed words', () => {
+  const m = Q.quoteModel(decision, post, config, { today: '2026-11-06' });
+  assert.equal(m.monthlyLine, `Then ${m.monthly} a month, starting month 4`);
+  assert.match(Q.checkTextCovers(decision.text.body, m), /which covers 7 days of daily visits/);
+  const good = decision.text.body.replace('$200 (details', `$200, which covers ${m.coversText} (details`);
+  assert.equal(Q.checkTextCovers(good, m), null);
+  assert.equal(Q.checkTextCovers(good.replace('7 days', '7  Days'), m), null);
+});

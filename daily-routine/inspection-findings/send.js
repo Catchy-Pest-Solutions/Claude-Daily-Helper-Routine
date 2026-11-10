@@ -112,8 +112,10 @@ function emailPlain(decision, model) {
     ...(decision.email.intro || []),
     ...(decision.email.body || []),
     ...(decision.why?.length ? ['Why it matters:', ...decision.why.map((w) => `- ${w}`)] : []),
-    `The fix: ${model.fixLine} The initial fee comes with a 3-month warranty.${model.credit ? ` Includes your ${model.credit} credit, good through ${model.creditExpiresLong}.` : ''}`,
-    `Details: ${model.planName}, 12-month plan. ${model.initial} covers the first 3 months, then ${model.monthly} a month (billed every 4 weeks) from month four. No annual commitment: ${model.noAnnualInitial} initial, same monthly fee. The full quote is attached as a PDF.`,
+    `The fix: ${model.fixLine}${model.credit ? ` Includes your ${model.credit} credit, good through ${model.creditExpiresLong}.` : ''}`,
+    ...(model.coversDetails.length ? ['How we fix it:', ...model.coversDetails] : []),
+    ...model.finePrint,
+    `Details: ${model.planName}, 12-month plan. ${model.initial} covers the first 3 months, then ${model.monthly} a month (billed every 4 weeks) starting month 4. No annual commitment: ${model.noAnnualInitial} initial, same monthly fee. The full quote is attached as a PDF.`,
     ...(decision.email.closing || []),
     `Short video about ${model.planName}: ${model.video}`,
   ].join('\n\n');
@@ -226,7 +228,7 @@ async function main() {
     const errs = Q.checkDecision(d, post, config);
     if (d.action === 'quote' && !errs.length) {
       const m = Q.quoteModel(d, post, config, { today });
-      const e1 = Q.checkTextPrice(d.text.body, m);
+      const e1 = Q.checkTextPrice(d.text.body, m) || Q.checkTextCovers(d.text.body, m);
       const e2 = Q.checkDayNames([d.text.body, ...(d.email.intro || []), ...(d.email.body || []), ...(d.email.closing || [])], m);
       if (e1) errs.push(e1);
       if (e2) errs.push(e2);

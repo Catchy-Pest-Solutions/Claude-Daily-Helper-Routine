@@ -5,7 +5,7 @@
 //
 // For each "quote" decision: stamps every chosen tech photo with the service
 // address and the Slack post's date and time (Slack strips the camera's own
-// timestamp), renders the quote card (1080x1350 JPG for the text) and the
+// timestamp), renders the quote card (1080x1920 JPG for the text) and the
 // proposal PDF, uploads the card (public picture link Textable can fetch)
 // and the PDF (Drive share link) to the Drive folder under random names.
 // Writes $S/rendered.json and prints one JSON line {"rendered": N, ...}.
@@ -23,7 +23,7 @@ const Q = require('./lib/quote');
 
 const TEMPLATES = path.join(__dirname, 'templates');
 const LOGO = path.join(__dirname, '..', 'lead-followup', 'assets', 'logo-print.png');
-const CARD = { width: 1080, height: 1350, maxBytes: 300 * 1024 };
+const CARD = { width: 1080, height: 1920, maxBytes: 400 * 1024 };
 const PHOTO_WIDTH = 1200;
 const fill = (name, data) => renderString(fs.readFileSync(path.join(TEMPLATES, name), 'utf8'), [data]);
 
@@ -89,13 +89,14 @@ async function renderQuote(chrome, decision, post, config, today, outDir) {
   const cardHtml = path.join(dir, 'card.html');
   fs.writeFileSync(cardHtml, fill('card.html', { ...model, headline: decision.headline, photoUrl: cardSrc ? `file://${cardSrc}` : null, logoUrl: `file://${LOGO}`, address: model.address, when: model.stampWhen, officePhone: config.officePhone, kicker: model.request ? `Your quote from ${model.techName}` : `What ${model.techName} found`, fixLabel: model.request ? 'Your price' : 'Fix it for' }));
   const card = await chrome.open(cardHtml, CARD);
-  const overflows = () => card.evaluate(`(() => { const m = document.querySelector('main'); return m.scrollHeight > m.clientHeight + 1; })()`);
+  // The photo takes whatever height the text leaves; too much text pushes the footer off the card.
+  const overflows = () => card.evaluate(`document.querySelector('footer').getBoundingClientRect().bottom > ${CARD.height} + 1`);
   if (await overflows()) {
     await card.evaluate(`document.body.classList.add('compact')`);
     if (await overflows()) throw new Error(`${model.key}: card text doesn't fit; shorten the headline`);
   }
-  const cardJpg = await jpegUnder(card, CARD.maxBytes, [90, 84, 78, 70, 60, 50]);
-  if (cardJpg.length > CARD.maxBytes) throw new Error(`${model.key}: card is over 300 KB`);
+  const cardJpg = await jpegUnder(card, CARD.maxBytes, [90, 84, 78, 70, 60, 50, 42, 36]);
+  if (cardJpg.length > CARD.maxBytes) throw new Error(`${model.key}: card is over 400 KB`);
   await card.close();
   const cardPath = path.join(dir, 'quote-card.jpg');
   fs.writeFileSync(cardPath, cardJpg);
@@ -105,6 +106,7 @@ async function renderQuote(chrome, decision, post, config, today, outDir) {
   const infographic = config.infographics?.[decision.infographic || config.findings.find((f) => f.key === decision.findings[0])?.infographic];
   const photoCols = Math.max(1, stamped.length >= 3 ? 3 : stamped.length);
   const pdfHtml = path.join(dir, 'proposal.html');
+  const infographicUrl = infographic && fs.existsSync(path.join(__dirname, infographic)) ? `file://${path.join(__dirname, infographic)}` : null;
   fs.writeFileSync(pdfHtml, fill('proposal.html', {
     ...model,
     headline: decision.pdfHeadline || (model.request ? `Your quote for ${model.street}` : `What ${model.techName} found at ${model.street}`),
@@ -116,24 +118,34 @@ async function renderQuote(chrome, decision, post, config, today, outDir) {
     photoCols,
     photoHeight: photoCols === 1 ? 360 : photoCols === 2 ? 300 : 210,
     photoHeightCompact: photoCols === 1 ? 280 : photoCols === 2 ? 220 : 160,
+    photoHeightTight: photoCols === 1 ? 230 : photoCols === 2 ? 190 : 140,
     found: decision.found,
     why: decision.why || [],
     hasWhy: (decision.why || []).length > 0,
     checkedSentence: Q.checkedSentence(decision.checkedOk, model.visitPhrase === 'your inspection' ? 'the inspection' : 'the visit'),
     hasChecked: (decision.checkedOk || []).length > 0,
-    infographicUrl: infographic && fs.existsSync(path.join(__dirname, infographic)) ? `file://${path.join(__dirname, infographic)}` : null,
+    infographicUrl,
     officePhone: config.officePhone,
     company: config.company,
   }));
   const page = await chrome.open(pdfHtml, { width: 816, height: 1056 });
   let pdf = await page.pdf();
-  if (pdfPageCount(pdf) > 1) {
-    await page.evaluate(`document.body.classList.add('compact')`);
-    const compact = await page.pdf();
-    if (pdfPageCount(compact) < pdfPageCount(pdf)) pdf = compact;
+  // One page (plus the infographic) if it fits, shrinking step by step;
+  // otherwise the fix moves to its own page: page 1 what was found, page 2
+  // the fix, then the infographic.
+  const extra = infographicUrl ? 1 : 0;
+  for (const cls of ['compact', 'tight']) {
+    if (pdfPageCount(pdf) <= 1 + extra) break;
+    await page.evaluate(`document.body.classList.add('${cls}')`);
+    const smaller = await page.pdf();
+    if (pdfPageCount(smaller) < pdfPageCount(pdf)) pdf = smaller;
+  }
+  if (pdfPageCount(pdf) > 1 + extra) {
+    await page.evaluate(`document.body.classList.remove('compact', 'tight'); document.body.classList.add('split')`);
+    pdf = await page.pdf();
   }
   await page.close();
-  if (pdfPageCount(pdf) > 2) throw new Error(`${model.key}: proposal is ${pdfPageCount(pdf)} pages; shorten found/why`);
+  if (pdfPageCount(pdf) > 2 + extra) throw new Error(`${model.key}: proposal is ${pdfPageCount(pdf)} pages; shorten found/why`);
   const pdfPath = path.join(dir, 'proposal.pdf');
   fs.writeFileSync(pdfPath, pdf);
   return { key: model.key, ts: decision.ts, plan: model.plan, cardPath, pdfPath, pdfPages: pdfPageCount(pdf), cardBytes: cardJpg.length, photos: stamped };
@@ -163,7 +175,7 @@ async function main() {
     const errs = Q.checkDecision(d, post, config);
     if (!errs.length) {
       const m = Q.quoteModel(d, post, config, { today });
-      const priceErr = Q.checkTextPrice(d.text.body, m);
+      const priceErr = Q.checkTextPrice(d.text.body, m) || Q.checkTextCovers(d.text.body, m);
       if (priceErr) errs.push(priceErr);
       const dayErr = Q.checkDayNames([d.text.body, ...(d.email.intro || []), ...(d.email.body || []), ...(d.email.closing || [])], m);
       if (dayErr) errs.push(dayErr);

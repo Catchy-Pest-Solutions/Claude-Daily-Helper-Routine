@@ -23,6 +23,15 @@
   .fix .was { color: #6B756C; text-decoration: line-through; font-size: 17px; }
   .fix .lines { font-size: 13px; line-height: 1.55; }
   .fix b { font-size: 15px; }
+  .covers { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px; break-inside: avoid; }
+  .covers h3 { font-size: 12.5px; letter-spacing: 2px; text-transform: uppercase; color: #11960B; margin-bottom: 6px; }
+  .covers ul { list-style: none; padding-left: 0; }
+  .covers li { position: relative; padding-left: 20px; margin: 4px 0; }
+  .covers li::before { content: "\2713"; position: absolute; left: 0; color: #11960B; font-weight: 900; }
+  .covers li.top { font-weight: 700; }
+  .covers .monthly { padding-left: 20px; margin-top: 4px; }
+  .covers p { margin: 0 0 8px; }
+  .fine { font-size: 11.5px; color: #4A554B; margin-top: 8px; }
   .terms { font-size: 11.5px; color: #4A554B; margin-top: 8px; }
   .infographic { break-before: page; padding: 48px 56px 0; text-align: center; }
   .infographic h2 { text-align: left; margin-top: 0; }
@@ -31,6 +40,15 @@
   footer { margin-top: 20px; border-top: 1px solid #DDE3DD; padding-top: 10px; font-size: 11.5px; color: #4A554B; display: flex; justify-content: space-between; }
   .compact .photos img { height: {{photoHeightCompact}}px; }
   .compact h1 { margin-top: 16px; }
+  .split .fixpart { break-before: page; padding-top: 12px; }
+  .split .fixpart h2:first-child { margin-top: 0; font-size: 18px; }
+  .split .fix .price { font-size: 56px; }
+  .tight { font-size: 12.5px; line-height: 1.42; }
+  .tight .page { padding-top: 30px; padding-bottom: 26px; }
+  .tight .photos img { height: {{photoHeightTight}}px; }
+  .tight h2 { margin: 14px 0 6px; }
+  .tight .fix { margin-top: 12px; padding: 12px 20px; }
+  .tight .covers { margin-top: 10px; }
 </style></head>
 <body><div class="page">
   <header><img src="{{logoUrl}}" alt="Catchy Pest Solutions"><div class="meta">Prepared for {{customerName}}<br>{{address}}<br>{{date}}</div></header>
@@ -41,12 +59,19 @@
   {{#found}}<p>{{.}}</p>{{/found}}
   {{#hasWhy}}<h2>Why it matters</h2><ul>{{#why}}<li>{{.}}</li>{{/why}}</ul>{{/hasWhy}}
   {{#hasChecked}}<h2>What looked fine</h2><p>{{checkedSentence}}</p>{{/hasChecked}}
+  <section class="fixpart">
   <h2>The fix</h2>
   <div class="fix">
     <div>{{#credit}}<div class="was">{{regularInitial}}</div>{{/credit}}<div class="price heavy">{{initial}}</div><div style="font-size:12px">initial fee</div></div>
-    <div class="lines"><b>{{planName}}</b><br>{{fixLine}}<br>The initial fee comes with a 3-month warranty.<br>{{#credit}}Includes your <b>{{credit}} credit</b> ({{creditReason}}), good through {{creditExpiresLong}}.{{/credit}}</div>
+    <div class="lines"><b>{{planName}}</b><br>{{fixLine}}<br>{{#credit}}Includes your <b>{{credit}} credit</b> ({{creditReason}}), good through {{creditExpiresLong}}.{{/credit}}</div>
   </div>
-  <p class="terms">12-month plan: {{initial}} today covers the first 3 months, then {{monthly}} a month (billed every 4 weeks) from month four. No annual commitment: {{noAnnualInitial}} initial, same monthly fee. Reply YES to the text or call {{officePhone}} and the office will get you scheduled.</p>
+  <div class="covers">
+    <div><h3>Price covers</h3><ul>{{#coversItems}}<li{{#top}} class="top"{{/top}}>{{text}}</li>{{/coversItems}}</ul><p class="monthly">{{monthlyLine}}</p></div>
+    <div><h3>How we fix it</h3>{{#coversDetails}}<p>{{.}}</p>{{/coversDetails}}</div>
+  </div>
+  {{#finePrint}}<p class="fine">{{.}}</p>{{/finePrint}}
+  <p class="terms">12-month plan: {{initial}} today covers the first 3 months, then {{monthly}} a month (billed every 4 weeks) starting month 4. No annual commitment: {{noAnnualInitial}} initial, same monthly fee. Reply YES to the text or call {{officePhone}} and the office will get you scheduled.</p>
+  </section>
   <footer><span>{{company.name}} &middot; {{company.address}}</span><span>{{officePhone}} &middot; {{company.website}}</span></footer>
 </div>
 {{#infographicUrl}}<div class="infographic"><h2>Why it's worth fixing</h2><img src="{{infographicUrl}}" alt=""><p>Example illustration, not a photo of your home.</p></div>{{/infographicUrl}}
