@@ -141,7 +141,8 @@ async function launch() {
     });
 
   // Opens an HTML file at the given viewport size and waits for fonts and images.
-  async function open(htmlPath, { width, height }) {
+  async function open(htmlPath, { width, height: startHeight }) {
+    let height = startHeight;
     const { targetId } = await send('Target.createTarget', { url: 'about:blank' });
     const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
     await send('Page.enable', {}, sessionId);
@@ -158,6 +159,11 @@ async function launch() {
       sessionId,
     );
     return {
+      // Resizes the viewport (and the screenshot) to a new height.
+      setHeight: async (h) => {
+        height = h;
+        await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false }, sessionId);
+      },
       evaluate: async (expression) => (await send('Runtime.evaluate', { expression, returnByValue: true }, sessionId)).result.value,
       screenshotJpeg: async (quality) => {
         const { data } = await send(
@@ -187,7 +193,14 @@ async function launch() {
     }
     ws.close();
     proc.kill('SIGKILL');
-    fs.rmSync(userDir, { recursive: true, force: true });
+    // Chrome can still be writing its profile for a moment after the kill
+    // (ENOTEMPTY). The files are already rendered by now, so a leftover temp
+    // folder must never fail the run.
+    try {
+      fs.rmSync(userDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    } catch {
+      // leave it for the OS to clean up
+    }
   }
 
   return { open, close };
