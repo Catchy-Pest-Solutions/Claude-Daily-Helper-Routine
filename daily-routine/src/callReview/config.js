@@ -44,6 +44,22 @@ module.exports = {
 
   officeHours: { start: '08:00', end: '17:00' },
 
+  // Follow-up text to missed callers who aren't in Briostack and are still
+  // owed a callback (see followUpText.js). mode: 'off' | 'preview' (list
+  // them in Daniel's report, send nothing) | 'test' (send each text to
+  // testPhone instead of the caller) | 'live'.
+  textFollowUp: {
+    mode: 'test',
+    from: '+18282634804',
+    testPhone: '+12708737343', // same test phone as lead-followup/config.json
+    officePhone: '(828) 263-4804',
+    signature: '-Daniel, Catchy Pest Solutions',
+    // Skip anyone texting with us in ATS Texting within this many days.
+    skipIfTextedWithinDays: 14,
+    // Eastern, business days only.
+    sendHours: ['08:00', '19:00'],
+  },
+
   // Weekly trend in Monday's report compares the last N full weeks.
   weeklyTrendWeeks: 2,
 };

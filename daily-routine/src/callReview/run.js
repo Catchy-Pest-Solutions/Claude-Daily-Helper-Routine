@@ -10,7 +10,10 @@
 //
 // Prints one JSON object:
 //   { status: "ok" | "skipped" | "error", window, ownerMessage,
-//     officeOnlyMessage, tasks, likelyRobocalls, apiUsage, problems }
+//     officeOnlyMessage, tasks, followUpTexts, likelyRobocalls, apiUsage,
+//     problems }
+// Missed callers who aren't in Briostack also get a follow-up text
+// (followUpText.js; config.textFollowUp.mode). --dry-run only previews them.
 // The routine DMs ownerMessage to Daniel and posts officeOnlyMessage to
 // #office-only (null only when the run failed).
 const path = require('node:path');
@@ -28,6 +31,8 @@ const { createBriostackCallbackClient } = require('./briostack');
 const { analyzeCalls, dailyTotals, formatPhone } = require('./callAnalysis');
 const { buildTask } = require('./taskBuilder');
 const reports = require('./reports');
+const { sendFollowUpTexts } = require('./followUpText');
+const { createTextableClient, textableCredentials } = require('./textable');
 
 // Pull a little before the window so calls that straddle the start are
 // seen whole (and then excluded, since they belong to the previous run).
@@ -42,7 +47,7 @@ function parseArgs(argv) {
   return args;
 }
 
-async function runCallReview({ nowMs, dryRun, ats, brio }) {
+async function runCallReview({ nowMs, dryRun, ats, brio, textable = null }) {
   const window = cal.runWindow(nowMs);
   if (window.skip) return { status: 'skipped', window, reason: `${window.today} is ${window.reason}` };
 
@@ -70,6 +75,7 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
     const tasks = [];
     const alreadyOpen = [];
     const likelyRobocalls = [];
+    const textCandidates = [];
     let openTasks = null;
     if (brio) {
       try {
@@ -104,7 +110,27 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
       task.outcome = entry.misses[0].outcome;
       task.missCount = entry.misses.length;
       task.firstMissMs = entry.misses[0].startMs;
-      if (canCreate) {
+      tasks.push(task);
+      if (!customer) textCandidates.push({ task, lookedUp });
+    }
+
+    // Follow-up texts go out before the tasks are made, so a task can say
+    // the caller was texted.
+    step = 'follow-up texts';
+    const followUp = await sendFollowUpTexts({ candidates: textCandidates, textable, settings: config.textFollowUp, nowMs, dryRun, problems });
+    for (const r of followUp.results) {
+      if (r.status !== 'sent') continue;
+      const task = tasks.find((t) => t.phone === r.phone);
+      task.texted = true;
+      task.description = task.description.replace(
+        /\nCreated automatically/,
+        `\nTexted them ${cal.formatDay(r.sentAtMs)} ${cal.formatTime(r.sentAtMs)} asking for a good time to call. Check ATS Texting for a reply before calling.\nCreated automatically`,
+      );
+    }
+
+    step = 'Briostack';
+    if (canCreate) {
+      for (const task of tasks) {
         try {
           task.briostackTaskId = await brio.createTask(task);
           task.created = true;
@@ -113,7 +139,6 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
           problems.push(`Couldn't create the task for ${task.displayName} ${task.phone}: ${err.message}`);
         }
       }
-      tasks.push(task);
     }
     if (!brio) problems.push("Briostack isn't connected (BRIOSTACK_API_KEY missing), so no tasks were created.");
     else if (!config.taskTypeId) problems.push('No callback task type is set in config.js yet, so no Briostack tasks were created.');
@@ -133,7 +158,7 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
       }
     }
 
-    const apiUsage = { ats: ats.requestCount(), briostack: brio ? brio.requestCount() : 0 };
+    const apiUsage = { ats: ats.requestCount(), briostack: brio ? brio.requestCount() : 0, textable: textable ? textable.requestCount() : 0 };
     const robocalls = likelyRobocalls.map((e) => ({ phone: e.phone, callerName: e.callerName, calls: e.misses.length, summary: reports.missSummary(e) }));
     return {
       status: 'ok',
@@ -141,10 +166,11 @@ async function runCallReview({ nowMs, dryRun, ats, brio }) {
       tasks,
       apiUsage,
       problems,
-      officeOnlyMessage: reports.officeOnlyMessage({ window, analysis, tasks, doubleCallMisses, likelyRobocalls: robocalls, earlierOpen: earlierCallbackTasks(openTasks, nowMs), config }),
+      officeOnlyMessage: reports.officeOnlyMessage({ window, analysis, tasks, followUp, doubleCallMisses, likelyRobocalls: robocalls, earlierOpen: earlierCallbackTasks(openTasks, nowMs), config }),
+      followUpTexts: followUp,
       alreadyOpen: alreadyOpen.map((e) => e.phone),
       likelyRobocalls: robocalls,
-      ownerMessage: reports.ownerReport({ window, analysis, tasks, alreadyOpen, likelyRobocalls: robocalls, texts, apiUsage, problems, weekly, doubleCallMisses, config }),
+      ownerMessage: reports.ownerReport({ window, analysis, tasks, followUp, alreadyOpen, likelyRobocalls: robocalls, texts, apiUsage, problems, weekly, doubleCallMisses, config }),
     };
   } catch (err) {
     return {
@@ -214,7 +240,9 @@ async function main() {
   const brio = env.BRIOSTACK_API_KEY
     ? createBriostackCallbackClient({ baseUrl: env.BRIOSTACK_BASE_URL || 'https://catchypestsolutions.briostack.io/rest/v1/', apiKey: env.BRIOSTACK_API_KEY, config })
     : null;
-  const result = await runCallReview({ ...args, ats, brio });
+  const creds = textableCredentials(env);
+  const textable = creds ? createTextableClient(creds) : null;
+  const result = await runCallReview({ ...args, ats, brio, textable });
   process.stdout.write(JSON.stringify(result, null, 2) + '\n');
 }
 
