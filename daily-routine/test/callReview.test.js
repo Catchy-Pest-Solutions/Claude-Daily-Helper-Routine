@@ -243,12 +243,13 @@ test('runner: builds tasks and messages, creating tasks through Briostack', asyn
     },
     requestCount: () => 2,
   };
-  const r = await runCallReview({ nowMs: Date.parse('2026-09-30T16:05:00Z'), ats, brio });
+  const textable = { lastMessageByPhone: async () => ({}), send: async () => 'sent', requestCount: () => 2 };
+  const r = await runCallReview({ nowMs: Date.parse('2026-09-30T16:05:00Z'), ats, brio, textable });
   assert.equal(r.status, 'ok');
   assert.equal(created.length, 1);
   assert.equal(created[0].assigneeName, 'Steve');
   assert.equal(r.tasks[0].created, true);
-  assert.match(r.officeOnlyMessage, /Still need a callback\*\n\n👤 \*Steve\* \(1\)\n_Left a voicemail_\n• 🆕 .*\(828\) 555-0102 — Wed, Sep 30 9:30 AM$/m);
+  assert.match(r.officeOnlyMessage, /Still need a callback\*\n\n👤 \*Steve\* \(1\)\n_Left a voicemail_\n• 🆕 .*\(828\) 555-0102 — Wed, Sep 30 9:30 AM 💬$/m);
   assert.doesNotMatch(r.officeOnlyMessage, /Shelley\* \(/);
   assert.match(r.ownerMessage, /ran cleanly/);
   assert.match(r.ownerMessage, /^<@U09LQDUPQTC>/);
@@ -499,4 +500,128 @@ test('office message groups callbacks by person, then by what happened', () => {
       '',
     ].join('\n'),
   );
+});
+
+// Follow-up texts: two missed callers on Wed Sep 30 morning, one not in
+// Briostack, one a former customer.
+async function followUpRun({ mode, dryRun = false, lastText = {}, sendResult = 'sent', nowIso = '2026-09-30T16:05:00Z' }) {
+  const onDay = (l) => ({ ...l, start_time: l.start_time.replace('2026-09-29', '2026-09-30'), end_time: l.end_time.replace('2026-09-29', '2026-09-30') });
+  const legs = [...voicemail('a', '09:30', '8285550102', '191'), ...voicemail('b', '10:30', '8285550103', '191')].map(onDay);
+  const ats = { searchCalls: async () => legs, searchInboundTexts: async () => [], searchOutboundTexts: async () => [], requestCount: () => 3 };
+  const created = [];
+  const brio = {
+    listOpenTasks: async () => [],
+    findCustomerByPhone: async (phone) => (phone === '8285550103' ? { id: '9', name: 'Old Customer', statusId: 'CUSTOMER_COMPLETE', services: [] } : null),
+    createTask: async (t) => {
+      created.push(t);
+      return 'T' + created.length;
+    },
+    requestCount: () => 2,
+  };
+  const sent = [];
+  const textable = {
+    lastMessageByPhone: async () => lastText,
+    send: async (x) => {
+      sent.push(x);
+      return sendResult;
+    },
+    requestCount: () => sent.length + 1,
+  };
+  const saved = config.textFollowUp.mode;
+  config.textFollowUp.mode = mode;
+  try {
+    const r = await runCallReview({ nowMs: Date.parse(nowIso), dryRun, ats, brio, textable });
+    return { r, sent, created };
+  } finally {
+    config.textFollowUp.mode = saved;
+  }
+}
+
+test('follow-up text: live mode texts only the caller not in Briostack and notes it on the task', async () => {
+  const { r, sent, created } = await followUpRun({ mode: 'live' });
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].to, '+18285550102');
+  assert.equal(sent[0].from, '+18282634804');
+  assert.match(sent[0].message, /^Hi! We got your call this morning and haven't been able to connect with you yet\..*\(828\) 263-4804.*-Daniel, Catchy Pest Solutions$/);
+  assert.doesNotMatch(sent[0].message, /STOP/);
+  const task = created.find((t) => t.phone === '8285550102');
+  assert.match(task.description, /Texted them Wed, Sep 30 12:05 PM asking for a good time to call/);
+  assert.doesNotMatch(created.find((t) => t.phone === '8285550103').description, /Texted them/);
+  assert.match(r.officeOnlyMessage, /\(828\) 555-0102 — Wed, Sep 30 9:30 AM 💬$/m);
+  assert.match(r.ownerMessage, /💬 \*Follow-up texts\*.*\n• ✅ Texted 1 caller:\n   ◦ .*\(828\) 555-0102/);
+  assert.deepEqual(r.problems, []);
+});
+
+test('follow-up text: test mode sends to the test phone, preview and dry run send nothing', async () => {
+  const t = await followUpRun({ mode: 'test' });
+  assert.equal(t.sent.length, 1);
+  assert.equal(t.sent[0].to, config.textFollowUp.testPhone);
+  assert.match(t.sent[0].message, /^TEST for \(828\) 555-0102:\nHi! We got your call/);
+  assert.doesNotMatch(t.created[0].description, /Texted them/);
+  assert.match(t.r.ownerMessage, /🧪 Test mode: 1 text went to the test phone/);
+
+  for (const opts of [{ mode: 'preview' }, { mode: 'live', dryRun: true }]) {
+    const p = await followUpRun(opts);
+    assert.equal(p.sent.length, 0);
+    assert.match(p.r.ownerMessage, /👀 Preview only, nothing sent\. Would have texted 1 caller/);
+  }
+  const off = await followUpRun({ mode: 'off' });
+  assert.equal(off.sent.length, 0);
+  assert.doesNotMatch(off.r.ownerMessage, /Follow-up texts/);
+});
+
+test('follow-up text: skips recent conversations, after-hours runs, and reports failures', async () => {
+  const recent = await followUpRun({ mode: 'live', lastText: { 8285550102: Date.parse('2026-09-25T15:00:00Z') } });
+  assert.equal(recent.sent.length, 0);
+  assert.match(recent.r.ownerMessage, /Not texted: .*texts with us in ATS Texting on Fri, Sep 25/);
+
+  const old = await followUpRun({ mode: 'live', lastText: { 8285550102: Date.parse('2026-08-01T15:00:00Z') } });
+  assert.equal(old.sent.length, 1);
+
+  const late = await followUpRun({ mode: 'live', nowIso: '2026-10-01T00:30:00Z' });
+  assert.equal(late.sent.length, 0);
+  assert.match(late.r.problems.join(' '), /outside 08:00–19:00/);
+
+  const failed = await followUpRun({ mode: 'live', sendResult: 'failed: Textable 500' });
+  assert.match(failed.r.problems.join(' '), /Follow-up text to .*\(828\) 555-0102 failed: Textable 500/);
+  assert.doesNotMatch(failed.created[0].description, /Texted them/);
+
+  const optedOut = await followUpRun({ mode: 'live', sendResult: 'opted_out' });
+  assert.deepEqual(optedOut.r.problems, []);
+  assert.match(optedOut.r.ownerMessage, /opted out of texts/);
+});
+
+test('follow-up text wording: when the call came in', () => {
+  const { whenPhrase } = require('../src/callReview/followUpText');
+  const now = cal.easternToMs('2026-10-05', '12:00'); // Monday
+  assert.equal(whenPhrase(cal.easternToMs('2026-10-05', '09:00'), now), 'this morning');
+  assert.equal(whenPhrase(cal.easternToMs('2026-10-04', '15:00'), now), 'yesterday');
+  assert.equal(whenPhrase(cal.easternToMs('2026-10-02', '15:00'), now), 'on Friday');
+});
+
+test('textable client: reads contacts, maps 451 to opted_out', async () => {
+  const { createTextableClient, textableCredentials } = require('../src/callReview/textable');
+  assert.deepEqual(textableCredentials({ Textable_Account_UID: 'u', Textable_Token: 't' }), { uid: 'u', token: 't' });
+  assert.equal(textableCredentials({}), null);
+  const calls = [];
+  const fetchImpl = async (url, opts) => {
+    calls.push({ url, opts });
+    if (url.endsWith('/contacts')) return { ok: true, status: 200, json: async () => ({ contacts: [{ phoneNumber: '+18285550102', last_message_date: 5 }] }) };
+    return { ok: false, status: 451, json: async () => ({}) };
+  };
+  const c = createTextableClient({ uid: 'u', token: 't', fetchImpl, pauseMs: 0 });
+  assert.deepEqual(await c.lastMessageByPhone(), { 8285550102: 5 });
+  assert.equal(await c.send({ to: '+18285550102', from: '+18282634804', message: 'hi' }), 'opted_out');
+  assert.equal(calls[0].opts.headers.Authorization, 'Bearer u:t');
+  assert.equal(c.requestCount(), 2);
+});
+
+test('follow-up text: no text to business caller IDs or toll-free numbers', () => {
+  const { skipReason } = require('../src/callReview/followUpText');
+  const opts = { lookedUp: true, lastTextMs: 0, nowMs: 0, settings: config.textFollowUp };
+  assert.equal(skipReason({ phone: '4438733663', displayName: 'Best Pro Servic' }, opts), 'caller ID looks like a business');
+  assert.equal(skipReason({ phone: '8885550100', displayName: 'Unknown caller' }, opts), 'toll-free number (a business)');
+  assert.equal(skipReason({ phone: '8285550102', displayName: 'Vincent Coleman' }, opts), null);
+  assert.equal(skipReason({ phone: '8285717591', displayName: 'Unknown caller (Swannanoa NC)' }, opts), null);
+  assert.equal(skipReason({ phone: '8285550102', displayName: 'Brenda Wilson', customerId: '19437' }, opts), 'in Briostack');
 });

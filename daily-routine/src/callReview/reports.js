@@ -27,7 +27,7 @@ function hourLabel(h) {
 // #office-only: kept short on purpose. Callbacks owed, grouped by who
 // calls back and then by what happened, then each person's line. The full
 // picture goes to Daniel.
-function officeOnlyMessage({ window: w, analysis, tasks, doubleCallMisses = [], likelyRobocalls = [], earlierOpen = null, config }) {
+function officeOnlyMessage({ window: w, analysis, tasks, followUp = null, doubleCallMisses = [], likelyRobocalls = [], earlierOpen = null, config }) {
   const s = analysis.stats;
   const L = [`📊 *Daily call recap* — ${windowLabel(w)} _(noon to noon)_`, ''];
 
@@ -43,9 +43,13 @@ function officeOnlyMessage({ window: w, analysis, tasks, doubleCallMisses = [], 
         const flag = t.callerType === 'new' ? '🆕 ' : '';
         const when = t.firstMissMs ? `${cal.formatDay(t.firstMissMs)} ${cal.formatTime(t.firstMissMs)}` : '';
         const time = t.missCount > 1 ? ` — ${t.missCount} calls, first ${when}` : when ? ` — ${when}` : '';
-        L.push(`• ${flag}*${t.displayName}* ${formatPhone(t.phone)}${time}${t.error ? ' ⚠️ no task made' : ''}`);
+        L.push(`• ${flag}*${t.displayName}* ${formatPhone(t.phone)}${time}${t.texted ? ' 💬' : ''}${t.error ? ' ⚠️ no task made' : ''}`);
       }
     }
+  }
+  if (tasks.some((t) => t.texted)) {
+    L.push('');
+    L.push('_💬 = we texted them asking for a good time to call. Check ATS Texting for a reply before calling._');
   }
   if (tasks.length) L.push('');
   if (earlierOpen?.total) {
@@ -145,7 +149,7 @@ function ideas(stats, missed, robocallCalls = 0) {
 }
 
 // Owner's DM: how the run went plus the business picture.
-function ownerReport({ window: w, analysis, tasks, alreadyOpen = [], likelyRobocalls = [], texts, apiUsage, problems, weekly, doubleCallMisses = [], config }) {
+function ownerReport({ window: w, analysis, tasks, followUp = null, alreadyOpen = [], likelyRobocalls = [], texts, apiUsage, problems, weekly, doubleCallMisses = [], config }) {
   const nameOf = (ext) => config.staff[ext]?.name || `ext ${ext}`;
   const s = analysis.stats;
   const L = [];
@@ -207,6 +211,8 @@ function ownerReport({ window: w, analysis, tasks, alreadyOpen = [], likelyRoboc
   }
   L.push('');
 
+  L.push(...followUpLines(followUp));
+
   L.push('👩‍💼 *Team*');
   L.push(...teamLines(s));
   L.push('');
@@ -245,6 +251,32 @@ function ownerReport({ window: w, analysis, tasks, alreadyOpen = [], likelyRoboc
   }
 
   return L.join('\n');
+}
+
+// Follow-up texts to missed callers not in Briostack.
+function followUpLines(followUp) {
+  if (!followUp || followUp.mode === 'off' || !followUp.results.length) return [];
+  const r = followUp.results;
+  const by = (status) => r.filter((x) => x.status === status);
+  const name = (x) => `${x.displayName} ${formatPhone(x.phone)}`;
+  const L = ['💬 *Follow-up texts* _(missed callers not in Briostack)_'];
+  if (followUp.mode === 'preview') {
+    L.push(`• 👀 Preview only, nothing sent. Would have texted ${plural(by('preview').length, 'caller')}:`);
+    for (const x of by('preview')) L.push(`   ◦ ${name(x)}`);
+    if (by('preview')[0]) L.push(`   _"${by('preview')[0].message}"_`);
+  } else if (followUp.mode === 'test') {
+    L.push(`• 🧪 Test mode: ${plural(by('test_sent').length, 'text')} went to the test phone instead of the caller:`);
+    for (const x of by('test_sent')) L.push(`   ◦ ${name(x)}`);
+  } else {
+    L.push(`• ✅ Texted ${plural(by('sent').length, 'caller')}${by('sent').length ? ':' : ''}`);
+    for (const x of by('sent')) L.push(`   ◦ ${name(x)}`);
+  }
+  for (const x of by('failed')) L.push(`• ⚠️ Failed: ${name(x)} — ${x.reason}`);
+  for (const x of by('opted_out')) L.push(`• 🚫 ${name(x)} opted out of texts, not sent`);
+  const skipped = by('skipped');
+  if (skipped.length) L.push(`• Not texted: ${skipped.map((x) => `${name(x)} (${x.reason})`).join('; ')}`);
+  L.push('');
+  return L;
 }
 
 function failureReport({ step, error, window: w, config }) {

@@ -31,6 +31,8 @@ messages, files or commits.
 
 - `ATS_USERNAME`, `ATS_PASSWORD`
 - `BRIOSTACK_API_KEY`
+- `TEXTABLE_ACCOUNT_UID`, `TEXTABLE_API_TOKEN` (follow-up texts; any
+  capitalization works)
 
 ## Steps
 
@@ -40,9 +42,14 @@ messages, files or commits.
    cd daily-routine && node src/callReview/run.js
    ```
 
-   It prints one JSON object. Don't call the ATS or Briostack APIs yourself:
-   the script already makes the minimum number of calls, and both APIs have
-   daily limits.
+   It prints one JSON object. Don't call the ATS, Briostack or Textable
+   APIs yourself: the script already makes the minimum number of calls, and
+   the APIs have daily limits.
+
+   The script also texts missed callers who aren't in Briostack (see
+   `followUpTexts` and the "💬 Follow-up texts" part of `ownerMessage`).
+   Once it has printed `"status": "ok"`, don't run it again in the same
+   run: a second run could create duplicate tasks.
 
 2. Act on `status`:
 
