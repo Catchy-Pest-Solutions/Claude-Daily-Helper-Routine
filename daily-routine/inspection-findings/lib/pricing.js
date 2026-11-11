@@ -122,7 +122,8 @@ function exclusionFor(findingKeys, { techSaysNoExclusion = false } = {}, config)
 
 // One quote per customer per plan, but every finding on it is paid (Daniel,
 // Nov 10: carpenter bees + a wasp nest = $2 + $1); 1.5x when the visit was
-// an Inspection or One Time Service.
+// an Inspection or One Time Service. A quote request (the tech relaying
+// what the customer asked for) is a flat $2, no multiplier (Daniel, Nov 11).
 function bonusFor(findingKeys, { visitCategory } = {}, config) {
   const byPlan = {};
   for (const k of new Set(findingKeys)) {
@@ -132,7 +133,7 @@ function bonusFor(findingKeys, { visitCategory } = {}, config) {
     byPlan[p] = (byPlan[p] ?? 0) + f.bonus;
   }
   const mult = config.inspectionCategories.includes(String(visitCategory || '')) ? config.bonusMultiplierInspection : 1;
-  const perPlan = Object.fromEntries(Object.entries(byPlan).map(([p, b]) => [p, Math.round(b * mult * 100) / 100]));
+  const perPlan = Object.fromEntries(Object.entries(byPlan).map(([p, b]) => [p, p === 'quote_request' ? b : Math.round(b * mult * 100) / 100]));
   return { perPlan, multiplier: mult, total: Object.values(perPlan).reduce((a, b) => a + b, 0) };
 }
 

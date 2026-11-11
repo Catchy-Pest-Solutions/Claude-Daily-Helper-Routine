@@ -224,7 +224,7 @@ test('office task: customer ID first, customer notes and custom-quote alert when
   assert.doesNotMatch(taskDescription({ decision, post, model: m, results: { email: 'sent', text: 'sent' }, action: 'quote', sentAtMs: Date.now() }), /Customer notes/);
 });
 
-test('quote request for one of our plans is priced like a finding, without photos, $0 bonus', () => {
+test('quote request for one of our plans is priced like a finding, without photos, $2 bonus', () => {
   const req = {
     ts: '1.1', action: 'quote', findings: ['quote_request'], plan: 'termite', headline: 'Termite protection',
     found: ['Asked about termite protection.'], email: { intro: ['Hi Pat,'] },
@@ -233,7 +233,7 @@ test('quote request for one of our plans is priced like a finding, without photo
   const noPhotos = { ...post, photos: [] };
   assert.deepEqual(Q.checkDecision(req, noPhotos, config), []);
   const m = Q.quoteModel(req, noPhotos, config, { today: '2026-11-06' });
-  assert.deepEqual([m.request, m.plan, m.initial, m.bonus], [true, 'termite', '$550', 0]);
+  assert.deepEqual([m.request, m.plan, m.initial, m.bonus], [true, 'termite', '$550', 2]);
   assert.equal(Q.checkTextPrice(req.text.body, m), null);
   // Critter requests include exclusion unless the tech says otherwise.
   assert.equal(Q.quoteModel({ ...req, plan: 'critter' }, noPhotos, config, { today: '2026-11-06' }).exclusion, true);
@@ -373,4 +373,13 @@ test('one Briostack task per customer: both quotes under one header and one Next
   assert.equal(both.description.match(/^Next:/gm).length, 1);
   assert.match(both.description, /1\. HomeShield Critter Control quote\nFound by Dustin/);
   assert.match(both.description, /2\. Carolina TermiteShield quote\nFound by Dustin/);
+});
+
+test('quote requests pay a flat $2 (no 1.5x), on the quote and as an office task', () => {
+  assert.equal(pricing.bonusFor(['quote_request'], { visitCategory: '12501' }, config).total, 2);
+  const request = { ...decision, findings: ['quote_request'], plan: 'critter', techSaysNoExclusion: false };
+  const m = Q.quoteModel(request, { ...post, photos: [] }, config, { today: '2026-11-06' });
+  assert.equal(m.request, true);
+  assert.equal(m.bonus, 2);
+  assert.equal(m.exclusion, true);
 });
