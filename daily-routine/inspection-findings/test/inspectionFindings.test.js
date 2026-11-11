@@ -383,3 +383,35 @@ test('quote requests pay a flat $2 (no 1.5x), on the quote and as an office task
   assert.equal(m.bonus, 2);
   assert.equal(m.exclusion, true);
 });
+
+test('bat remediation price: base by stories, size, activity, access, $1,000-$2,500, credit, ends in 95', () => {
+  const { batPrice, endIn95 } = require('../lib/bat');
+  assert.equal(endIn95(2050), 1995);
+  assert.equal(endIn95(1650), 1595);
+  assert.equal(endIn95(1695), 1695);
+  // 1,400 sq ft ranch, minor guano, existing customer: $1,100 - $250 = $850 -> $795.
+  assert.equal(batPrice({ sqft: 1400, stories: 1 }, config).final, 795);
+  // 2,200 sq ft two-story, nesting inside: $1,900 - $250 = $1,650 -> $1,595, shown as $1,845 - $250.
+  const two = batPrice({ sqft: 2200, stories: 2, heavyActivity: true }, config);
+  assert.deepEqual([two.final, two.credit, two.list], [1595, 250, 1845]);
+  // Big and hard: $2,400 (the steps top out under the $2,500 cap); new customers get $149: $2,251 -> $2,195.
+  assert.equal(batPrice({ sqft: 4000, stories: 3, heavyActivity: true, hardAccess: true, existingCustomer: false }, config).final, 2195);
+  // Daniel's price replaces the formula's.
+  assert.equal(batPrice({ sqft: 1400, stories: 1 }, config, { approvedPrice: 995 }).final, 995);
+});
+
+test('bat quotes are drafts until Daniel replies "approve" in the thread', () => {
+  const batPost = { ...post, thread: [{ fromDaniel: true, text: 'Bat quote draft ... Reply *approve* to send it' }], customer: { ...post.customer, status: 'CUSTOMER_ACTIVE', email: 'x@y.z' } };
+  const d = { ...decision, findings: ['bats'], plan: 'bat', techSaysNoExclusion: undefined, bat: { sqft: 2200, sqftSource: 'Zillow', stories: 2, heavyActivity: true, hardAccess: false, exterior: 'vinyl' }, text: { body: 'x. Reply YES' } };
+  assert.equal(Q.isBatDraft(d), true);
+  assert.equal(Q.batApproval(batPost), null); // the draft itself doesn't count
+  assert.deepEqual(Q.checkDecision(d, batPost, config), []);
+  const approved = { ...d, bat: { ...d.bat, approved: true, approvedPrice: 1495 } };
+  assert.match(Q.checkDecision(approved, batPost, config).join(), /hasn't replied "approve"/);
+  const yes = { ...batPost, thread: [...batPost.thread, { fromDaniel: true, text: 'approve $1,495' }] };
+  assert.deepEqual(Q.checkDecision(approved, yes, config), []);
+  assert.match(Q.checkDecision({ ...approved, bat: { ...approved.bat, approvedPrice: 1595 } }, yes, config).join(), /\$1495 Daniel approved/);
+  const m = Q.quoteModel(approved, yes, config, { today: '2026-11-11' });
+  assert.deepEqual([m.initial, m.credit, m.recurring, m.bonus], ['$1,495', '$250', false, 4.5]); // $3, 1.5x on a One Time Service visit
+  assert.match(Q.checkDecision({ ...d, bat: { stories: 2 } }, batPost, config).join(), /bat\.sqft/);
+});

@@ -88,9 +88,31 @@
     { "key": "wood_to_ground", "sheetLabel": "Wood/siding to ground", "label": "Wood or siding touching the ground", "plan": "termite", "bonus": 2, "infographic": "termite-entry-points" },
     { "key": "stinging_nest", "sheetLabel": "Stinging nest", "label": "Wasp, hornet or yellow jacket nest", "plan": "signature", "bonus": 1, "infographic": "stinging-insects" },
     { "key": "yard_burrows", "sheetLabel": "Yard burrows", "label": "Mole, vole or groundhog burrows in the yard", "plan": "critter", "bonus": 1, "infographic": "yard-burrowing", "exclusionDefault": false },
+    { "key": "bats", "sheetLabel": "Bats", "label": "Bats (seen, heard, or droppings piled under a roof edge or porch ceiling)", "plan": "bat", "bonus": 3 },
     { "key": "quote_request", "sheetLabel": "Quote request", "label": "Quote request (the customer asked; no photos needed)", "plan": null, "bonus": 2 }
   ],
   "priceCovers": {
+    "bat": {
+      "lines": [
+        { "text": "One-way doors at the entry points so bats leave and can't get back in" },
+        { "text": "Every other gap sealed with bat-proof materials" },
+        { "text": "Follow-up visit 2 weeks later: doors removed, final sealing" },
+        { "text": "Sanitation visit: fog treatment and outside guano cleanup" },
+        { "text": "1-year bat-free guarantee" }
+      ],
+      "text": [
+        { "text": "the one-way doors, sealing the entry points, the follow-up and sanitation visits and a 1-year bat-free guarantee" }
+      ],
+      "details": [
+        { "text": "We install one-way doors at the entry points so the bats can leave but not get back in, and seal every other gap with bat-proof materials (caulk, foam, mesh or flashing)." },
+        { "text": "About 2 weeks later we remove the doors, seal those spots for good and inspect inside and out. Then a sanitation visit: a fog treatment for odors and bacteria, and guano cleanup outside." },
+        { "text": "If bats get back in within a year, we come back and fix it at no charge." }
+      ],
+      "finePrint": [
+        "Guano cleanup is outside only; it doesn't include replacing insulation or removing guano inside the home.",
+        "May through July, while young bats can't fly, we seal everything except the nesting site on the first visit and put the one-way door there after August 1."
+      ]
+    },
     "_doc": "What the initial fee covers, filled in by the scripts (lib/quote.js priceCovers). lines: the card's and the PDF's \"Price covers\" list; the script adds \"Then $X a month, starting month 4\" at the end. text: the pieces of the customer's text (\"...$174, which covers <pieces joined: a, b and c> (details in the picture)\"). details: the \"How we fix it\" paragraphs in the email and PDF. finePrint: under the fix in the email and PDF. An item with findings shows only for those findings (one quote can merge several) and goes to the top; exclusion true/false shows only on the price with/without exclusion; topFor moves it to the top for those findings.",
     "signature": {
       "lines": [
@@ -153,6 +175,20 @@
         "The damage warranty covers new termite damage while your plan is active, not damage that's already there."
       ]
     }
+  },
+
+  "batRemediation": {
+    "_doc": "Bat Remediation quotes (Daniel, Nov 11): one charge, covers the 1-year bat-free guarantee; never automatic, Daniel approves every draft. Price = base (1 or 2+ stories) + size + heavy activity + hard access, kept between min and max, minus the consultation credit, then rounded down so the customer's price ends in 95.",
+    "name": "Wildlife Service - Bat Remediation",
+    "phone": "(828) 826-2348",
+    "email": "info@catchypestsolutions.com",
+    "base": { "oneStory": 1100, "twoStory": 1600 },
+    "size": { "over": 1500, "step": 500, "add": 100, "max": 400 },
+    "heavyActivity": 200,
+    "hardAccess": 200,
+    "min": 1000,
+    "max": 2500,
+    "credit": { "existing": 250, "new": 149 }
   },
 
   "infographics": {

@@ -107,6 +107,13 @@ async function renderQuote(chrome, decision, post, config, today, outDir, allPos
   const cardPath = path.join(dir, 'quote-card.jpg');
   fs.writeFileSync(cardPath, cardJpg);
 
+  // Bat Remediation: Daniel's quote-and-agreement PDF instead.
+  if (model.plan === 'bat') {
+    const pdfPath = await renderBatPdf(chrome, { decision, post, model, stamped, dir, today, config });
+    const pages = pdfPageCount(fs.readFileSync(pdfPath));
+    return { key: model.key, ts: decision.ts, plan: model.plan, cardPath, pdfPath, pdfPages: pages, cardBytes: cardJpg.length, photos: stamped };
+  }
+
   // Proposal PDF.
   // decision.infographic (a config.infographics key) picks one for a quote request.
   const infographic = config.infographics?.[decision.infographic || config.findings.find((f) => f.key === Q.allFindings(decision)[0])?.infographic];
@@ -157,6 +164,63 @@ async function renderQuote(chrome, decision, post, config, today, outDir, allPos
   return { key: model.key, ts: decision.ts, plan: model.plan, cardPath, pdfPath, pdfPages: pdfPageCount(pdf), cardBytes: cardJpg.length, photos: stamped };
 }
 
+const BAT_ASSETS = path.join(__dirname, 'assets', 'bat');
+const BAT_CHECKS = [
+  ['live_bats', 'Live Bats found at structure'], ['no_signs', 'No visible signs of bats found'],
+  ['minor_evidence', 'Minor Bat evidence visible'], ['adjacent', 'Bat Activity adjacent to structure'],
+  ['major_evidence', 'Major Bat evidence visible'], ['nesting_inside', 'Nesting inside structure'],
+  ['entry_point', 'Entry point identified'], ['nesting_exterior', 'Nesting exterior structure'],
+];
+
+// The bat quote and agreement: page 1 (customer, inspection results,
+// features, price with the credit), page 3 (notes and photos) filled in;
+// Daniel's scope/signature (2) and terms (4-6) pages as they are.
+async function renderBatPdf(chrome, { decision, post, model, stamped, dir, config }) {
+  const b = decision.bat || {};
+  const checks = new Set(b.checks || []);
+  const photoCols = Math.max(1, stamped.length >= 3 ? 3 : stamped.length);
+  const phones = (post.customer?.phones || []).map((p) => String(p.number || '').replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3'));
+  const html = path.join(dir, 'bat-proposal.html');
+  fs.writeFileSync(html, fill('bat-proposal.html', {
+    ...model,
+    bat: {
+      foundation: b.foundation || 'to be confirmed on the first visit',
+      linearFeet: b.linearFeet || 'about 200 ft',
+      oneWayDoors: b.oneWayDoors || '1-3',
+      exterior: b.exterior,
+      exclusionArea: b.exclusionArea || 'about 30-50 ft, multiple areas',
+      attic: b.attic || 'see technician notes; confirmed on the first visit',
+      entryPoints: b.entryPoints || (decision.found || []).join(' '),
+    },
+    homeLine: `${b.stories >= 3 ? '3+' : b.stories}-story, about ${Number(b.sqft).toLocaleString('en-US')} sq ft`,
+    checks: BAT_CHECKS.map(([key, label]) => ({ label, on: checks.has(key) })),
+    customerId: post.customer?.id || '',
+    phone: phones.join(', '),
+    email: String(post.customer?.email || '').split(',')[0],
+    listPrice: Q.money(model.price.regularInitial),
+    batPhone: config.batRemediation.phone,
+    batEmail: config.batRemediation.email,
+    logoUrl: `file://${LOGO}`,
+    date: Q.longDate(cal.toEastern(Date.now()).date),
+    found: decision.found || [],
+    hasPhotos: stamped.length > 0,
+    photos: stamped.map((s) => ({ url: `file://${s.path}`, caption: s.caption })),
+    photoCols,
+    photoHeight: photoCols === 1 ? 420 : photoCols === 2 ? 300 : 220,
+    page2: `file://${path.join(BAT_ASSETS, 'page-2.jpg')}`,
+    page4: `file://${path.join(BAT_ASSETS, 'page-4.jpg')}`,
+    page5: `file://${path.join(BAT_ASSETS, 'page-5.jpg')}`,
+    page6: `file://${path.join(BAT_ASSETS, 'page-6.jpg')}`,
+  }));
+  const page = await chrome.open(html, { width: 816, height: 1056 });
+  const pdf = await page.pdf();
+  await page.close();
+  if (pdfPageCount(pdf) !== 6) throw new Error(`${model.key}: bat quote is ${pdfPageCount(pdf)} pages, not 6; shorten found or use fewer photos`);
+  const pdfPath = path.join(dir, 'proposal.pdf');
+  fs.writeFileSync(pdfPath, pdf);
+  return pdfPath;
+}
+
 async function upload(r, config) {
   const cardId = await google.uploadShared({ folderId: config.driveFolderId, name: google.randomName('inspection-card', 'jpg'), mimeType: 'image/jpeg', data: fs.readFileSync(r.cardPath) });
   const pdfId = await google.uploadShared({ folderId: config.driveFolderId, name: google.randomName('Catchy-Pest-Inspection', 'pdf'), mimeType: 'application/pdf', data: fs.readFileSync(r.pdfPath) });
@@ -178,7 +242,7 @@ async function main() {
   const quotes = decisions.filter((d) => d.action === 'quote');
   for (const d of quotes) {
     const post = collected.posts.find((p) => p.ts === d.ts);
-    const secondary = !Q.customerGroups(decisions, collected.posts).get(Q.leadKey(d))?.primary;
+    const secondary = Q.customerGroups(decisions, collected.posts).get(Q.leadKey(d))?.primary === false;
     const errs = [...Q.checkDecision(d, post, config, collected.posts, { secondary }), ...Q.checkMerges(d, decisions, config)];
     if (!errs.length) errs.push(...Q.checkQuoteMessages(d, post, config, decisions, collected.posts, { today }));
     if (errs.length) problems.push(`${d.ts}${d.plan ? `:${d.plan}` : ''}: ${errs.join('; ')}`);

@@ -10,6 +10,11 @@
 //                  [INSPECTION FINDINGS] entries on the customer's
 //                  Communications tab (the PDF on the email entry), a
 //                  BID_FOLLOWUP task, and a Leads sheet row.
+//   bat quote      (plan "bat", Daniel hasn't approved it yet): a draft.
+//                  Nothing to the customer, Briostack or Steve; the
+//                  draft message for Daniel goes in $S/bat-drafts.json
+//                  for the routine to post in the post's thread, and the
+//                  sheet row is "waiting" until he replies "approve".
 //   commercial     task to price it (no message to the customer), sheet row
 //                  (the tech still earns the bonus).
 //   custom_quote   same, for a custom job on a customer we'd otherwise
@@ -133,10 +138,10 @@ function emailPlain({ intro, closing, parts }) {
       ...(multi ? [`${i + 1}. ${decision.headline}`] : []),
       ...(decision.email.body || []),
       ...(decision.why?.length ? ['Why it matters:', ...decision.why.map((w) => `- ${w}`)] : []),
-      `The fix: ${model.fixLine}${model.credit ? ` Includes your ${model.credit} credit, good through ${model.creditExpiresLong}.` : ''}`,
+      `The fix: ${model.fixLine}${model.credit ? ` Includes your ${model.credit} ${model.creditLabel}, good through ${model.creditExpiresLong}.` : ''}`,
       ...(model.coversDetails.length ? ['How we fix it:', ...model.coversDetails] : []),
       ...model.finePrint,
-      `Details: ${model.planName}, 12-month plan, billed every 4 weeks. No annual commitment: ${model.noAnnualInitial} initial, same monthly fee. The full quote is attached as a PDF.`,
+      model.detailsLine,
     ]),
     ...(closing || []),
     ...parts.map(({ model }) => `Short video about ${model.planName}: ${model.video}`),
@@ -247,6 +252,24 @@ function groupTask(items, { test }) {
   return { title: `${t}Inspection findings: ${items.map(taskLabel).join(' + ')} — ${name}`, description: joinBlocks(blocks) };
 }
 
+// The Slack reply (in the bat post's thread) that shows Daniel a bat quote
+// before it goes out. He answers in the thread: "approve" sends it at this
+// price, "approve $1,795" at his price; anything else is a change to make.
+function batDraftMessage({ decision, post, model, rend, config }) {
+  const b = decision.bat || {};
+  return [
+    `*Bat quote draft for ${model.customerName} #${post.customer.id}* (${post.tech?.name || 'tech'}, ${model.visitDay.slice(0, 3)} ${Q.shortDate(model.visitDate)}). Nothing has gone to the customer yet.`,
+    `*Price: ${model.initial}* (shown as ${Q.money(model.price.regularInitial)} minus the ${model.credit} ${model.creditLabel})`,
+    `How: ${model.bat.steps.join('; ')}.`,
+    `Home: ${b.stories}-story, about ${Number(b.sqft).toLocaleString('en-US')} sq ft (${b.sqftSource}); ${b.exterior}${b.attic ? `; attic: ${b.attic}` : ''}.`,
+    `Quote card: ${rend?.cardUrl || 'not uploaded'}`,
+    `Quote PDF: ${rend?.pdfUrl || 'not uploaded'}`,
+    `Text: "${String(decision.text?.body || '').trim()}"`,
+    '',
+    `Reply *approve* to send it at ${model.initial}, or *approve $1,795* (your price) to change it. Anything else: tell me what to fix and I'll send a new draft.`,
+  ].join('\n');
+}
+
 // The sheet's Post ID always has a ":" so Google Sheets keeps it as text:
 // a bare Slack ts ("1794243334.617239") is read as a number and rounded,
 // and collect.js would no longer see the post as handled.
@@ -265,7 +288,7 @@ function sheetRow({ decision, post, model, status, counted, reason, bonus, confi
     Customer: model?.customerName || [post.customer?.firstName, post.customer?.lastName].filter(Boolean).join(' '),
     'Customer ID': post.customer?.id || post.customerIdPosted || '',
     Finding: labels.join('; '),
-    Plan: planKey ? `${config.plans[planKey]?.name || planKey}${model?.exclusion === false ? ' (no exclusion)' : ''}` : '',
+    Plan: planKey ? `${config.plans[planKey]?.name || (planKey === 'bat' ? config.batRemediation.name : planKey)}${model?.exclusion === false ? ' (no exclusion)' : ''}` : '',
     Quote: model ? model.price.initial : '',
     Credit: model ? model.price.credit : '',
     Bonus: bonus ?? 0,
@@ -322,7 +345,7 @@ async function main() {
   const problems = [];
   for (const d of decisions) {
     const post = collected.posts.find((p) => p.ts === d.ts);
-    const secondary = d.action === 'quote' && !Q.customerGroups(decisions, collected.posts).get(Q.leadKey(d))?.primary;
+    const secondary = d.action === 'quote' && Q.customerGroups(decisions, collected.posts).get(Q.leadKey(d))?.primary === false;
     const errs = [...Q.checkDecision(d, post, config, collected.posts, { secondary }), ...Q.checkMerges(d, decisions, config)];
     if (d.action === 'quote' && !errs.length) {
       const m = Q.quoteModel(d, post, config, { today });
@@ -358,6 +381,7 @@ async function main() {
   const results = [];
   const rows = [];
   const taskItems = new Map(); // customer ID -> [task items]
+  const batDrafts = [];
   for (const d of decisions) {
     const post = collected.posts.find((p) => p.ts === d.ts);
     const key = Q.leadKey(d);
@@ -371,6 +395,14 @@ async function main() {
 
     const model = d.action === 'quote' ? Q.quoteModel(d, post, config, { today }) : null;
     const rend = model ? rendered.find((x) => x.key === model.key) : null;
+
+    // Bat quotes wait for Daniel: a draft for him, nothing to the customer.
+    if (Q.isBatDraft(d)) {
+      r.text = r.email = r.log = r.task = 'draft for Daniel';
+      batDrafts.push({ ts: d.ts, key, customer: model.customerName, message: batDraftMessage({ decision: d, post, model, rend, config }) });
+      rows.push(sheetRow({ decision: d, post, model, status: 'waiting', counted: false, reason: 'bat quote: draft sent to Daniel for approval', bonus: 0, config }));
+      continue;
+    }
 
     if (dupKeys.has(key)) {
       r.text = r.email = r.log = r.task = 'already_sent';
@@ -549,6 +581,7 @@ async function main() {
     }
   } else results.forEach((r) => (r.sheet = sheetId ? 'skipped' : 'skipped (no sheet in config)'));
   fs.writeFileSync(path.join(outDir, 'sheet-rows.json'), JSON.stringify(rows, null, 2));
+  fs.writeFileSync(path.join(outDir, 'bat-drafts.json'), JSON.stringify({ drafts: batDrafts }, null, 2));
   process.stdout.write(`${JSON.stringify({ results, testMode: test })}\n`);
 }
 
@@ -559,4 +592,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { groupTask, textSendAt, taskDue, textNumbers, logBody, taskDescription, mergedRows, sheetPostId };
+module.exports = { batDraftMessage, groupTask, textSendAt, taskDue, textNumbers, logBody, taskDescription, mergedRows, sheetPostId };
