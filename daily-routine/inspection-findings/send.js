@@ -4,13 +4,17 @@
 //   node send.js --posts $S/posts.json --decisions $S/decisions.json [--preview] [--no-sheet]
 //
 // For each decision:
-//   quote          email now, text(s) scheduled for config.textSendTime
-//                  (10 AM Eastern) through Textable sendAt, two
+//   quote          one email and one text per customer, sent right away
+//                  (the routine runs at 9 AM; Textable's sendAt sent
+//                  texts early on Nov 11, so nothing is scheduled), two
 //                  [INSPECTION FINDINGS] entries on the customer's
 //                  Communications tab (the PDF on the email entry), a
 //                  BID_FOLLOWUP task, and a Leads sheet row.
 //   commercial     task to price it (no message to the customer), sheet row
 //                  (the tech still earns the bonus).
+//   custom_quote   same, for a custom job on a customer we'd otherwise
+//                  skip (bats on a Critter Control customer: bats aren't
+//                  covered); the tech earns the bonus.
 //   quote_request  task for the office to quote it, sheet row ($0 bonus).
 //   skip / ask     sheet row only ("didn't count" / "waiting"); the routine
 //                  sends the tech's note in Slack itself.
@@ -56,7 +60,7 @@ async function sendText({ to, message, mediaUrl, sendAtMs, from }) {
   const uid = envAny('TEXTABLE_USER_ID', 'TEXTABLE_ACCOUNT_UID');
   const token = envAny('TEXTABLE_API_TOKEN', 'TEXTABLE_TOKEN');
   const auth = uid && token ? { Authorization: `Bearer ${uid}:${token}` } : {};
-  const body = { to, from, message, ...(mediaUrl ? { media: [mediaUrl] } : {}), ...(sendAtMs ? { sendAt: sendAtMs } : {}) };
+  const body = { to, from, message, ...([].concat(mediaUrl || []).filter(Boolean).length ? { media: [].concat(mediaUrl).filter(Boolean) } : {}), ...(sendAtMs ? { sendAt: sendAtMs } : {}) };
   let res;
   try {
     res = await fetch(TEXTABLE, { method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -89,43 +93,64 @@ function textNumbers(post) {
   return (post.customer?.phones || []).map((p) => normalizePhone(p.number)).filter((n) => n && !seen.has(n) && seen.add(n)).slice(0, 2);
 }
 
-function emailHtml({ decision, model, subject, photos, config, infographic }) {
+// One email for all of a customer's quotes: the primary decision's intro
+// and closing around one section per quote (parts: [{ decision, model,
+// photos: [{ cid, caption }], infographicCid }]). A single quote reads
+// exactly like before; with two or more each section gets a numbered
+// heading and its own example picture and video.
+function emailHtml({ intro, closing, parts, subject, config }) {
+  const multi = parts.length > 1;
+  const quotes = parts.map((p, i) => ({
+    ...p.model,
+    multi,
+    number: i + 1,
+    headline: p.decision.headline,
+    fixTitle: multi ? `The fix: ${p.model.planName}` : 'The fix',
+    photos: p.photos,
+    body: (p.decision.email.body || []).map(para),
+    why: p.decision.why || [],
+    hasWhy: (p.decision.why || []).length > 0,
+    infographic: p.infographicCid ? { infographicCid: p.infographicCid } : null,
+  }));
   return fill('email.html', {
     subject,
     logoCid: 'catchy-logo',
-    intro: (decision.email.intro || []).map(para),
-    photos: photos.map((p, i) => ({ cid: `photo-${i + 1}`, caption: p.caption || '' })),
-    body: (decision.email.body || []).map(para),
-    why: decision.why || [],
-    hasWhy: (decision.why || []).length > 0,
-    ...model,
-    closing: (decision.email.closing || []).map(para),
-    infographic: infographic ? { infographicCid: 'infographic' } : null,
+    intro: (intro || []).map(para),
+    quotes,
+    single: multi ? null : quotes[0],
+    closing: (closing || []).map(para),
     company: config.company,
     officePhone: config.officePhone,
     officePhoneDigits: `+1${normalizePhone(config.officePhone)}`,
   });
 }
 
-function emailPlain(decision, model) {
+function emailPlain({ intro, closing, parts }) {
+  const multi = parts.length > 1;
   return [
-    ...(decision.email.intro || []),
-    ...(decision.email.body || []),
-    ...(decision.why?.length ? ['Why it matters:', ...decision.why.map((w) => `- ${w}`)] : []),
-    `The fix: ${model.fixLine} The initial fee comes with a 3-month warranty.${model.credit ? ` Includes your ${model.credit} credit, good through ${model.creditExpiresLong}.` : ''}`,
-    `Details: ${model.planName}, 12-month plan. ${model.initial} covers the first 3 months, then ${model.monthly} a month (billed every 4 weeks) from month four. No annual commitment: ${model.noAnnualInitial} initial, same monthly fee. The full quote is attached as a PDF.`,
-    ...(decision.email.closing || []),
-    `Short video about ${model.planName}: ${model.video}`,
+    ...(intro || []),
+    ...parts.flatMap(({ decision, model }, i) => [
+      ...(multi ? [`${i + 1}. ${decision.headline}`] : []),
+      ...(decision.email.body || []),
+      ...(decision.why?.length ? ['Why it matters:', ...decision.why.map((w) => `- ${w}`)] : []),
+      `The fix: ${model.fixLine}${model.credit ? ` Includes your ${model.credit} credit, good through ${model.creditExpiresLong}.` : ''}`,
+      ...(model.coversDetails.length ? ['How we fix it:', ...model.coversDetails] : []),
+      ...model.finePrint,
+      `Details: ${model.planName}, 12-month plan, billed every 4 weeks. No annual commitment: ${model.noAnnualInitial} initial, same monthly fee. The full quote is attached as a PDF.`,
+    ]),
+    ...(closing || []),
+    ...parts.map(({ model }) => `Short video about ${model.planName}: ${model.video}`),
   ].join('\n\n');
 }
 
-function logBody({ prefix, kind, key, model, post, status, recipient, whenMs, sendAtMs, message, subject, pdfUrl, today }) {
+function logBody({ prefix, kind, key, model, post, status, recipient, whenMs, sendAtMs, message, subject, pdfUrl, today, alsoLinks = [], together = [] }) {
   const when = status === 'scheduled' && sendAtMs ? `scheduled for ${cal.formatDay(sendAtMs)} ${cal.formatTime(sendAtMs)}` : `${cal.formatDay(whenMs)} ${cal.formatTime(whenMs)}`;
   return [
     `${prefix} ${kind} ${status}${prefix === TEST_LOG_PREFIX && ['sent', 'scheduled'].includes(status) ? ` to the test ${kind === 'Text' ? 'phone' : 'inbox'} only` : ''}`,
     `Customer ${prefix === TEST_LOG_PREFIX ? 'contact' : 'to'}: ${recipient}`,
     `When: ${when}`,
-    `Found by: ${model.techName} (Slack post ${post.link})`,
+    ...(together.length ? [`Sent in the same ${kind.toLowerCase()} as: ${together.join(', ')}`] : []),
+    `Found by: ${post.tech?.name || model.techName} (Slack post ${post.link}${alsoLinks.length ? `, also ${alsoLinks.join(', ')}` : ''})`,
     `Plan: ${model.planName}${model.exclusion === false ? ' (no exclusion)' : model.exclusion ? ' (with exclusion)' : ''}`,
     `Plan key: ${model.plan}`,
     `Price: ${model.initial} initial (12-month plan), then ${model.monthly} a month. No annual commitment: ${model.noAnnualInitial}.`,
@@ -144,7 +169,7 @@ function logBody({ prefix, kind, key, model, post, status, recipient, whenMs, se
 // The Briostack task the office reads before calling: short lines, the
 // customer ID first (to paste into Briostack search), only what the call
 // needs.
-function taskDescription({ decision, post, model, results, action, sentAtMs }) {
+function taskBlocks({ decision, post, model, results, action, sentAtMs }) {
   const name = [post.customer?.firstName, post.customer?.lastName].filter(Boolean).join(' ');
   const phones = (post.customer?.phones || []).map((p) => formatPhone(normalizePhone(p.number))).filter(Boolean);
   const sentences = (decision.found || [post.text]).join(' ').split(/(?<=[.!?])\s+/).map((x) => x.trim()).filter(Boolean);
@@ -172,16 +197,67 @@ function taskDescription({ decision, post, model, results, action, sentAtMs }) {
       ],
       ['Next:', '1. Check for a YES reply first.', '2. Call to close it.', '3. Note what happened here and close the task.'],
     );
+  } else if (action === 'custom_quote') {
+    blocks.push(['Custom quote: no automatic price.', 'Nothing was sent to the customer.'], ['Next:', '1. Price it (see the Slack post and photos).', '2. Call the customer.', '3. Note what happened here and close the task.']);
   } else if (action === 'commercial') {
     blocks.push(['Business: no automatic price.', 'Nothing was sent to the customer.'], ['Next:', '1. Price it.', '2. Call the customer.', '3. Note what happened here and close the task.']);
   } else {
     blocks.push([`They asked about: ${decision.request || 'see above'}.`, 'Nothing was sent to the customer.'], ['Next:', '1. Call and quote it.', '2. Note what happened here and close the task.']);
   }
-  return blocks.map((b) => b.join('\n')).join('\n\n');
+  return blocks;
 }
 
+const joinBlocks = (blocks) => blocks.map((b) => b.join('\n')).join('\n\n');
+
+function taskDescription(item) {
+  return joinBlocks(taskBlocks(item));
+}
+
+// What a task is about, for its title: "TermiteShield quote".
+function taskLabel({ decision, model }) {
+  if (decision.action === 'quote') return `${model.planName} quote`;
+  return { commercial: 'business to price', custom_quote: 'custom quote' }[decision.action] || 'quote request';
+}
+
+// One Briostack task per customer (Daniel, Nov 11): everything the run
+// found or quoted for that customer, under one header and one "Next".
+function groupTask(items, { test }) {
+  const name = items[0].model?.customerName || [items[0].post.customer?.firstName, items[0].post.customer?.lastName].filter(Boolean).join(' ');
+  const t = test ? 'TEST ' : '';
+  if (items.length === 1) {
+    const { decision: d } = items[0];
+    const title = d.action === 'quote'
+      ? `${t}Inspection finding: ${items[0].model.planName} quote — ${name}`
+      : `${t}${{ commercial: 'Price inspection finding (business)', custom_quote: 'Custom quote needed (inspection finding)' }[d.action] || 'Quote request from tech'} — ${name}`;
+    return { title, description: taskDescription(items[0]) };
+  }
+  const all = items.map((it) => taskBlocks(it));
+  const nextOf = (blocks) => blocks.find((b) => b[0] === 'Next:');
+  const quoted = items.findIndex((it) => it.decision.action === 'quote');
+  const next = nextOf(all[quoted >= 0 ? quoted : 0]);
+  const blocks = [all[0][0]];
+  items.forEach((it, i) => {
+    const body = all[i].slice(1).filter((b) => b !== nextOf(all[i]));
+    body[0] = [`${i + 1}. ${taskLabel(it)[0].toUpperCase()}${taskLabel(it).slice(1)}`, ...body[0]];
+    blocks.push(...body);
+  });
+  const names = items.filter((it) => it.decision.action === 'quote').map((it) => it.model.planName);
+  if (names.length > 1) blocks.push([`Sent as one text and one email with ${names.length} quotes.`]);
+  blocks.push(next);
+  return { title: `${t}Inspection findings: ${items.map(taskLabel).join(' + ')} — ${name}`, description: joinBlocks(blocks) };
+}
+
+// The sheet's Post ID always has a ":" so Google Sheets keeps it as text:
+// a bare Slack ts ("1794243334.617239") is read as a number and rounded,
+// and collect.js would no longer see the post as handled.
+const sheetPostId = (decision) => {
+  const key = Q.leadKey(decision);
+  return key.includes(':') ? key : `${key}:none`;
+};
+
 function sheetRow({ decision, post, model, status, counted, reason, bonus, config }) {
-  const labels = (decision.findings || []).map((k) => config.findings.find((f) => f.key === k)?.label || k);
+  const finding = (k) => config.findings.find((f) => f.key === k);
+  const labels = (decision.findings || []).map((k) => finding(k)?.sheetLabel || finding(k)?.label || k);
   const planKey = decision.plan || model?.plan || '';
   return {
     'Visit date': model?.visitDate || post.visit?.date || post.postDate,
@@ -197,8 +273,31 @@ function sheetRow({ decision, post, model, status, counted, reason, bonus, confi
     Notes: reason || '',
     Status: status,
     'Credit good through': model ? model.creditExpiresYmd : '',
-    'Post ID': Q.leadKey(decision),
+    'Post ID': sheetPostId(decision),
   };
+}
+
+// Posts merged into a quote (alsoPosts): one sheet row each, so each post
+// is settled and its tech is paid for its own findings. The quote and
+// credit stay on the first post's row only, so totals don't double count.
+function mergedRows({ decision: d, model, posts, config }) {
+  return (d.alsoPosts || []).map((a) => {
+    const other = posts.find((x) => x.ts === a.ts);
+    const missing = (a.missingSteps || []).filter(Boolean);
+    const plan = model?.plan || d.plan || config.findings.find((f) => f.key === a.findings[0])?.plan;
+    const bonus = require('./lib/pricing').bonusFor(a.findings, { visitCategory: other.visit?.category }, config).perPlan[plan] ?? 0;
+    const row = sheetRow({
+      decision: { ...d, ts: a.ts, findings: a.findings, plan },
+      post: other,
+      model: model && { ...model, visitDate: other.visit?.date || other.postDate },
+      status: d.action === 'quote' ? 'quoted' : 'task for office',
+      counted: !missing.length,
+      reason: [`same quote as post ${d.ts}`, missing.length ? `no bonus: missing ${missing.join(', ')}` : ''].filter(Boolean).join('; '),
+      bonus: missing.length ? 0 : bonus,
+      config,
+    });
+    return { ...row, Quote: '', Credit: '' };
+  });
 }
 
 async function main() {
@@ -223,13 +322,11 @@ async function main() {
   const problems = [];
   for (const d of decisions) {
     const post = collected.posts.find((p) => p.ts === d.ts);
-    const errs = Q.checkDecision(d, post, config);
+    const secondary = d.action === 'quote' && !Q.customerGroups(decisions, collected.posts).get(Q.leadKey(d))?.primary;
+    const errs = [...Q.checkDecision(d, post, config, collected.posts, { secondary }), ...Q.checkMerges(d, decisions, config)];
     if (d.action === 'quote' && !errs.length) {
       const m = Q.quoteModel(d, post, config, { today });
-      const e1 = Q.checkTextPrice(d.text.body, m);
-      const e2 = Q.checkDayNames([d.text.body, ...(d.email.intro || []), ...(d.email.body || []), ...(d.email.closing || [])], m);
-      if (e1) errs.push(e1);
-      if (e2) errs.push(e2);
+      errs.push(...Q.checkQuoteMessages(d, post, config, decisions, collected.posts, { today }));
       if (!rendered.find((r) => r.key === m.key)) errs.push('not rendered yet (run render.js)');
       else if (!args.preview && !rendered.find((r) => r.key === m.key).cardUrl) errs.push('rendered with --no-upload; run render.js again without it');
     }
@@ -237,9 +334,30 @@ async function main() {
   }
   if (problems.length) throw new Error(`fix decisions.json first: ${problems.join(' | ')}`);
 
+
   const brio = args.preview ? null : createBriostack();
+
+  // Duplicate protection: a lead already logged on the customer isn't sent
+  // again. Checked up front so a customer's one text and email only cover
+  // the quotes that are actually new.
+  const dupKeys = new Set();
+  if (brio && !args.resend) {
+    for (const d of decisions.filter((x) => x.action === 'quote')) {
+      const post = collected.posts.find((p) => p.ts === d.ts);
+      const comms = await brio.listCommunications(post.customer.id);
+      for (const c of comms.filter((x) => String(x.subject || '').startsWith('[INSPECTION FINDINGS'))) {
+        const full = await brio.getCommunication(post.customer.id, c.communicationId);
+        if (String(full?.content || '').includes(`Lead: ${Q.leadKey(d)}\n`)) dupKeys.add(Q.leadKey(d));
+      }
+    }
+  }
+  // One text and one email per customer: lead key -> { primary, group }.
+  const groups = Q.customerGroups(decisions.filter((d) => !dupKeys.has(Q.leadKey(d))), collected.posts);
+  const groupSent = new Map(); // primary lead key -> what went out
+
   const results = [];
   const rows = [];
+  const taskItems = new Map(); // customer ID -> [task items]
   for (const d of decisions) {
     const post = collected.posts.find((p) => p.ts === d.ts);
     const key = Q.leadKey(d);
@@ -254,77 +372,101 @@ async function main() {
     const model = d.action === 'quote' ? Q.quoteModel(d, post, config, { today }) : null;
     const rend = model ? rendered.find((x) => x.key === model.key) : null;
 
-    // Duplicate protection: this lead already logged on the customer.
-    if (brio && d.action === 'quote' && !args.resend) {
-      const comms = await brio.listCommunications(post.customer.id);
-      let dup = false;
-      for (const c of comms.filter((x) => String(x.subject || '').startsWith('[INSPECTION FINDINGS'))) {
-        const full = await brio.getCommunication(post.customer.id, c.communicationId);
-        if (String(full?.content || '').includes(`Lead: ${key}\n`)) dup = true;
-      }
-      if (dup) {
-        r.text = r.email = r.log = r.task = 'already_sent';
-        continue;
-      }
+    if (dupKeys.has(key)) {
+      r.text = r.email = r.log = r.task = 'already_sent';
+      continue;
     }
 
     if (d.action === 'quote') {
       const who = model.customerName || `customer ${post.customer.id}`;
       const numbers = textNumbers(post);
-      const sendAtMs = textSendAt(nowMs, config);
-      r.textAt = sendAtMs ? `${cal.formatDay(sendAtMs)} ${cal.formatTime(sendAtMs)}` : 'now';
-      r.textAtMs = sendAtMs || nowMs;
-      const subjectBase = model.request ? `Your quote for ${model.street}` : `What I found at ${model.street}`;
+      const sendAtMs = null; // sent now: Textable's sendAt isn't reliable
+      const { group } = groups.get(key);
+      const primaryKey = Q.leadKey(group[0]);
+      const together = group.map((x) => Q.leadKey(x)).filter((k) => k !== key);
+      const subjectBase = model.request && group.length === 1 ? `Your quote for ${model.street}` : `${model.signed ? 'What I found' : 'What we found'} at ${model.street}`;
       const subject = test ? `[TEST for ${who}] ${subjectBase}` : subjectBase;
-      const photos = rend.photos;
-      const infoPath = config.infographics?.[d.infographic || config.findings.find((f) => f.key === d.findings[0])?.infographic];
-      const infographic = infoPath && fs.existsSync(path.join(__dirname, infoPath)) ? path.join(__dirname, infoPath) : null;
-      const html = emailHtml({ decision: d, model, subject, photos, config, infographic });
-      const textBody = d.text.body.trim();
-      const textMessage = test ? `TEST for ${who} (${numbers.map(formatPhone).join(', ') || 'no phone'}):\n${textBody}` : textBody;
       const emailTo = post.customer.email;
+      const textBody = group[0].text.body.trim();
+      const textMessage = test ? `TEST for ${who} (${numbers.map(formatPhone).join(', ') || 'no phone'}):\n${textBody}` : textBody;
+      // Every quote in the customer's group: its model, rendered card/PDF,
+      // photos and example picture, numbered for the email's content IDs.
+      const parts = group.map((x, qi) => {
+        const m = Q.quoteModel(x, collected.posts.find((p) => p.ts === x.ts), config, { today });
+        const rx = rendered.find((y) => y.key === m.key);
+        const infoPath = config.infographics?.[x.infographic || config.findings.find((f) => f.key === Q.allFindings(x)[0])?.infographic];
+        const infographic = infoPath && fs.existsSync(path.join(__dirname, infoPath)) ? path.join(__dirname, infoPath) : null;
+        const pre = group.length > 1 ? `q${qi + 1}-` : '';
+        return { decision: x, model: m, rend: rx, infographic, infographicCid: infographic ? `${pre}infographic` : null, photos: rx.photos.map((ph, i) => ({ ...ph, cid: `${pre}photo-${i + 1}` })) };
+      });
+      const intro = group[0].email.intro;
+      const closing = group[0].email.closing;
+      const html = emailHtml({ intro, closing, parts, subject, config });
+      const plain = emailPlain({ intro, closing, parts });
 
       if (args.preview) {
-        const dir = path.join(outDir, 'preview');
-        fs.mkdirSync(dir, { recursive: true });
-        const safe = key.replace(/[^\w]/g, '_');
-        fs.writeFileSync(path.join(dir, `${safe}-text.txt`), `To: ${test ? config.testPhone : numbers.join(', ')}\nSend at: ${r.textAt}\nPicture: ${rend.cardPath}\n\n${textMessage}\n`);
-        let prev = html.replace('cid:catchy-logo', `file://${LOGO}`);
-        photos.forEach((p, i) => (prev = prev.replace(`cid:photo-${i + 1}`, `file://${p.path}`)));
-        fs.writeFileSync(path.join(dir, `${safe}-email.html`), prev);
-        r.text = r.email = 'preview';
+        r.textAt = 'now';
+        if (key === primaryKey) {
+          const dir = path.join(outDir, 'preview');
+          fs.mkdirSync(dir, { recursive: true });
+          const safe = `customer_${post.customer.id}`;
+          fs.writeFileSync(path.join(dir, `${safe}-text.txt`), `To: ${test ? config.testPhone : numbers.join(', ')}\nPictures: ${parts.map((p) => p.rend.cardPath).join(', ')}\n\n${textMessage}\n`);
+          let prev = html.replace('cid:catchy-logo', `file://${LOGO}`);
+          for (const p of parts) {
+            p.photos.forEach((ph) => (prev = prev.replace(`cid:${ph.cid}`, `file://${ph.path}`)));
+            if (p.infographicCid) prev = prev.replace(`cid:${p.infographicCid}`, `file://${p.infographic}`);
+          }
+          fs.writeFileSync(path.join(dir, `${safe}-email.html`), prev);
+        }
+        r.text = r.email = key === primaryKey ? 'preview' : `preview (with ${primaryKey})`;
+        const pc = String(post.customer.id);
+        if (!taskItems.has(pc)) taskItems.set(pc, []);
+        taskItems.get(pc).push({ decision: d, post, model, results: { ...r, text: 'sent', email: 'sent' }, action: d.action, sentAtMs: nowMs, previewOf: r });
         continue;
       }
 
-      // Text(s): primary and secondary only; one test text in test mode.
+      // One text and one email for the customer, sent with the group's
+      // first quote; the others reuse what happened.
       const targets = test ? (numbers.length ? [`+1${normalizePhone(config.testPhone)}`] : []) : numbers.map((n) => `+1${n}`);
       if (test && targets.some((t) => t !== `+1${normalizePhone(config.testPhone)}`)) throw new Error('test mode guard: text recipient is not testPhone');
-      const textResults = [];
-      for (const to of targets) textResults.push(await sendText({ to, message: textMessage, mediaUrl: rend.cardUrl, sendAtMs, from: config.textFrom }));
-      r.text = textResults.length ? [...new Set(textResults)].join(', ') : 'skipped (no number)';
-
-      // Email.
-      if (emailTo) {
-        const to = test ? config.testEmail : emailTo;
-        try {
-          const inline = [{ cid: 'catchy-logo', filename: 'catchy-pest-solutions.png', mimeType: 'image/png', data: fs.readFileSync(LOGO) }];
-          photos.forEach((p, i) => inline.push({ cid: `photo-${i + 1}`, filename: `photo-${i + 1}.jpg`, mimeType: 'image/jpeg', data: fs.readFileSync(p.path) }));
-          if (infographic) inline.push({ cid: 'infographic', filename: 'example.jpg', mimeType: infographic.endsWith('.png') ? 'image/png' : 'image/jpeg', data: fs.readFileSync(infographic) });
-          await google.sendMail({
-            fromName: `${model.techName} at ${config.company.name}`,
-            fromEmail: config.senderEmail,
-            to,
-            subject,
-            text: emailPlain(d, model),
-            html,
-            inline,
-            attachments: [{ filename: `Catchy Pest Solutions - What I found at ${model.street}.pdf`.replace(/[\\/:*?"<>|]/g, ''), mimeType: 'application/pdf', data: fs.readFileSync(rend.pdfPath) }],
-          });
-          r.email = 'sent';
-        } catch (err) {
-          r.email = `failed: ${err.message}`;
-        }
-      } else r.email = 'skipped (no address)';
+      if (key === primaryKey) {
+        const sent = { textAtMs: Date.now() };
+        // Text(s): primary and secondary phone only; every quote card attached.
+        const textResults = [];
+        for (const to of targets) textResults.push(await sendText({ to, message: textMessage, mediaUrl: parts.map((p) => p.rend.cardUrl), sendAtMs, from: config.textFrom }));
+        sent.text = textResults.length ? [...new Set(textResults)].join(', ') : 'skipped (no number)';
+        // Email: every quote's photos inline and every PDF attached.
+        if (emailTo) {
+          const to = test ? config.testEmail : emailTo;
+          try {
+            const inline = [{ cid: 'catchy-logo', filename: 'catchy-pest-solutions.png', mimeType: 'image/png', data: fs.readFileSync(LOGO) }];
+            for (const p of parts) {
+              p.photos.forEach((ph) => inline.push({ cid: ph.cid, filename: `${ph.cid}.jpg`, mimeType: 'image/jpeg', data: fs.readFileSync(ph.path) }));
+              if (p.infographic) inline.push({ cid: p.infographicCid, filename: `${p.infographicCid}.jpg`, mimeType: p.infographic.endsWith('.png') ? 'image/png' : 'image/jpeg', data: fs.readFileSync(p.infographic) });
+            }
+            await google.sendMail({
+              fromName: model.signed ? `${model.techName} at ${config.company.name}` : config.company.name,
+              fromEmail: config.senderEmail,
+              to,
+              subject,
+              text: plain,
+              html,
+              inline,
+              attachments: parts.map((p) => ({ filename: `Catchy Pest Solutions - ${p.model.planName} quote for ${p.model.street}.pdf`.replace(/[\\/:*?"<>|]/g, ''), mimeType: 'application/pdf', data: fs.readFileSync(p.rend.pdfPath) })),
+            });
+            sent.email = 'sent';
+          } catch (err) {
+            sent.email = `failed: ${err.message}`;
+          }
+        } else sent.email = 'skipped (no address)';
+        groupSent.set(primaryKey, sent);
+      }
+      const sent = groupSent.get(primaryKey);
+      r.text = sent.text;
+      r.email = sent.email;
+      r.textAt = 'now';
+      r.textAtMs = sent.textAtMs;
+      if (together.length) r.together = together;
 
       // Log (even when a send failed, so a re-run can't double-send).
       try {
@@ -333,11 +475,11 @@ async function main() {
         const phoneId = customer.primaryPhone?.contactMethodId;
         const emailId = customer.primaryEmail?.contactMethodId;
         const date = cal.easternIso(nowMs);
-        const common = { prefix, key, model, post, today, pdfUrl: rend.pdfUrl };
+        const common = { prefix, key, model, post, today, together, pdfUrl: rend.pdfUrl, alsoLinks: (d.alsoPosts || []).map((a) => collected.posts.find((x) => x.ts === a.ts)?.link).filter(Boolean) };
         if (targets.length || numbers.length) {
           await createLogEntry(brio, post.customer.id, { subject: `${prefix} Text`, communicationTypeId: 'SMS', date, content: logBody({ ...common, kind: 'Text', status: r.text, recipient: numbers.map(formatPhone).join(', '), whenMs: nowMs, sendAtMs, message: textBody }) }, phoneId || emailId);
         }
-        const entry = await createLogEntry(brio, post.customer.id, { subject: `${prefix} Email`, communicationTypeId: 'EMAIL_COMMUNICATION', date, content: logBody({ ...common, kind: 'Email', status: r.email, recipient: emailTo || 'no email', whenMs: nowMs, message: emailPlain(d, model), subject: subjectBase }) }, emailId || phoneId);
+        const entry = await createLogEntry(brio, post.customer.id, { subject: `${prefix} Email`, communicationTypeId: 'EMAIL_COMMUNICATION', date, content: logBody({ ...common, kind: 'Email', status: r.email, recipient: emailTo || 'no email', whenMs: nowMs, message: plain, subject: subjectBase }) }, emailId || phoneId);
         r.log = 'logged';
         if (entry?.communicationId) {
           try {
@@ -351,40 +493,51 @@ async function main() {
       }
     }
 
-    // Task.
-    if (args.preview) {
-      r.task = 'preview';
-    } else {
-      try {
-        const title = d.action === 'quote'
-          ? `${test ? 'TEST ' : ''}Inspection finding: ${model.planName} quote — ${model.customerName}`
-          : `${test ? 'TEST ' : ''}${d.action === 'commercial' ? 'Price inspection finding (business)' : 'Quote request from tech'} — ${[post.customer?.firstName, post.customer?.lastName].filter(Boolean).join(' ')}`;
-        const created = await brio.createTask({
-          title: title.slice(0, 120),
-          taskTypeId: config.taskTypeId,
-          statusId: 'ORDER_REQMNT_CREATED',
-          description: taskDescription({ decision: d, post, model, results: r, action: d.action, sentAtMs: nowMs }),
-          employeeId: String(assignee.employeeId),
-          partyId: String(post.customer.id),
-          startDate: cal.easternIso(nowMs),
-          dueDate: taskDue(nowMs, config),
-        });
-        r.task = `created ${created?.taskId || ''} for ${assignee.name}`.trim();
-      } catch (err) {
-        r.task = `failed: ${err.message}`;
-      }
-    }
+    // Task: one per customer, created after the loop.
+    const cid = String(post.customer?.id || post.customerIdPosted || d.ts);
+    if (!taskItems.has(cid)) taskItems.set(cid, []);
+    taskItems.get(cid).push({ decision: d, post, model, results: r, action: d.action, sentAtMs: nowMs });
 
-    const bonus = d.action === 'quote' ? model.bonus : d.action === 'commercial' ? require('./lib/pricing').bonusFor(d.findings, { visitCategory: post.visit?.category }, config).total : 0;
+    const bonus = d.action === 'quote' ? model.bonus : ['commercial', 'custom_quote'].includes(d.action) ? require('./lib/pricing').bonusFor(d.findings, { visitCategory: post.visit?.category }, config).total : 0;
     const missing = (d.missingSteps || []).filter(Boolean);
     rows.push(sheetRow({
       decision: d, post, model,
-      status: d.action === 'quote' ? 'quoted' : d.action === 'commercial' ? 'task for office' : 'quote request',
+      status: d.action === 'quote' ? 'quoted' : ['commercial', 'custom_quote'].includes(d.action) ? 'task for office' : 'quote request',
       counted: d.action !== 'quote_request' && !missing.length,
       reason: missing.length ? `no bonus: missing ${missing.join(', ')}` : d.reason || (model?.request ? 'quote request (no bonus)' : ''),
       bonus: missing.length ? 0 : bonus,
       config,
     }));
+
+    rows.push(...mergedRows({ decision: d, model, posts: collected.posts, config }));
+  }
+
+  // One Briostack task per customer for Steve, covering all their quotes.
+  for (const items of taskItems.values()) {
+    if (args.preview) {
+      const { title, description } = groupTask(items, { test });
+      fs.mkdirSync(path.join(outDir, 'preview'), { recursive: true });
+      fs.writeFileSync(path.join(outDir, 'preview', `customer_${items[0].post.customer?.id || items[0].decision.ts}-task.txt`), `${title}\n\n${description}\n`);
+      items.forEach((it) => ((it.previewOf || it.results).task = 'preview'));
+      continue;
+    }
+    try {
+      const { title, description } = groupTask(items, { test });
+      const created = await brio.createTask({
+        title: title.slice(0, 120),
+        taskTypeId: config.taskTypeId,
+        statusId: 'ORDER_REQMNT_CREATED',
+        description,
+        employeeId: String(assignee.employeeId),
+        partyId: String(items[0].post.customer.id),
+        startDate: cal.easternIso(nowMs),
+        dueDate: taskDue(nowMs, config),
+      });
+      const done = `created ${created?.taskId || ''} for ${assignee.name}`.trim();
+      items.forEach((it, i) => (it.results.task = i === 0 ? done : `${done} (same task as ${items[0].results.key})`));
+    } catch (err) {
+      items.forEach((it) => (it.results.task = `failed: ${err.message}`));
+    }
   }
 
   if (!args.preview && !args['no-sheet'] && sheetId && rows.length) {
@@ -406,4 +559,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { textSendAt, taskDue, textNumbers, logBody, taskDescription };
+module.exports = { groupTask, textSendAt, taskDue, textNumbers, logBody, taskDescription, mergedRows, sheetPostId };

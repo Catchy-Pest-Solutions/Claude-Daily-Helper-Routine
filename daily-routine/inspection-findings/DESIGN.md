@@ -19,7 +19,7 @@ Goal: get current customers (and inspection / one-time customers) to add the
 plan that fixes a problem the tech actually found, and close it by text or
 email so the office call is a backstop.
 
-## Schedule: one run, Mon-Sat at 8:00 AM Eastern
+## Schedule: one run, Mon-Sat at 9:00 AM Eastern
 
 The run processes every channel post since the last successful run (Monday
 covers Saturday and Sunday; Saturday covers Friday; a missed run catches up
@@ -30,13 +30,16 @@ by itself). Office holidays: reuse `src/callReview/calendar.js`.
 2. **Validate** each post (see Checks).
 3. **Quote**: price it (see Pricing), render the quote card and PDF, write the
    email and text.
-4. **Send**: emails go out as each one is ready (from 8 AM); texts are
-   scheduled for **10:00 AM** through Textable `sendAt`. Texts go to the
-   primary and secondary phone only, never a third.
+4. **Send**: the email and text go out together as soon as they're ready
+   (nothing is scheduled: Textable's `sendAt` sent texts early on Nov 11).
+   One text and one email per customer, even with quotes for two plans
+   (Nov 11). Texts go to the primary and secondary phone only, never a
+   third.
 5. **Log** both on the customer's Communications tab, starting
    `[INSPECTION FINDINGS]` (or `[INSPECTION FINDINGS — TEST ...]`), with the
    plan, price, credit amount and credit expiry date.
-6. **Task** for Steve B in Briostack (see Tasks). Nothing goes to Steve in
+6. **Task** for Steve B in Briostack (see Tasks): one per customer, even
+   with several quotes or findings (Nov 11). Nothing goes to Steve in
    Slack.
 7. **Tech messages** in Slack (sent from Daniel's account): a one-line note
    when a post didn't count and why, or a clarification question when
@@ -57,6 +60,9 @@ together for a few days, aiming to go live the week of Nov 9, 2026.
 1. **Photograph the problem up close**, one clear photo per issue.
 2. **Step back and take a wide photo** showing where it is on the house (this
    also shows it's a single-family home or business).
+   (Nov 11: be lenient. Two or more photos where the problem shows, at
+   least one far enough back to tell whose house it is, count for the
+   bonus; a full wide shot of the house isn't required.)
 3. **Voice-to-text what you see**: what it is, exactly where (side of the
    house, room, corner), how much, active or old, what the customer said,
    and what you checked that looked fine.
@@ -103,8 +109,16 @@ together for a few days, aiming to go live the week of Nov 9, 2026.
 
 - Leads from an **Inspection / Consultation (12501)** or **One Time Service
   (12504)** visit pay **1.5x** (extra-thorough inspections on those visits).
-- **One lead per customer per plan**: carpenter bees plus a wasp nest is one
-  Signature lead, paid at the higher amount.
+- **One quote per customer per plan, every finding paid** (Nov 10):
+  carpenter bees plus a wasp nest is one Signature quote, even when they
+  came in separate posts, and the tech is paid for both ($2 + $1). Same for
+  TermiteShield and Critter Control (an entry point plus yard burrows is
+  one Critter quote with exclusion, $2 + $1). A merged post gets its own
+  sheet row (its findings and bonus, "same quote as post ..."); the price
+  stays on the first post's row only.
+  A finding posted after the quote already went out (offer still open)
+  isn't added and earns no extra bonus; the tech gets the "already quoted"
+  note.
 - No weekly cap for now.
 - Future findings (not yet): crawl space encapsulation, attic insulation
   removal/replacement, vent covers, moisture readings over 20%, standing
@@ -160,20 +174,26 @@ honors it at booking from the Communications log.
   quote." Name the visit day, not "yesterday." Never mention AI.
 - **Pitch the fix, not a plan**: here's the problem, here's what it costs to
   fix (the initial fee). The plan name and monthly fee are secondary.
-- **Text**: short, confident, assumes the sale. Initial fee only, then
-  "(details in the picture)". Don't mention the 12-month plan in the text.
+- **Text**: short, confident, assumes the sale. Initial fee only and, in a
+  few fixed words, what it covers ("$399, which covers the soil treatment
+  and bait stations, with a damage warranty"), then "(details in the
+  picture)". Don't mention the 12-month plan in the text.
   Ends with an easy close: "Reply YES and the office will get you
   scheduled." One picture: the quote card.
-- **Quote card** (texted picture): the tech's photo of their home stamped
-  with the address, date and time (from the Slack post), the problem, the
-  price, the 12-month plan and monthly fee, the credit and its expiry.
+- **Quote card** (texted picture, 1080x1920, a phone screen): the tech's
+  photo of their home stamped with the address, date and time (from the
+  Slack post), the problem, the price, the credit and its expiry, the
+  "Price covers" list ending "Then $X a month, starting month 4", and the
+  plan name (12-month plan).
 - **Email**: subject **"What I found at <street address>"**. More
   explanation: the tech's photos (stamped), what was found and where, why it
-  matters (researched, accurate claims), the fix and price, "the initial
-  fee comes with a 3-month warranty," terms (12-month plan, monthly fee from
-  month four) in the details, the infographic for that finding labeled as
+  matters (researched, accurate claims), the fix and price with the same
+  covers words as the text, "How we fix it", terms (12-month plan, monthly
+  fee starting month 4) in the details, the infographic for that finding labeled as
   an example, and the plan's video link at the very bottom.
-- **PDF** attached to the email: the same, laid out as a short proposal.
+- **PDF** attached to the email: the same, laid out as a short proposal,
+  with the card's "Price covers" list and "How we fix it". One page plus
+  the infographic when it fits; otherwise the fix gets its own page 2.
 - **Credibility ("menu")**: say what the tech checked and didn't see,
   phrased as "During today's visit I didn't see any signs of ...". Only for
   things the tech actually checked. Never state "no termites" or "no
@@ -223,7 +243,7 @@ one row per post: date, tech, customer ID, finding, plan, quote, counted
 reads the sheet, so edits stick.
 
 Payroll runs Thursday 5-8 PM; the pay period is Friday-Thursday. With the
-one-day lag, **Thursday's 8 AM run** Slacks Daniel each tech's total for
+one-day lag, **Thursday's morning run** Slacks Daniel each tech's total for
 visits from the previous Thursday through Wednesday, plus a sheet link.
 Thursday's visits roll into next week.
 
@@ -295,6 +315,14 @@ leads; set a real minimum after 2-3 weeks of data.
   unreasonably small or big, and fixing it actually helps the customer.
 - **Bats** (rare) count as rodent droppings: same Critter Control quote,
   plus a one-line alert to #office-only (`C09LNB93MQW`) for a custom quote.
+  Nov 10: any evidence (seen, heard, droppings) earns the $3 bonus, even
+  with thin photos, and even when the customer has Critter Control: bats
+  aren't covered by it, so a Critter customer gets a `custom_quote` task
+  for the office instead of a skip. The tech is asked for more photos.
+- **Covered yard burrows** (Nov 10): no bonus, but the tech is told
+  they're covered and to treat them as part of Critter Control service.
+- **Sheet Post IDs** always contain a ":" (`<ts>:<plan>` or `<ts>:none`):
+  Google Sheets rounds a bare Slack ts as a number.
 - **Customer notes** (preferences, deadlines, who to call) from the tech's
   post go on the office task under "Customer notes", never to the customer.
 - Bonuses are paid for every lead that counts, whether or not the customer
@@ -307,3 +335,26 @@ leads; set a real minimum after 2-3 weeks of data.
   a finding, just without photos (card shows a plain "Your quote" panel;
   email subject "Your quote for <street>"). $0 bonus. Requests for other
   services still become a task for the office.
+- **What the price covers** (Nov 10, Daniel): customers who don't read
+  email only see the text and the card, so both say what the initial fee
+  covers. The words are fixed in `config.json` `priceCovers` (card and
+  PDF list, the text's covers words, "How we fix it", fine print) and
+  filled in by the scripts, the tech's specific finding first, then the
+  plan's other benefits. Each list ends "Then $X a month, starting month 4"
+  (plain, not bold) with the customer's real monthly fee. "3-month
+  warranty" is gone: it only ever meant what the initial fee covers.
+  - Signature: the finding's line (carpenter bee holes foamed and outside
+    wood treated; nests treated, removed and an outside treatment that
+    prevents new ones), first 3 treatments over 3 months (first two 2 weeks
+    apart; the third usually comes right before billing starts in month 4),
+    30+ pests inside and out, free return visits between treatments.
+  - Critter: inspection and full trap/station setup, 7 days of daily
+    visits, the two-week follow-up (droppings and burrows), entry points
+    sealed with foam, copper mesh and hardware cloth (with-exclusion price
+    only; never for yard burrows), granular repellent, 3 months of
+    coverage. The email and PDF say we don't repair foundations or replace
+    siding, shingles or roofing.
+  - TermiteShield: the finding treated directly, liquid soil treatment,
+    bait stations installed (about every 15-20 feet), retreatment and
+    damage warranty. The warranty covers new damage while the plan is
+    active, never existing damage, and never names a payout amount.

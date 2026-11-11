@@ -62,8 +62,9 @@ test('exclusion: assumed for rodent signs unless the tech says no; never for yar
   assert.equal(pricing.exclusionFor(['termites'], {}, config), null);
 });
 
-test('bonus: one lead per plan at the higher amount, 1.5x on inspection / one-time visits', () => {
-  assert.deepEqual(pricing.bonusFor(['carpenter_bees', 'stinging_nest'], {}, config).perPlan, { signature: 2 });
+test('bonus: every finding is paid, even on one quote; 1.5x on inspection / one-time visits', () => {
+  assert.deepEqual(pricing.bonusFor(['carpenter_bees', 'stinging_nest'], {}, config).perPlan, { signature: 3 });
+  assert.deepEqual(pricing.bonusFor(['exclusion_needed', 'yard_burrows'], {}, config).perPlan, { critter: 3 });
   assert.equal(pricing.bonusFor(['rodent_droppings'], { visitCategory: '12504' }, config).total, 4.5);
   assert.equal(pricing.bonusFor(['termites', 'rodent_droppings'], { visitCategory: 'GPCONETIME' }, config).total, 7);
 });
@@ -129,6 +130,39 @@ test('decisions that must not go out are refused', () => {
   assert.match(Q.checkDecision({ ...decision, findings: ['termites', 'rodent_droppings'] }, post, config).join(), /one plan/);
 });
 
+test('one text and one email per customer: the first quote carries the text for all of them', () => {
+  const termite = { ts: '1.2', action: 'quote', findings: ['wood_to_ground'], plan: 'termite', headline: 'Siding to ground', found: ['x'], email: { body: ['Siding touches the ground.'] } };
+  const other = { ...post, ts: '1.2' };
+  const posts = [post, other, { ...post, ts: '2.1', customer: { ...post.customer, id: '11111' } }];
+  const decisions = [decision, termite, { ...decision, ts: '2.1' }];
+  const groups = Q.customerGroups(decisions, posts);
+  assert.equal(groups.get('1.1:critter').primary, true);
+  assert.equal(groups.get('1.2:termite').primary, false);
+  assert.equal(groups.get('1.2:termite').group.length, 2);
+  assert.equal(groups.get('2.1:critter').group.length, 1);
+  // The second quote has no text of its own; it needs its email section.
+  assert.deepEqual(Q.checkDecision(termite, other, config, posts, { secondary: true }), []);
+  assert.match(Q.checkDecision({ ...termite, text: { body: 'x' } }, other, config, posts, { secondary: true }).join(), /leave text\.body off/);
+  // The one text quotes both prices, each in its covers words, and the email.
+  const models = [Q.quoteModel(decision, post, config, { today: '2026-11-06' }), Q.quoteModel(termite, other, config, { today: '2026-11-06' })];
+  const good = `We can take care of the mice for ${models[0].initial}, which covers ${models[0].coversText}, and protect your home for ${models[1].initial}, which covers ${models[1].coversText} (details in the pictures). I also emailed you the photos and details. Reply YES`;
+  assert.deepEqual(Q.checkGroupText(good, models, { hasEmail: true }), []);
+  assert.match(Q.checkGroupText(good.replace(models[1].initial, '$1'), models, { hasEmail: true }).join(), /TermiteShield initial fee/);
+  assert.match(Q.checkGroupText(good.replace(' I also emailed you the photos and details.', ''), models, { hasEmail: true }).join(), /emailed them/);
+  assert.match(Q.checkGroupText(good, models, { hasEmail: false }).join(), /no email address/);
+});
+
+test("techs who don't sign: no name in the customer's messages, cards say 'What we found'", () => {
+  const unsigned = { ...post, tech: { ...post.tech, signMessages: false } };
+  assert.match(Q.checkDecision(decision, unsigned, config).join(), /Dustin doesn't sign/);
+  const plain = { ...decision, text: { body: decision.text.body.replace("it's Dustin", 'this is Catchy Pest Solutions') } };
+  assert.deepEqual(Q.checkDecision(plain, unsigned, config), []);
+  const m = Q.quoteModel(plain, unsigned, config, { today: '2026-11-06' });
+  assert.equal(m.foundBy, 'What we found');
+  assert.equal(m.signed, false);
+  assert.equal(Q.quoteModel(decision, post, config, { today: '2026-11-06' }).foundBy, 'What Dustin found');
+});
+
 test('texts go at 10 AM; tasks are due 1 PM, Saturday runs move to Monday', () => {
   const sat8 = cal.easternToMs('2026-11-07', '08:00');
   assert.equal(taskDue(sat8, config), cal.easternIso(cal.easternToMs('2026-11-09', '13:00')));
@@ -155,7 +189,7 @@ test('sheet CSV round-trips commas, quotes and newlines', () => {
   assert.deepEqual(sheet.parseCsv(sheet.toCsv(rows)), rows);
 });
 
-test('sheet layout: pay weeks newest first, a SUMIFS total per tech and for the week', () => {
+test('sheet layout: pay weeks newest first, each tech followed by a SUMIFS total, then the week', () => {
   assert.equal(sheet.payWeekOf('2026-11-06'), 'Nov 5 - Nov 11, 2026');
   assert.equal(sheet.payWeekOf('11/12/2026'), 'Nov 12 - Nov 18, 2026');
   const out = sheet.layout([
@@ -166,11 +200,14 @@ test('sheet layout: pay weeks newest first, a SUMIFS total per tech and for the 
   const col = (name) => sheet.COLUMNS.indexOf(name);
   assert.equal(out[1][col('Pay week')], 'Nov 12 - Nov 18, 2026');
   assert.equal(out[2][col('Tech')], 'Aaron W - week total');
-  assert.equal(out[2][col('Bonus')], '=DOLLAR(SUMIFS(J:J,A:A,A2,C:C,"Aaron W"))');
+  assert.equal(out[2][col('Bonus')], '=DOLLAR(SUMIFS(F:F,A:A,A2,B:B,"Aaron W"))');
   assert.equal(out[3][col('Tech')], 'ALL TECHS - week total');
   assert.equal(out[5][col('Tech')], 'Aaron W'); // older week, sorted by tech
-  assert.equal(out[6][col('Bonus')], '$4.50');
-  assert.equal(out[6][col('Quote')], '$200');
+  assert.equal(out[6][col('Tech')], 'Aaron W - week total'); // right under Aaron's leads
+  assert.equal(out[7][col('Bonus')], '$4.50');
+  assert.equal(out[7][col('Quote')], '$200');
+  assert.equal(out[8][col('Tech')], 'Dustin M. - week total');
+  assert.equal(out[9][col('Tech')], 'ALL TECHS - week total');
   // Reading it back skips the total rows.
   const back = sheet.rowsToObjects(sheet.parseCsv(sheet.toCsv(out))).items;
   assert.deepEqual(back.map((r) => r['Post ID']), ['2:termite', '3:signature', '1:critter']);
@@ -204,4 +241,136 @@ test('quote request for one of our plans is priced like a finding, without photo
   // Needs one of our plans; a finding still needs photos.
   assert.match(Q.checkDecision({ ...req, plan: 'mosquito' }, noPhotos, config).join(), /quote request needs plan/);
   assert.match(Q.checkDecision(decision, noPhotos, config).join(), /no photos/);
+});
+
+test('price covers: the tech\'s finding goes to the top, exclusion only on the with-exclusion price, monthly line last', () => {
+  const sig = Q.priceCovers('signature', ['stinging_nest'], null, '$44', config);
+  assert.match(sig.lines[0], /^Active nests treated and removed/);
+  assert.ok(!sig.lines.some((l) => /carpenter/i.test(l)));
+  assert.deepEqual(sig.items[0], { text: sig.lines[0], top: true });
+  assert.equal(sig.monthlyLine, 'Then $44 a month, starting month 4');
+  assert.match(sig.text, /removing the nests/);
+
+  const gap = Q.priceCovers('critter', ['exclusion_needed'], true, '$49', config);
+  assert.match(gap.lines[0], /^Entry points sealed/);
+  assert.match(gap.text, /^sealing the entry points/);
+  assert.match(gap.details[0], /don't do construction repairs/);
+
+  const burrows = Q.priceCovers('critter', ['yard_burrows'], false, '$49', config);
+  assert.ok(!burrows.lines.some((l) => /Entry points/.test(l)));
+  assert.ok(burrows.lines.some((l) => /Two-week follow-up/.test(l)));
+  assert.ok(!/entry points/.test(burrows.text));
+  assert.match(burrows.text, /granular repellent/);
+
+  const droppings = Q.priceCovers('critter', ['rodent_droppings'], true, '$49', config);
+  assert.ok(droppings.lines.some((l) => /Entry points/.test(l)));
+  assert.match(droppings.text, /sealing the entry points/);
+
+  const termite = Q.priceCovers('termite', ['wood_to_ground'], null, '$29', config);
+  assert.equal(termite.lines[0], 'Wood-to-ground areas treated directly');
+  assert.equal(termite.text, 'the soil treatment and bait stations, with a damage warranty');
+  assert.match(termite.finePrint.join(' '), /not damage that's already there/);
+  const request = Q.priceCovers('termite', ['quote_request'], null, '$29', config);
+  assert.ok(request.items.every((i) => !i.top));
+});
+
+test('the text must say what the price covers in the fixed words', () => {
+  const m = Q.quoteModel(decision, post, config, { today: '2026-11-06' });
+  assert.equal(m.monthlyLine, `Then ${m.monthly} a month, starting month 4`);
+  assert.match(Q.checkTextCovers(decision.text.body, m), /which covers 7 days of daily visits/);
+  const good = decision.text.body.replace('$200 (details', `$200, which covers ${m.coversText} (details`);
+  assert.equal(Q.checkTextCovers(good, m), null);
+  assert.equal(Q.checkTextCovers(good.replace('7 days', '7  Days'), m), null);
+});
+
+test('one quote per plan: text pieces join, and other posts merge in with their own findings', () => {
+  assert.equal(Q.priceCovers('signature', ['carpenter_bees', 'stinging_nest'], null, '$44', config).text, 'foaming the carpenter bee holes, removing the nests and your first 3 treatments');
+  assert.equal(Q.priceCovers('critter', ['exclusion_needed', 'yard_burrows'], true, '$49', config).text, 'sealing the entry points, 7 days of daily visits and a granular repellent');
+
+  // Entry points in one post, mole burrows in another: one Critter quote with exclusion.
+  const gapPost = { ...post, ts: '1.1' };
+  const burrowPost = { ...post, ts: '2.2' };
+  const merged = { ...decision, findings: ['exclusion_needed'], techSaysNoExclusion: false, alsoPosts: [{ ts: '2.2', findings: ['yard_burrows'] }] };
+  assert.deepEqual(Q.checkDecision(merged, gapPost, config, [gapPost, burrowPost]), []);
+  assert.deepEqual(Q.allFindings(merged), ['exclusion_needed', 'yard_burrows']);
+  const m = Q.quoteModel(merged, gapPost, config, { today: '2026-11-06' });
+  assert.equal(m.exclusion, true);
+  assert.equal(m.bonus, 3); // this post's own finding ($2 x 1.5 one-time visit); the burrow post is paid on its own row
+
+  const stranger = { ...burrowPost, customer: { ...post.customer, id: '11111' } };
+  assert.match(Q.checkDecision(merged, gapPost, config, [gapPost, stranger]).join(), /different customer/);
+  assert.match(Q.checkDecision(merged, gapPost, config, [gapPost]).join(), /no collected post/);
+  assert.match(Q.checkMerges(merged, [merged, { ts: '2.2', action: 'quote', findings: ['yard_burrows'] }], config).join(), /can't have its own critter decision/);
+  assert.deepEqual(Q.checkMerges(merged, [merged, { ts: '2.2', action: 'quote', findings: ['termites'] }], config), []);
+});
+
+test('a merged post gets its own sheet row: its findings, its bonus, no second quote', () => {
+  const { mergedRows } = require('../send');
+  const other = { ...post, ts: '2.2', tech: { name: 'Aaron', fullName: 'Aaron W' }, visit: { date: '2026-11-06', category: 'RODENT' } };
+  const merged = { ...decision, findings: ['exclusion_needed'], techSaysNoExclusion: false, alsoPosts: [{ ts: '2.2', findings: ['yard_burrows'] }] };
+  const m = Q.quoteModel(merged, post, config, { today: '2026-11-06' });
+  const [row] = mergedRows({ decision: merged, model: m, posts: [post, other], config });
+  assert.equal(row['Post ID'], '2.2:critter');
+  assert.equal(row.Tech, 'Aaron W');
+  assert.equal(row.Bonus, 1);
+  assert.equal(row.Quote, '');
+  assert.equal(row.Status, 'quoted');
+  assert.match(row.Finding, /burrows/);
+  assert.match(row.Notes, /same quote as post 1\.1/);
+  const [noBonus] = mergedRows({ decision: { ...merged, alsoPosts: [{ ts: '2.2', findings: ['yard_burrows'], missingSteps: ['wide photo'] }] }, model: m, posts: [post, other], config });
+  assert.deepEqual([noBonus.Bonus, noBonus.Counted], [0, 'no']);
+});
+
+test('sheet Post IDs always keep a ":" so Google Sheets doesn\'t round the Slack ts', () => {
+  const { sheetPostId } = require('../send');
+  assert.equal(sheetPostId({ ts: '1794243334.617239', action: 'skip' }), '1794243334.617239:none');
+  assert.equal(sheetPostId({ ts: '1794251167.644139', action: 'quote', plan: 'termite' }), '1794251167.644139:termite');
+});
+
+test('bats on a Critter Control customer: custom_quote, a task for the office, no coverage stop', () => {
+  const covered = { ...post, checks: { covered: { critter: 'HomeShield - Critter Control' }, priorOfferPlans: [] } };
+  const bats = { ts: '1.1', action: 'custom_quote', findings: ['rodent_droppings'], plan: 'critter', officeAlert: 'Possible bats.' };
+  assert.deepEqual(Q.checkDecision(bats, covered, config), []);
+  assert.match(Q.checkDecision({ ...bats, action: 'quote' }, covered, config).join(), /already covered/);
+});
+
+test('tech notes: thank you with the bonus and the pay-week total, read from the sheet', () => {
+  const { notesFor } = require('../tech-notes');
+  const week = 'Nov 5 - Nov 11, 2026';
+  const rows = [
+    { 'Pay week': week, Tech: 'Aaron W', Customer: 'Karen Gerry', Quote: '$399', Plan: 'Carolina TermiteShield', Bonus: '$2', Counted: 'yes', 'Post ID': '1.1:termite' },
+    { 'Pay week': week, Tech: 'Aaron W', Customer: 'Jim Kerley', Quote: '$324', Bonus: '$0', Counted: 'no', 'Post ID': '2.2:critter' },
+    { 'Pay week': week, Tech: 'Aaron W', Customer: 'Susan Justus', Quote: '$399', Bonus: '$2', Counted: 'yes', 'Post ID': '3.3:termite' },
+  ];
+  const posts = ['1.1', '2.2', '3.3', '4.4'].map((ts) => ({ ts, tech: { name: 'Aaron', fullName: 'Aaron W' } }));
+  const notes = notesFor({
+    rows,
+    posts,
+    decisions: [
+      { ts: '1.1', action: 'quote', plan: 'termite' },
+      { ts: '2.2', action: 'quote', plan: 'critter', techMessage: 'Next time add a second photo.' },
+      { ts: '4.4', action: 'skip', techMessage: "Didn't count: they already have Critter Control." },
+    ],
+  });
+  assert.equal(notes[0].text, 'Quote sent to Karen Gerry (TermiteShield, $399). $2 bonus added, thank you Aaron! Your bonuses this pay week (Nov 5 - Nov 11): $4.');
+  assert.equal(notes[1].text, 'Quote sent to Jim Kerley (Critter Control, $324). Next time add a second photo. Your bonuses this pay week (Nov 5 - Nov 11): $4.');
+  assert.equal(notes[2].text, "Didn't count: they already have Critter Control.");
+});
+
+test('one Briostack task per customer: both quotes under one header and one Next', () => {
+  const { groupTask } = require('../send');
+  const termite = { ts: '1.2', action: 'quote', findings: ['wood_to_ground'], plan: 'termite', headline: 'Siding to ground', found: ['Siding touches the soil.'], email: { body: ['x'] } };
+  const results = { email: 'sent', text: 'sent', textAtMs: Date.parse('2026-11-06T15:00:00Z') };
+  const items = [
+    { decision, post, model: Q.quoteModel(decision, post, config, { today: '2026-11-06' }), results, action: 'quote', sentAtMs: results.textAtMs },
+    { decision: termite, post, model: Q.quoteModel(termite, post, config, { today: '2026-11-06' }), results, action: 'quote', sentAtMs: results.textAtMs },
+  ];
+  const one = groupTask(items.slice(0, 1), { test: false });
+  assert.equal(one.title, 'Inspection finding: HomeShield Critter Control quote — Pat Sample');
+  const both = groupTask(items, { test: false });
+  assert.equal(both.title, 'Inspection findings: HomeShield Critter Control quote + Carolina TermiteShield quote — Pat Sample');
+  assert.equal(both.description.match(/Customer ID: 99999/g).length, 1);
+  assert.equal(both.description.match(/^Next:/gm).length, 1);
+  assert.match(both.description, /1\. HomeShield Critter Control quote\nFound by Dustin/);
+  assert.match(both.description, /2\. Carolina TermiteShield quote\nFound by Dustin/);
 });

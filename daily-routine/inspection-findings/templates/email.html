@@ -7,18 +7,26 @@
   <tr><td style="padding:26px 32px 10px 32px;"><img src="cid:{{logoCid}}" width="190" alt="Catchy Pest Solutions" style="display:block; width:190px; max-width:190px; height:auto; border:0;"></td></tr>
   <tr><td style="padding:10px 32px 0 32px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.55; color:#0E120E;">
     {{#intro}}<p style="margin:0 0 16px 0;">{{{.}}}</p>{{/intro}}
+    {{#quotes}}
+    {{#multi}}<p style="margin:8px 0 12px 0; font-size:20px; line-height:1.3; font-weight:bold; color:#0E120E;">{{number}}. {{headline}}</p>{{/multi}}
     {{#photos}}<p style="margin:4px 0 4px 0;"><img src="cid:{{cid}}" width="536" alt="{{caption}}" style="display:block; width:100%; max-width:536px; height:auto; border-radius:6px;"></p><p style="margin:0 0 16px 0; font-size:13px; color:#5C665D;">{{caption}}</p>{{/photos}}
     {{#body}}<p style="margin:0 0 16px 0;">{{{.}}}</p>{{/body}}
     {{#hasWhy}}<p style="margin:0 0 6px 0;"><strong>Why it matters</strong></p><ul style="margin:0 0 16px 0; padding-left:20px;">{{#why}}<li style="margin:0 0 6px 0;">{{.}}</li>{{/why}}</ul>{{/hasWhy}}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#EEF1EE; border-left:8px solid #15BA0D; border-radius:8px; margin:4px 0 18px 0;"><tr><td style="padding:16px 20px; font-family:Arial, Helvetica, sans-serif; color:#0E120E;">
-      <div style="font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#11960B; font-weight:bold;">The fix</div>
+      <div style="font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#11960B; font-weight:bold;">{{fixTitle}}</div>
       <div style="font-size:34px; font-weight:bold; line-height:1.2;">{{initial}}</div>
-      <div style="font-size:15px; line-height:1.5;">{{fixLine}} The initial fee comes with a 3-month warranty.{{#credit}}<br>Includes your <strong>{{credit}} credit</strong>, good through {{creditExpiresLong}}.{{/credit}}</div>
-      <div style="font-size:12px; line-height:1.5; color:#5C665D; margin-top:8px;">Details: {{planName}}, 12-month plan. {{initial}} covers the first 3 months, then {{monthly}} a month (billed every 4 weeks) from month four. No annual commitment: {{noAnnualInitial}} initial, same monthly fee. The full quote is attached as a PDF.</div>
+      <div style="font-size:15px; line-height:1.5;">{{fixLine}}{{#credit}}<br>Includes your <strong>{{credit}} credit</strong>, good through {{creditExpiresLong}}.{{/credit}}</div>
+      <div style="font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#11960B; font-weight:bold; margin-top:14px;">How we fix it</div>
+      {{#coversDetails}}<div style="font-size:15px; line-height:1.5; margin-top:6px;">{{.}}</div>{{/coversDetails}}
+      {{#finePrint}}<div style="font-size:12px; line-height:1.5; color:#5C665D; margin-top:8px;">{{.}}</div>{{/finePrint}}
+      <div style="font-size:12px; line-height:1.5; color:#5C665D; margin-top:8px;">Details: {{planName}}, 12-month plan, billed every 4 weeks. No annual commitment: {{noAnnualInitial}} initial, same monthly fee. The full quote is attached as a PDF.</div>
     </td></tr></table>
+    {{#multi}}{{#infographic}}<p style="margin:8px 0 4px 0;"><img src="cid:{{infographicCid}}" width="536" alt="Example" style="display:block; width:100%; max-width:536px; height:auto; border-radius:6px;"></p><p style="margin:0 0 16px 0; font-size:12px; color:#5C665D;">Example illustration, not a photo of your home.</p>{{/infographic}}
+    {{#video}}<p style="margin:0 0 24px 0; font-size:14px;">Short video about {{planName}}: <a href="{{video}}" style="color:#11960B;">{{video}}</a></p>{{/video}}{{/multi}}
+    {{/quotes}}
     {{#closing}}<p style="margin:0 0 16px 0;">{{{.}}}</p>{{/closing}}
-    {{#infographic}}<p style="margin:8px 0 4px 0;"><img src="cid:{{infographicCid}}" width="536" alt="Example" style="display:block; width:100%; max-width:536px; height:auto; border-radius:6px;"></p><p style="margin:0 0 16px 0; font-size:12px; color:#5C665D;">Example illustration, not a photo of your home.</p>{{/infographic}}
-    {{#video}}<p style="margin:0 0 16px 0; font-size:14px;">Short video about {{planName}}: <a href="{{video}}" style="color:#11960B;">{{video}}</a></p>{{/video}}
+    {{#single}}{{#infographic}}<p style="margin:8px 0 4px 0;"><img src="cid:{{infographicCid}}" width="536" alt="Example" style="display:block; width:100%; max-width:536px; height:auto; border-radius:6px;"></p><p style="margin:0 0 16px 0; font-size:12px; color:#5C665D;">Example illustration, not a photo of your home.</p>{{/infographic}}
+    {{#video}}<p style="margin:0 0 16px 0; font-size:14px;">Short video about {{planName}}: <a href="{{video}}" style="color:#11960B;">{{video}}</a></p>{{/video}}{{/single}}
   </td></tr>
   <tr><td style="padding:0 32px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid #DDE3DD; font-size:0; line-height:0;">&nbsp;</td></tr></table></td></tr>
   <tr><td style="padding:14px 32px 24px 32px; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:1.6; color:#5C665D;"><strong style="color:#0E120E;">{{company.name}}</strong><br>{{company.address}}<br><a href="tel:{{officePhoneDigits}}" style="color:#0E120E; text-decoration:none;">{{officePhone}}</a> &middot; <a href="https://{{company.website}}" style="color:#11960B; text-decoration:none;">{{company.website}}</a></td></tr>

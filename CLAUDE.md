@@ -16,6 +16,9 @@ Reference docs, read the relevant one before touching an integration:
   in the ATS phone API.
 - `daily-routine/lead-followup/README.md`: the new-customer follow-up
   routine (prepare/render/send scripts, the Apps Script relay, test mode).
+- `daily-routine/daily-summary/ROUTINE_PROMPT.md`: the daily technician
+  briefing, office check-list, trap counts and same-address add-on tasks
+  (Briostack API + Slack). Change the routine by editing this file.
 
 Credentials come from the environment (see `.env.example`). Never write
 them into files, messages or commits.

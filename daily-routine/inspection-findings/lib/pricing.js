@@ -120,15 +120,16 @@ function exclusionFor(findingKeys, { techSaysNoExclusion = false } = {}, config)
   return !techSaysNoExclusion;
 }
 
-// One lead per customer per plan, paid at the highest finding's bonus;
-// 1.5x when the visit was an Inspection or One Time Service.
+// One quote per customer per plan, but every finding on it is paid (Daniel,
+// Nov 10: carpenter bees + a wasp nest = $2 + $1); 1.5x when the visit was
+// an Inspection or One Time Service.
 function bonusFor(findingKeys, { visitCategory } = {}, config) {
   const byPlan = {};
-  for (const k of findingKeys) {
+  for (const k of new Set(findingKeys)) {
     const f = config.findings.find((x) => x.key === k);
     if (!f) throw new Error(`unknown finding ${k}`);
     const p = f.plan || 'quote_request';
-    byPlan[p] = Math.max(byPlan[p] ?? 0, f.bonus);
+    byPlan[p] = (byPlan[p] ?? 0) + f.bonus;
   }
   const mult = config.inspectionCategories.includes(String(visitCategory || '')) ? config.bonusMultiplierInspection : 1;
   const perPlan = Object.fromEntries(Object.entries(byPlan).map(([p, b]) => [p, Math.round(b * mult * 100) / 100]));
