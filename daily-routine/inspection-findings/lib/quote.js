@@ -4,6 +4,7 @@
 // message can't change what the customer is quoted: the message is checked
 // against the computed price instead.
 const pricing = require('./pricing');
+const bat = require('./bat');
 const cal = require('../../src/callReview/calendar');
 
 const ACTIONS = ['quote', 'commercial', 'custom_quote', 'quote_request', 'skip', 'ask'];
@@ -63,6 +64,15 @@ function checkDecision(decision, post, config, allPosts = [], { secondary = fals
 
   // Hard stops the routine should already have caught.
   const plan = decision.plan || plans[0];
+  if (plan === 'bat') {
+    errs.push(...bat.checkBatInputs(decision.bat));
+    if (decision.bat?.approved) {
+      const ok = batApproval(post);
+      if (!ok) errs.push('bat.approved: Daniel hasn\'t replied "approve" in the post\'s thread yet (leave approved off: it goes to him as a draft)');
+      else if (ok.price != null && Number(decision.bat.approvedPrice) !== ok.price) errs.push(`bat.approvedPrice must be the $${ok.price} Daniel approved`);
+      else if (ok.price == null && decision.bat.approvedPrice != null) errs.push('Daniel approved without a price: leave bat.approvedPrice off (the formula price goes out)');
+    } else if (decision.bat?.approvedPrice != null) errs.push('bat.approvedPrice only goes with bat.approved');
+  }
   if (post.checks?.catchyClub) errs.push('Catchy Club customer: skip');
   if (post.checks?.covered?.[plan]) errs.push(`already covered by ${post.checks.covered[plan]}: skip`);
   if ((post.checks?.priorOfferPlans || []).includes(plan) && !decision.allowRepeat) errs.push(`${plan} was already quoted and the offer is still open: skip`);
@@ -111,9 +121,12 @@ function checkMerges(decision, decisions, config) {
 // and email.closing wrap the email; every quote adds its own section
 // (headline, photos, email.body, why, the fix box). Returns lead key ->
 // { primary, group: [decisions] } for every quote decision.
+// A bat quote Daniel hasn't approved yet: rendered and sent to him only.
+const isBatDraft = (d) => d.action === 'quote' && d.plan === 'bat' && !d.bat?.approved;
+
 function customerGroups(decisions, posts) {
   const byCustomer = new Map();
-  for (const d of decisions.filter((x) => x.action === 'quote')) {
+  for (const d of decisions.filter((x) => x.action === 'quote' && !isBatDraft(x))) {
     const post = posts.find((p) => p.ts === d.ts);
     const id = String(post?.customer?.id || d.ts);
     if (!byCustomer.has(id)) byCustomer.set(id, []);
@@ -187,7 +200,9 @@ function quoteModel(decision, post, config, { today }) {
   const findings = allFindings(decision);
   const plan = decision.plan || config.findings.find((f) => f.key === findings[0]).plan;
   const exclusion = plan !== 'critter' ? null : request ? !decision.techSaysNoExclusion : pricing.exclusionFor(findings, { techSaysNoExclusion: Boolean(decision.techSaysNoExclusion) }, config);
-  const price = pricing.priceFor(plan, post.plans, config, { exclusion: exclusion ?? true });
+  const isBat = plan === 'bat';
+  const batQuote = isBat ? bat.batPrice({ ...(decision.bat || {}), existingCustomer: isExistingCustomer(post) }, config, { approvedPrice: decision.bat?.approved ? decision.bat.approvedPrice ?? null : null }) : null;
+  const price = isBat ? batPriceObject(batQuote, config) : pricing.priceFor(plan, post.plans, config, { exclusion: exclusion ?? true });
   const creditExpires = pricing.creditExpiry(today, config);
   const bonus = pricing.bonusFor(decision.findings, { visitCategory: post.visit?.category }, config);
   const visitDate = post.visit?.date || post.postDate;
@@ -203,13 +218,22 @@ function quoteModel(decision, post, config, { today }) {
     monthly: money(price.monthly),
     regularInitial: money(price.regularInitial),
     credit: price.credit > 0 ? money(price.credit) : null,
-    creditReason: { other_plan: `50% off with your ${post.plans.otherPlans[0] || 'current plan'}`, visit_credit: 'what you paid for your inspection visit', returning: 'returning-customer discount' }[price.tier],
-    creditReasonOffice: { other_plan: `50% off because they have ${post.plans.otherPlans[0] || 'another plan'}`, visit_credit: 'what they paid for their inspection visits', returning: '10% returning-customer discount' }[price.tier],
+    // Bat Remediation: one charge, no monthly fee, a consultation credit.
+    recurring: !isBat,
+    bat: batQuote,
+    batDraft: isBat && !decision.bat?.approved,
+    creditLabel: isBat ? 'consultation credit' : 'credit',
+    planLine: isBat ? `${price.planName}: one charge, no monthly fee` : `${price.planName}, 12-month plan`,
+    detailsLine: isBat
+      ? `Details: ${price.planName}, one charge due when the initial installation and exclusion are done, no monthly fee. The full quote and agreement are attached as a PDF.`
+      : `Details: ${price.planName}, 12-month plan, billed every 4 weeks. No annual commitment: ${money(price.noAnnualInitial)} initial, same monthly fee. The full quote is attached as a PDF.`,
+    creditReason: isBat ? 'your consultation credit' : { other_plan: `50% off with your ${post.plans.otherPlans[0] || 'current plan'}`, visit_credit: 'what you paid for your inspection visit', returning: 'returning-customer discount' }[price.tier],
+    creditReasonOffice: isBat ? `${isExistingCustomer(post) ? 'existing-customer' : 'new-customer'} consultation credit` : { other_plan: `50% off because they have ${post.plans.otherPlans[0] || 'another plan'}`, visit_credit: 'what they paid for their inspection visits', returning: '10% returning-customer discount' }[price.tier],
     creditExpires: shortDate(creditExpires),
     creditExpiresLong: longDate(creditExpires),
     creditExpiresYmd: creditExpires,
     noAnnualInitial: money(price.noAnnualInitial),
-    fixLine: `${money(price.initial)} covers ${covers.text}. Then ${money(price.monthly)} a month, starting month 4, on ${price.planName}.`,
+    fixLine: isBat ? `${money(price.initial)} covers ${covers.text}. One charge, no monthly fee.` : `${money(price.initial)} covers ${covers.text}. Then ${money(price.monthly)} a month, starting month 4, on ${price.planName}.`,
     bonus: request ? bonus.perPlan.quote_request ?? 0 : bonus.perPlan[plan] ?? 0,
     bonusMultiplier: bonus.multiplier,
     // Unsigned techs (signMessages false): "our technician", "What we found".
@@ -224,14 +248,38 @@ function quoteModel(decision, post, config, { today }) {
     street: post.customer?.street || post.customer?.serviceAddress || '',
     stampWhen: stampWhen(post),
     customerName: [post.customer?.firstName, post.customer?.lastName].filter(Boolean).join(' '),
-    video: config.plans[plan].video,
+    video: config.plans[plan]?.video || null,
     coversLines: covers.lines,
     coversItems: covers.items,
-    monthlyLine: covers.monthlyLine,
+    monthlyLine: isBat ? '' : covers.monthlyLine,
     coversText: covers.text,
     coversDetails: covers.details,
     finePrint: covers.finePrint,
   };
+}
+
+// A customer with any active service (bats are found on service visits,
+// so nearly always) gets the $250 consultation credit; new ones $149.
+function isExistingCustomer(post) {
+  return post.customer?.status === 'CUSTOMER_ACTIVE' || (post.plans?.active || []).length > 0;
+}
+
+// A bat quote in the shape pricing.priceFor returns, so the templates and
+// checks treat it like any other quote.
+function batPriceObject(q, config) {
+  return { plan: 'bat', planName: config.batRemediation.name, exclusion: null, tier: 'consult_credit', reason: `${money(q.credit)} consultation credit`, regularInitial: q.list, regularMonthly: 0, initial: q.final, monthly: 0, credit: q.credit, noAnnualInitial: q.final };
+}
+
+// Daniel's approval of a bat draft: his latest reply in the post's thread
+// that says "approve" (and the price, when he changed it).
+function batApproval(post) {
+  // Only a reply that starts with "approve": the routine's own posts in
+  // the thread come from Daniel's account too (the draft says "Reply approve").
+  const replies = (post.thread || []).filter((r) => r.fromDaniel && /^\s*\**approved?\b/i.test(r.text || ''));
+  const last = replies[replies.length - 1];
+  if (!last) return null;
+  const m = /\$\s?([\d,]+)/.exec(last.text);
+  return { ts: last.ts, price: m ? Number(m[1].replace(/,/g, '')) : null, text: last.text };
 }
 
 // The text must quote the computed initial fee and no other price.
@@ -269,4 +317,4 @@ function checkedSentence(items, visitPhrase = 'the visit') {
   return `During ${visitPhrase} I didn't see any signs of ${joined}.`;
 }
 
-module.exports = { customerGroups, checkGroupText, checkQuoteMessages, allFindings, stampWhen, checkMerges, isQuoteRequest, ACTIONS, checkDecision, quoteModel, priceCovers, checkTextPrice, checkTextCovers, checkDayNames, checkedSentence, leadKey, money, longDate, shortDate };
+module.exports = { isBatDraft, batApproval, isExistingCustomer, customerGroups, checkGroupText, checkQuoteMessages, allFindings, stampWhen, checkMerges, isQuoteRequest, ACTIONS, checkDecision, quoteModel, priceCovers, checkTextPrice, checkTextCovers, checkDayNames, checkedSentence, leadKey, money, longDate, shortDate };

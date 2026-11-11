@@ -102,7 +102,7 @@ action per post per plan:
 
 Findings keys (config.json `findings`): `termites`, `rodent_droppings`,
 `carpenter_bees`, `exclusion_needed`, `wood_to_ground`, `stinging_nest`,
-`yard_burrows`, `quote_request`.
+`yard_burrows`, `bats`, `quote_request`.
 
 **Exclusion** (Critter Control): rodent signs inside the home, crawl space
 or attic mean exclusion unless the tech says it isn't needed. "No entry
@@ -116,23 +116,64 @@ unreasonably small or big, and fixing it actually helps the customer. A
 vague "could use exclusion", a hairline crack, or a job beyond our
 exclusion work (a missing wall, a roof repair) doesn't count: skip or ask.
 
-**Bats** (rare): any evidence counts (seen, heard, or droppings piled in
-one line under a roof edge or porch ceiling) as `rodent_droppings`, the
-$3 bonus (Daniel, Nov 10). Bats aren't covered by Critter Control (we set
-up a Critter Control service for the exclusion and cleanup, but it's a
-custom quote), so having Critter Control doesn't skip it:
-- No Critter Control: quote Critter Control like rodent droppings.
-- Has Critter Control: `"action": "custom_quote"`, `"plan": "critter"`:
-  a task for the office to price it, nothing to the customer.
-- A business: `commercial` as usual.
+**Bats** (rare, 5-10 jobs a year; Daniel, Nov 11): any evidence counts
+(seen, heard, or droppings piled in one line under a roof edge or porch
+ceiling): `"findings": ["bats"]`, `"plan": "bat"`, `"action": "quote"`,
+the $3 bonus. It's a Bat Remediation quote, a one-time charge with a
+1-year bat-free guarantee, whether or not they have Critter Control
+(bats aren't covered). A business: `commercial` as usual. **Daniel
+approves every bat quote before it goes out**, so the first run makes a
+draft and a later run sends it:
+
+1. **Size the home.** Search the web for the service address (WebSearch:
+   "<street>, <city> NC" plus "Zillow" or "Redfin") for square footage
+   and stories. No listing: estimate from the photos and say so in
+   `sqftSource` ("estimate from photos"). Ask the tech (an `ask`
+   question is fine alongside the draft: post it in the thread) only for
+   what the photos can't show; don't hold the draft for it.
+2. **Write the decision** like any quote (headline, photos, found, text,
+   email) plus `"bat"`:
+   `{ "sqft": 2200, "sqftSource": "Zillow listing", "stories": 2,
+   "heavyActivity": true, "hardAccess": false, "exterior": "vinyl siding",
+   "attic": "true attic (tech)", "foundation": "crawl space",
+   "checks": ["major_evidence", "entry_point", "nesting_inside"],
+   "entryPoints": "Gap at the roofline above the back porch" }`.
+   `heavyActivity`: live bats, major guano or nesting inside. `hardAccess`:
+   3 stories, a steep or high roofline, a log home, lots of trim. `checks`
+   (the PDF's boxes): `live_bats`, `minor_evidence`, `major_evidence`,
+   `entry_point`, `no_signs`, `adjacent`, `nesting_inside`,
+   `nesting_exterior`. Leave `linearFeet`, `exclusionArea`,
+   `oneWayDoors` and `attic` off unless the tech says (the defaults: about
+   200 ft, about 30-50 ft in multiple areas, 1-3, "see technician notes").
+   The price comes from the scripts (`lib/bat.js`); render.js prints the
+   price to use in the text if yours is wrong. Text: "...found signs of
+   bats getting in along your roofline. We can take care of it for
+   $1,595 after your $250 consultation credit, which covers <covers
+   words> (details in the picture). I also emailed you the photos and
+   details. Reply YES ...". The email says we'll need to get inside on the
+   first visit to check the attic and any voids. Year-round: May-July
+   jobs are quoted the same (the PDF explains the August 1 door).
+3. **Draft.** Without `bat.approved`, send.js sends nothing to the
+   customer, Briostack or Steve: it writes the draft to
+   `$S/bat-drafts.json`. Post each draft's `message` as a reply in the
+   bat post's thread (Slack connector), then tell Daniel with
+   PushNotification ("Bat quote draft for Jane Smith ready: $1,595. Reply
+   approve in the thread."). The tech's note says it's with Daniel.
+4. **Approval.** Each run, a bat post with a draft comes back as
+   "waiting". Read the thread: Daniel replying `approve` sends it at the
+   draft price (`"bat": { ..., "approved": true }`), `approve $1,795` at
+   his price (`"approved": true, "approvedPrice": 1795`; write the text
+   with that price). Anything else from him is a change: make it and post
+   a new draft. No reply yet: write the same draft decision again but
+   don't post the draft or the tech's note again (they're already in the
+   thread); after 3 days, remind Daniel in your report.
+
 Every time: post one line to #office-only (`C09LNB93MQW`, Slack
-connector) through the decision's `officeAlert`, e.g. "Possible bats at
-Jane Smith #12345 (Dustin, Nov 12): droppings piled under the porch
-ceiling. Critter quote sent; needs a custom bat quote." Missing photos
-don't cancel the bat bonus (no `missingSteps`), but the office needs as
-much as possible for the quote, so the `techMessage` tells the tech it
-counts for $3 and asks for more photos: close-ups of the droppings and
-where they get in, and a wide shot of that side of the building.
+connector) through the decision's `officeAlert` when the bat quote goes
+out (not for the draft), e.g. "Bat quote sent to Jane Smith #12345
+(Dustin, Nov 12): $1,595." Missing photos don't cancel the bat bonus (no
+`missingSteps`), but the `techMessage` asks for close-ups of the
+droppings and where they get in, and a wide shot of that side.
 
 **Covered yard burrows**: mole, vole or groundhog burrows on a Critter
 Control customer are skipped (no bonus), but the `techMessage` tells the
@@ -257,7 +298,9 @@ texts early.
 `sheet`). Re-running is safe: logged leads come back `already_sent`.
 
 Post each decision's `officeAlert` (if any) to #office-only
-(`C09LNB93MQW`) as one message.
+(`C09LNB93MQW`) as one message. Post each new bat draft from
+`$S/bat-drafts.json` in its post's thread and push-notify Daniel (see
+Bats).
 
 Then the notes to the techs:
 
@@ -286,4 +329,5 @@ DM Daniel (`U09LQDUPQTC`) the contents of `$S/payroll.md`.
 ## Step 6: report
 
 DM Daniel one short summary: posts read, quoted (customer, plan, price),
-skipped and why, questions asked, anything that failed.
+skipped and why, questions asked, bat drafts waiting for him, anything
+that failed.

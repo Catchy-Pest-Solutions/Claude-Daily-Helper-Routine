@@ -1,0 +1,110 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>{{planName}} - {{customerName}}</title>
+<!-- Bat Remediation quote and agreement, filled by render.js. Pages 1 and 3
+     are filled in per quote; pages 2, 4, 5 and 6 are Daniel's own scope,
+     signature and terms pages (assets/bat), unchanged. Letter size. -->
+<style>
+  @page { size: letter; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Arial, Helvetica, "Liberation Sans", sans-serif; color: #111; font-size: 13px; line-height: 1.4; }
+  .heavy { font-family: "Arial Black", "Arial Bold", Arial, "Liberation Sans", sans-serif; font-weight: 900; }
+  .page { width: 816px; height: 1056px; padding: 16px 40px 0; position: relative; page-break-after: always; overflow: hidden; }
+  .page:last-child { page-break-after: auto; }
+  .page.image { padding: 22px 0 0; }
+  .page.image .body { width: 816px; display: block; }
+  header { display: flex; justify-content: space-between; align-items: flex-start; height: 100px; }
+  .page.image header { padding: 0 40px; }
+  header img { width: 210px; }
+  header .title { text-align: right; }
+  header .title h1 { font-size: 23px; margin: 18px 0 4px; }
+  header .title .email { font-weight: bold; font-size: 13px; }
+  header .title .phone { color: #8A2BE2; font-weight: bold; font-size: 15px; }
+  table.info { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  table.info td { border: 1.5px solid #222; padding: 6px 10px; font-size: 13.5px; }
+  table.info td.label { background: #EDEDED; width: 160px; text-align: center; }
+  p.agree { font-size: 12px; margin: 8px 0 6px; }
+  h2 { font-size: 16px; margin: 8px 0 4px; padding-bottom: 4px; border-bottom: 1px solid #999; }
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 40px; padding: 2px 22px; font-size: 13.5px; }
+  .box { display: inline-block; width: 13px; height: 13px; border: 1.5px solid #333; border-radius: 2px; margin-right: 8px; vertical-align: -1px; text-align: center; line-height: 10px; font-size: 12px; font-weight: bold; }
+  .features { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 3px 18px; padding: 4px 6px 2px; font-size: 13px; }
+  .features b { font-weight: bold; }
+  .entry { padding: 4px 6px 6px; font-size: 13px; }
+  .service { border: 1.5px solid #222; background: #F2F2F2; padding: 8px 26px; margin-top: 4px; }
+  .service .head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .service .head h3 { font-size: 18px; margin: 0; }
+  .service .price { font-size: 13px; color: #333; }
+  .service .price b { font-size: 20px; color: #111; }
+  .service ol { margin: 6px 0 0; padding-left: 26px; font-size: 13.5px; }
+  .service ol li { margin: 0; }
+  .schedule { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .schedule .step { background: #BFE3B4; border: 1.5px solid #555; border-radius: 6px; padding: 7px 14px; font-size: 15px; min-width: 150px; text-align: center; }
+  .schedule .arrow { font-size: 11px; text-align: center; color: #333; }
+  .note { font-size: 11.5px; color: #333; margin-top: 6px; }
+  .season { font-size: 12px; margin-top: 6px; background: #FFF6D6; border-left: 5px solid #E0B000; padding: 6px 10px; }
+  .footer { position: absolute; bottom: 12px; left: 0; right: 0; text-align: center; font-size: 12px; }
+  .notes p { margin: 4px 0; font-size: 13px; }
+  .photos { display: grid; grid-template-columns: repeat({{photoCols}}, 1fr); gap: 10px; margin-top: 8px; }
+  .photos img { width: 100%; height: {{photoHeight}}px; object-fit: cover; border-radius: 4px; display: block; }
+  .photos figure { margin: 0; }
+  .photos figcaption { font-size: 11px; color: #444; margin-top: 3px; }
+</style></head>
+<body>
+<div class="page">
+  <header><img src="{{logoUrl}}" alt="Catchy Pest Solutions"><div class="title"><h1 class="heavy">{{planName}}</h1><div class="email">{{batEmail}}</div><div class="phone">{{batPhone}}</div></div></header>
+  <table class="info">
+    <tr><td class="label">Customer / ID</td><td colspan="3">{{customerName}} / {{customerId}}</td></tr>
+    <tr><td class="label">Service Address</td><td colspan="3">{{address}}</td></tr>
+    <tr><td class="label">Billing Address</td><td colspan="3">{{address}}</td></tr>
+    <tr><td class="label">Phone Number</td><td>{{phone}}</td><td class="label" style="width:80px">Email</td><td>{{email}}</td></tr>
+  </table>
+  <p class="agree">This agreement is between Catchy Pest Solutions (&ldquo;Company&rdquo; - NC License No. 2592PW - SC License No. CA036051) and the Customer (&ldquo;Customer&rdquo;). This treatment is for the control of Big Brown Bat (Eptesicus fuscus) only and in no way covers any other nuisance wildlife or pests. By contracting Catchy Pest Solutions for services, the Customer confirms their understanding of and agreement to comply with the service terms and conditions outlined below.</p>
+  <h2 class="heavy">Initial Notes and Inspection Results</h2>
+  <div class="checks">{{#checks}}<div><span class="box">{{#on}}&#10003;{{/on}}</span>{{label}}</div>{{/checks}}</div>
+  <div style="padding:6px 6px 0"><b>Features:</b></div>
+  <div class="features">
+    <div><b>Foundation Type:</b> {{bat.foundation}}</div><div><b>Linear Footage:</b> {{bat.linearFeet}}</div><div><b>One-Way Doors:</b> {{bat.oneWayDoors}}</div>
+    <div><b>Home Exterior:</b> {{bat.exterior}}</div><div><b>Exclusion Area:</b> {{bat.exclusionArea}}</div><div><b>Attic:</b> {{bat.attic}}</div>
+    <div><b>Home:</b> {{homeLine}}</div>
+  </div>
+  <div class="entry"><b>Bat Infestation Entry Points and Nesting Site:</b> {{bat.entryPoints}}</div>
+  <div class="service">
+    <div class="head"><h3 class="heavy">Wildlife Remediation Service:</h3><span class="price">{{listPrice}} &minus; {{credit}} consultation credit = <b>{{initial}}</b> due upon completion of the Initial Installation and Exclusion</span></div>
+    <ol>
+      <li>Inspection / Discount ({{credit}} consultation credit)</li>
+      <li>Initial Installation and Exclusion Service</li>
+      <li>Follow-Up Service (2 Weeks Later)</li>
+      <li>Sanitation and Maintenance (10 Weeks Later)</li>
+      <li>1-Year Bat Free Guarantee</li>
+      <li><b>Total: {{initial}}</b> (one charge, no monthly fee)</li>
+    </ol>
+  </div>
+  <h2 class="heavy">Schedule and Maintenance</h2>
+  <div class="schedule"><div class="step">Initial Service</div><div class="arrow">&#10230;<br>Approx.<br>14 Days</div><div class="step">1st Follow-Up</div><div class="arrow">&#10230;<br>Every 10<br>Weeks</div><div class="step">Sanitation &amp;<br>Maintenance</div></div>
+  <div class="note">*service schedule may change based on pest activity and technician recommendations.</div>
+  <div class="season">May through July, while young bats can't fly, one-way doors can't go up. We do the full initial service then (sealing every other entry point) and come back after August 1 to put the one-way door on the nesting site.</div>
+  <div class="footer">Pg. 1</div>
+</div>
+<div class="page image">
+  <header><img src="{{logoUrl}}" alt=""><div class="title"><h1 class="heavy">{{planName}}</h1><div class="email">{{batEmail}}</div><div class="phone">{{batPhone}}</div></div></header>
+  <img class="body" src="{{page2}}" alt="">
+</div>
+<div class="page">
+  <header><img src="{{logoUrl}}" alt=""><div class="title"><h1 class="heavy">{{planName}}</h1><div class="email">{{batEmail}}</div><div class="phone">{{batPhone}}</div></div></header>
+  <h2 class="heavy">Other Notes, Graph, and Photos</h2>
+  <div class="notes">{{#found}}<p>{{.}}</p>{{/found}}<p>We'll need to get inside on the first visit to check the attic and any wall or ceiling voids.</p><p style="color:#444">Found by {{techName}} during {{visitPhrase}}, {{visitLong}}. Quote date {{date}}; price good through {{creditExpiresLong}}.</p></div>
+  {{#hasPhotos}}<div style="margin-top:10px"><b>Photos:</b></div><div class="photos">{{#photos}}<figure><img src="{{url}}" alt=""><figcaption>{{caption}}</figcaption></figure>{{/photos}}</div>{{/hasPhotos}}
+  <div class="footer">Pg. 3</div>
+</div>
+<div class="page image">
+  <header><img src="{{logoUrl}}" alt=""><div class="title"><h1 class="heavy">{{planName}}</h1><div class="email">{{batEmail}}</div><div class="phone">{{batPhone}}</div></div></header>
+  <img class="body" src="{{page4}}" alt="">
+</div>
+<div class="page image">
+  <header><img src="{{logoUrl}}" alt=""><div class="title"><h1 class="heavy">{{planName}}</h1><div class="email">{{batEmail}}</div><div class="phone">{{batPhone}}</div></div></header>
+  <img class="body" src="{{page5}}" alt="">
+</div>
+<div class="page image">
+  <header><img src="{{logoUrl}}" alt=""><div class="title"><h1 class="heavy">{{planName}}</h1><div class="email">{{batEmail}}</div><div class="phone">{{batPhone}}</div></div></header>
+  <img class="body" src="{{page6}}" alt="">
+</div>
+</body></html>

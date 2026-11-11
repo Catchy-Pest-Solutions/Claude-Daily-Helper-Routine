@@ -314,12 +314,31 @@ leads; set a real minimum after 2-3 weeks of data.
 - **Exclusion needed** counts only for a specific gap a mouse could fit
   through that our normal exclusion work can fix: in scope, not
   unreasonably small or big, and fixing it actually helps the customer.
-- **Bats** (rare) count as rodent droppings: same Critter Control quote,
-  plus a one-line alert to #office-only (`C09LNB93MQW`) for a custom quote.
-  Nov 10: any evidence (seen, heard, droppings) earns the $3 bonus, even
-  with thin photos, and even when the customer has Critter Control: bats
-  aren't covered by it, so a Critter customer gets a `custom_quote` task
-  for the office instead of a skip. The tech is asked for more photos.
+- **Bats** (rare, 5-10 jobs a year): any evidence (seen, heard,
+  droppings) earns the $3 bonus, even with thin photos (Nov 10). Since
+  Nov 11 they get a **Bat Remediation quote** (finding `bats`, plan
+  `bat`), Critter Control or not:
+  - One charge, no monthly fee, covers the 1-year bat-free guarantee.
+  - Price (`lib/bat.js`, `config.batRemediation`): 1 story $1,100, 2+
+    stories $1,600; +$100 per full 500 sq ft over 1,500 (up to +$400);
+    +$200 heavy activity (live bats, major guano, nesting inside); +$200
+    hard access (3 stories, steep or high roofline, log home); kept
+    between $1,000 and $2,500; minus the consultation credit ($250
+    existing customer, $149 new), shown to the customer; rounded down to
+    end in 95.
+  - Home size and stories from a web search of the address (Zillow,
+    Redfin), else an estimate from the photos. Techs don't measure;
+    footage, exclusion area and door count use Daniel's defaults.
+  - The PDF is Daniel's "Wildlife Service - Bat Remediation" quote and
+    agreement (`templates/bat-proposal.html`): pages 1 and 3 filled in,
+    pages 2 and 4-6 his scope, signature and terms (`assets/bat`), phone
+    (828) 826-2348.
+  - Daniel approves every one: the first run posts a draft in the post's
+    thread and push-notifies him; he replies "approve" or "approve $X";
+    the next run sends it (one text, one email, one task). A YES reply
+    from the customer is enough to book it.
+  - May-July: quoted the same; the first visit seals everything but the
+  nesting site, and the one-way door goes up after August 1.
 - **Covered yard burrows** (Nov 10): no bonus, but the tech is told
   they're covered and to treat them as part of Critter Control service.
 - **Sheet Post IDs** always contain a ":" (`<ts>:<plan>` or `<ts>:none`):

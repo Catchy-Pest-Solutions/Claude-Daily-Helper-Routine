@@ -51,11 +51,11 @@
     <div class="kicker">{{kicker}}</div>
     <h1 class="heavy">{{headline}}</h1>
     <div class="fix"><span class="label">{{fixLabel}}</span><span class="price heavy">{{initial}}</span></div>
-    {{#credit}}<div class="credit">Includes your {{credit}} credit &middot; good through {{creditExpires}}</div>{{/credit}}
+    {{#credit}}<div class="credit">Includes your {{credit}} {{creditLabel}} &middot; good through {{creditExpires}}</div>{{/credit}}
     <div class="covers"><h2>Price covers</h2>
       <ul>{{#coversItems}}<li{{#top}} class="top"{{/top}}>{{text}}</li>{{/coversItems}}</ul>
-      <p class="monthly">{{monthlyLine}}</p></div>
-    <p class="plan">{{planName}}, 12-month plan</p>
+      {{#monthlyLine}}<p class="monthly">{{monthlyLine}}</p>{{/monthlyLine}}</div>
+    <p class="plan">{{planLine}}</p>
   </main>
   <footer><span>Reply YES to get scheduled</span><span class="dot">&#9679;</span><span>{{officePhone}}</span></footer>
 </body></html>

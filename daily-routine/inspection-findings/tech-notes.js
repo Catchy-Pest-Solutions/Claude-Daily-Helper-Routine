@@ -19,7 +19,7 @@ const { loadConfig } = require('./lib/common');
 const sheet = require('./lib/sheet');
 
 const money = (n) => `$${(Math.round(n * 100) / 100).toFixed(n % 1 ? 2 : 0)}`;
-const SHORT_PLAN = { signature: 'Signature', critter: 'Critter Control', termite: 'TermiteShield' };
+const SHORT_PLAN = { signature: 'Signature', critter: 'Critter Control', termite: 'TermiteShield', bat: 'Bat Remediation' };
 
 function notesFor({ decisions, posts, rows }) {
   const byPost = (ts) => rows.filter((r) => String(r['Post ID']).split(':')[0] === ts);
@@ -34,6 +34,10 @@ function notesFor({ decisions, posts, rows }) {
     const first = post.tech?.name || 'there';
     if (d.action === 'skip' || d.action === 'ask') {
       if (d.techMessage) notes.push({ ts, tech: post.tech?.fullName, text: d.techMessage });
+      return;
+    }
+    if (d.action === 'quote' && d.plan === 'bat' && !d.bat?.approved) {
+      notes.push({ ts, tech: post.tech?.fullName, text: `Thanks ${first}! The bat quote is with Daniel for approval; your bonus is added when it goes out to the customer.` });
       return;
     }
     const mine = byPost(ts);
