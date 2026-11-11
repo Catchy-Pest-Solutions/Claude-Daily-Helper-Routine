@@ -30,9 +30,9 @@ by itself). Office holidays: reuse `src/callReview/calendar.js`.
 2. **Validate** each post (see Checks).
 3. **Quote**: price it (see Pricing), render the quote card and PDF, write the
    email and text.
-4. **Send**: emails go out as each one is ready (from 8 AM); texts are
-   scheduled for **10:00 AM** through Textable `sendAt`. Texts go to the
-   primary and secondary phone only, never a third.
+4. **Send**: the email and text both go out at **10:00 AM**. send.js
+   waits until then, because Textable's `sendAt` sent texts right away on
+   Nov 11. Texts go to the primary and secondary phone only, never a third.
 5. **Log** both on the customer's Communications tab, starting
    `[INSPECTION FINDINGS]` (or `[INSPECTION FINDINGS — TEST ...]`), with the
    plan, price, credit amount and credit expiry date.
@@ -57,6 +57,9 @@ together for a few days, aiming to go live the week of Nov 9, 2026.
 1. **Photograph the problem up close**, one clear photo per issue.
 2. **Step back and take a wide photo** showing where it is on the house (this
    also shows it's a single-family home or business).
+   (Nov 11: be lenient. Two or more photos where the problem shows, at
+   least one far enough back to tell whose house it is, count for the
+   bonus; a full wide shot of the house isn't required.)
 3. **Voice-to-text what you see**: what it is, exactly where (side of the
    house, room, corner), how much, active or old, what the customer said,
    and what you checked that looked fine.

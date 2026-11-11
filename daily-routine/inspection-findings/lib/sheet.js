@@ -10,9 +10,11 @@
 const crypto = require('node:crypto');
 const google = require('../../lead-followup/lib/google');
 
-// Readable order for payroll. "Post ID" (<slack ts>:<plan key>) is the
-// key; rows without one are the weekly total rows, rebuilt on every write.
-const COLUMNS = ['Pay week', 'Visit date', 'Tech', 'Customer', 'Customer ID', 'Finding', 'Plan', 'Quote', 'Credit', 'Bonus', 'Counted', 'Notes', 'Status', 'Credit good through', 'Post ID'];
+// Readable order for payroll: who, what, the bonus and why first, the
+// quote details after. "Post ID" (<slack ts>:<plan key>) is the key; rows
+// without one are the total rows, rebuilt on every write. Columns are read
+// back by name, so the order can change without touching old rows.
+const COLUMNS = ['Pay week', 'Tech', 'Visit date', 'Customer', 'Finding', 'Bonus', 'Counted', 'Notes', 'Plan', 'Quote', 'Credit', 'Status', 'Credit good through', 'Customer ID', 'Post ID'];
 const SHEET_MIME = 'application/vnd.google-apps.spreadsheet';
 
 function parseCsv(text) {
@@ -92,9 +94,10 @@ function toYmd(v) {
 const toNumber = (v) => Number(String(v ?? '').replace(/[$,\s]/g, '')) || 0;
 const dollars = (v) => (v === '' || v == null ? '' : `$${toNumber(v).toFixed(toNumber(v) % 1 ? 2 : 0)}`);
 
-// Lead rows grouped by pay week (newest first), each week followed by one
-// total row per tech and a week total. Totals are SUMIFS formulas, so a
-// bonus Daniel edits by hand updates them right away.
+// Lead rows grouped by pay week (newest first). Within a week, each tech's
+// leads (oldest first) are followed by that tech's total, and the week ends
+// with an all-techs total. Totals are SUMIFS formulas, so a bonus Daniel
+// edits by hand updates them right away.
 function layout(items) {
   const cols = COLUMNS;
   const col = (name) => String.fromCharCode(65 + cols.indexOf(name));
@@ -106,13 +109,13 @@ function layout(items) {
     weeks.get(week).push({ ...it, 'Pay week': week, 'Visit date': toYmd(it['Visit date']), 'Credit good through': toYmd(it['Credit good through']), Bonus: dollars(it.Bonus), Quote: dollars(it.Quote), Credit: dollars(it.Credit) });
   }
   const weekStart = (w) => weeks.get(w).map((r) => r['Visit date']).sort()[0] || '';
+  const blank = () => cols.map(() => '');
   const out = [cols];
   for (const week of [...weeks.keys()].sort((a, b) => weekStart(b).localeCompare(weekStart(a)))) {
     const rows = weeks.get(week).sort((a, b) => a.Tech.localeCompare(b.Tech) || a['Visit date'].localeCompare(b['Visit date']));
     const weekRow = out.length + 1; // a row holding this week's label in column A
-    rows.forEach((r) => out.push(cols.map((c) => r[c] ?? '')));
-    const blank = () => cols.map(() => '');
     for (const tech of [...new Set(rows.map((r) => r.Tech))]) {
+      rows.filter((r) => r.Tech === tech).forEach((r) => out.push(cols.map((c) => r[c] ?? '')));
       const line = blank();
       line[cols.indexOf('Pay week')] = week;
       line[cols.indexOf('Tech')] = `${tech} - week total`;

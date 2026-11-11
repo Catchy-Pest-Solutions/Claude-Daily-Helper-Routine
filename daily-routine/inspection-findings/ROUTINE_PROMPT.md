@@ -44,11 +44,18 @@ action per post per plan:
   seven findings; already covered (`checks.covered[plan]`, or Catchy Club:
   skip without a quote); already quoted and still open (`priorOffers`; a finding posted after that quote went out earns no extra bonus, Daniel Nov 10); the
   photos don't show what the tech described; no photos.
-- A quote can still go out when the tech skipped a step (no close-up, no
-  wide photo, no description of where, or posted after leaving), but all
-  four steps are required for the bonus: list what's missing in
-  `"missingSteps": ["wide photo"]` (bonus becomes $0, the sheet says why)
-  and tell the tech in a `techMessage`.
+- **Photos for the bonus** (Daniel, Nov 11: be lenient): 2 or more photos
+  where you can see the problem, at least one far enough back that you can
+  tell it's this customer's house (not all super close-ups). A full wide
+  shot of the house isn't required: a close-up plus a step-back photo of
+  that wall, corner or yard counts. A quote can still go out when the tech
+  missed something (only one photo of the problem, only super close-ups,
+  only far-away shots where you can't see the problem, no description of
+  what or where, or posted after leaving), but there's no bonus: list
+  what's missing in `"missingSteps": ["a photo showing the problem"]`
+  (bonus becomes $0, the sheet says why) and say it in the `techMessage`
+  as one short tip for next time (the "Quote sent ..." part is added for
+  you, so don't repeat it).
 - **ask**: something doesn't make sense and a question would fix it (which
   customer, where in the house, is exclusion needed). One short question.
   A post that's been "waiting" with no reply for 3+ days: tell Daniel in
@@ -195,15 +202,33 @@ node inspection-findings/send.js --posts $S/posts.json --decisions $S/decisions.
 
 Both refuse to run on a bad decision and say what to fix; fix it and run
 again. Look at each `quote-card.jpg` under `$S/quotes/` before sending.
+
+Customers get the email and the text at **10:00 AM Eastern** (Daniel,
+Nov 11). Textable's scheduled send (`sendAt`) went out right away, so
+send.js waits until 10:00 itself before sending anything. Before 10, run
+send.js with the Bash tool's `run_in_background` (timeout 7200000) and
+wait for it to finish; after 10 it sends at once. Never pass `--no-wait`
+in the routine.
+
 `send.js` prints one result per decision (`text`, `email`, `log`, `task`,
 `sheet`). Re-running is safe: logged leads come back `already_sent`.
 
 Post each decision's `officeAlert` (if any) to #office-only
 (`C09LNB93MQW`) as one message.
 
-Then, in Slack (from Daniel's account, the Slack connector), reply in each
-skip/ask post's thread with its `techMessage`. This happens in test mode
-too: techs are in the channel, so keep notes short and friendly. Plain
+Then the notes to the techs:
+
+```
+node inspection-findings/tech-notes.js --posts $S/posts.json --decisions $S/decisions.json
+```
+
+It prints one note per post, read from the Leads sheet after sending:
+"Quote sent to Karen Gerry (TermiteShield, $399). $2 bonus added, thank
+you Aaron! Your bonuses this pay week (Nov 5 - Nov 11): $8." (no bonus:
+the `techMessage` tip instead of the thank you; skip/ask: the
+`techMessage` alone). In Slack (from Daniel's account, the Slack
+connector), reply in each post's thread with its note, word for word.
+Techs are in the channel, so keep `techMessage`s short and friendly. Plain
 conversation in the channel (no customer ID, no photos) is left out by
 collect.js; never reply to it.
 

@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 // Steps 4-8 of the inspection findings routine (ROUTINE_PROMPT.md).
 //
-//   node send.js --posts $S/posts.json --decisions $S/decisions.json [--preview] [--no-sheet]
+//   node send.js --posts $S/posts.json --decisions $S/decisions.json [--preview] [--no-sheet] [--no-wait]
 //
 // For each decision:
-//   quote          email now, text(s) scheduled for config.textSendTime
-//                  (10 AM Eastern) through Textable sendAt, two
+//   quote          email and text(s) at config.textSendTime (10 AM
+//                  Eastern): send.js waits until then before sending
+//                  anything (Textable's sendAt sent texts right away on
+//                  Nov 11, so it isn't used; --no-wait sends now), two
 //                  [INSPECTION FINDINGS] entries on the customer's
 //                  Communications tab (the PDF on the email entry), a
 //                  BID_FOLLOWUP task, and a Leads sheet row.
@@ -196,7 +198,8 @@ const sheetPostId = (decision) => {
 };
 
 function sheetRow({ decision, post, model, status, counted, reason, bonus, config }) {
-  const labels = (decision.findings || []).map((k) => config.findings.find((f) => f.key === k)?.label || k);
+  const finding = (k) => config.findings.find((f) => f.key === k);
+  const labels = (decision.findings || []).map((k) => finding(k)?.sheetLabel || finding(k)?.label || k);
   const planKey = decision.plan || model?.plan || '';
   return {
     'Visit date': model?.visitDate || post.visit?.date || post.postDate,
@@ -240,7 +243,7 @@ function mergedRows({ decision: d, model, posts, config }) {
 }
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2), { values: ['posts', 'decisions', 'now'], flags: ['preview', 'no-sheet', 'resend'] });
+  const args = parseArgs(process.argv.slice(2), { values: ['posts', 'decisions', 'now'], flags: ['preview', 'no-sheet', 'resend', 'no-wait'] });
   if (args.resend && loadConfig().testMode === false) throw new Error('--resend only works in test mode');
   if (!args.posts || !args.decisions) throw new Error('usage: send.js --posts posts.json --decisions decisions.json [--preview] [--no-sheet]');
   const config = loadConfig();
@@ -251,7 +254,7 @@ async function main() {
   const outDir = path.dirname(path.resolve(args.decisions));
   const renderedFile = path.join(outDir, 'rendered.json');
   const rendered = fs.existsSync(renderedFile) ? JSON.parse(fs.readFileSync(renderedFile, 'utf8')).rendered : [];
-  const nowMs = args.now ? Date.parse(args.now) : Date.now();
+  let nowMs = args.now ? Date.parse(args.now) : Date.now();
   const today = collected.today || cal.toEastern(nowMs).date;
   const prefix = test ? TEST_LOG_PREFIX : LOG_PREFIX;
   const assignee = test ? config.testTaskAssignee : config.taskAssignee;
@@ -274,6 +277,17 @@ async function main() {
     if (errs.length) problems.push(`${Q.leadKey(d)}: ${errs.join('; ')}`);
   }
   if (problems.length) throw new Error(`fix decisions.json first: ${problems.join(' | ')}`);
+
+  // Customers get the email and text at 10 AM, not when the routine runs.
+  // Textable's sendAt was ignored (Nov 11: texts went out at 8 AM), so
+  // wait here instead. Run this in the background when it'll wait long.
+  const sendAt = textSendAt(Date.now(), config);
+  if (sendAt && !args.preview && !args['no-wait'] && !args.now && decisions.some((d) => d.action === 'quote')) {
+    process.stderr.write(`waiting until ${cal.formatTime(sendAt)} to send...\n`);
+    await new Promise((resolve) => setTimeout(resolve, sendAt - Date.now()));
+  }
+  const previewSendAt = textSendAt(nowMs, config);
+  if (!args.now) nowMs = Date.now(); // logs, tasks and the sheet show the real send time
 
   const brio = args.preview ? null : createBriostack();
   const results = [];
@@ -309,9 +323,9 @@ async function main() {
     if (d.action === 'quote') {
       const who = model.customerName || `customer ${post.customer.id}`;
       const numbers = textNumbers(post);
-      const sendAtMs = textSendAt(nowMs, config);
-      r.textAt = sendAtMs ? `${cal.formatDay(sendAtMs)} ${cal.formatTime(sendAtMs)}` : 'now';
-      r.textAtMs = sendAtMs || nowMs;
+      const sendAtMs = null; // sent now (after the 10 AM wait above)
+      r.textAt = args.preview && previewSendAt ? `${cal.formatDay(previewSendAt)} ${cal.formatTime(previewSendAt)}` : 'now';
+      r.textAtMs = nowMs;
       const subjectBase = model.request ? `Your quote for ${model.street}` : `What I found at ${model.street}`;
       const subject = test ? `[TEST for ${who}] ${subjectBase}` : subjectBase;
       const photos = rend.photos;
