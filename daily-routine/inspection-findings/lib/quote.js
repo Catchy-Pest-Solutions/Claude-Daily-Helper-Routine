@@ -28,7 +28,7 @@ function leadKey(decision) {
 
 // Problems with a decision; empty when it can go ahead.
 // allPosts (every collected post) is needed to check alsoPosts.
-function checkDecision(decision, post, config, allPosts = []) {
+function checkDecision(decision, post, config, allPosts = [], { secondary = false } = {}) {
   const errs = [];
   if (!ACTIONS.includes(decision.action)) errs.push(`action must be one of ${ACTIONS.join(', ')}`);
   if (!post) return [`no collected post with ts ${decision.ts}`];
@@ -71,16 +71,25 @@ function checkDecision(decision, post, config, allPosts = []) {
   if (!post.photos?.length && !request) errs.push('no photos');
 
   const t = String(decision.text?.body || '');
-  if (!t.trim()) errs.push('needs text.body');
+  if (!secondary && !t.trim()) errs.push('needs text.body');
+  if (secondary && t.trim()) errs.push("this customer's first quote decision has the one text for all their quotes: leave text.body off this one");
   if (!String(decision.headline || '').trim()) errs.push('needs headline (the problem, for the card)');
   if (String(decision.headline || '').length > 70) errs.push('headline is over 70 characters');
-  if (!(decision.email?.intro || []).length) errs.push('needs email.intro paragraphs');
+  if (!secondary && !(decision.email?.intro || []).length) errs.push('needs email.intro paragraphs');
+  if (secondary && !(decision.email?.body || []).length) errs.push("needs email.body (this quote's part of the customer's one email)");
   if (!(decision.found || []).length) errs.push('needs found (what was found and where, for the PDF)');
   for (const [label, s] of [['text.body', t], ['email', JSON.stringify(decision.email || {})], ['found', JSON.stringify(decision.found || [])]]) {
     if (/\b(AI|artificial intelligence|ChatGPT|Claude|automated)\b/.test(s)) errs.push(`${label} mentions AI/automation`);
   }
   if (/12[- ]month|annual|contract/i.test(t)) errs.push("text.body mustn't mention the 12-month plan (it's in the picture)");
-  if (!/reply yes/i.test(t)) errs.push('text.body should end with the "Reply YES" close');
+  if (!secondary && !/reply yes/i.test(t)) errs.push('text.body should end with the "Reply YES" close');
+  // Techs who don't want their name on customer messages (signMessages
+  // false in config.technicians): everything comes from Catchy Pest.
+  const first = post.tech?.name;
+  if (post.tech?.signMessages === false && first) {
+    const words = [t, JSON.stringify(decision.email || {}), decision.headline || ''].join(' ');
+    if (new RegExp(`\\b${first}\\b`, 'i').test(words)) errs.push(`${first} doesn't sign customer messages: write them from Catchy Pest Solutions without his name`);
+  }
   return errs;
 }
 
@@ -93,6 +102,60 @@ function checkMerges(decision, decisions, config) {
     if (decisions.some((d) => d !== decision && d.ts === a.ts && ['quote', 'commercial', 'custom_quote'].includes(d.action) && planOf(d) === planOf(decision))) errs.push(`post ${a.ts} is merged into this quote, so it can't have its own ${planOf(decision)} decision`);
     if (decisions.some((d) => d !== decision && (d.alsoPosts || []).some((x) => x.ts === a.ts) && planOf(d) === planOf(decision))) errs.push(`post ${a.ts} is merged into two quotes`);
   }
+  return errs;
+}
+
+// One text and one email per customer (Daniel, Nov 11): a customer's quote
+// decisions in one run go out together. The first one (in decisions.json
+// order) is the primary: its text.body covers every quote, its email.intro
+// and email.closing wrap the email; every quote adds its own section
+// (headline, photos, email.body, why, the fix box). Returns lead key ->
+// { primary, group: [decisions] } for every quote decision.
+function customerGroups(decisions, posts) {
+  const byCustomer = new Map();
+  for (const d of decisions.filter((x) => x.action === 'quote')) {
+    const post = posts.find((p) => p.ts === d.ts);
+    const id = String(post?.customer?.id || d.ts);
+    if (!byCustomer.has(id)) byCustomer.set(id, []);
+    byCustomer.get(id).push(d);
+  }
+  const out = new Map();
+  for (const group of byCustomer.values()) group.forEach((d, i) => out.set(leadKey(d), { primary: i === 0, group }));
+  return out;
+}
+
+// The customer's one text must quote every initial fee in the group (and
+// no other price), say what each covers in the fixed words, and mention
+// the email when there is one.
+function checkGroupText(body, models, { hasEmail }) {
+  const errs = [];
+  const amounts = [...String(body).matchAll(/\$\s?([\d,]+)/g)].map((m) => Number(m[1].replace(/,/g, '')));
+  const allowed = new Set(models.flatMap((m) => [m.price.initial, m.price.credit]));
+  for (const m of models) {
+    if (!amounts.includes(m.price.initial)) errs.push(`text.body must quote the ${m.planName} initial fee ${m.initial}`);
+    const c = checkTextCovers(body, m);
+    if (c) errs.push(models.length > 1 ? `${c} (${m.planName})` : c);
+  }
+  const bad = amounts.filter((a) => !allowed.has(a));
+  if (bad.length) errs.push(`text.body has a price that isn't this quote: ${bad.map(money).join(', ')}`);
+  const mentions = /\be-?mail/i.test(body);
+  if (hasEmail && !mentions) errs.push('text.body should say we emailed them too ("I also emailed you the photos and details.")');
+  if (!hasEmail && mentions) errs.push("text.body mentions an email, but there's no email address on file");
+  return errs;
+}
+
+// Every check on the words of a quote decision that depends on its
+// customer group: the one text (on the primary) and the day names.
+function checkQuoteMessages(decision, post, config, decisions, posts, { today }) {
+  const info = customerGroups(decisions, posts).get(leadKey(decision)) || { primary: true, group: [decision] };
+  const model = quoteModel(decision, post, config, { today });
+  const errs = [];
+  if (info.primary) {
+    const models = info.group.map((d) => quoteModel(d, posts.find((p) => p.ts === d.ts), config, { today }));
+    errs.push(...checkGroupText(decision.text.body, models, { hasEmail: Boolean(post.customer?.email) }));
+  }
+  const dayErr = checkDayNames([decision.text?.body, ...(decision.email?.intro || []), ...(decision.email?.body || []), ...(decision.email?.closing || [])], model);
+  if (dayErr) errs.push(dayErr);
   return errs;
 }
 
@@ -149,7 +212,10 @@ function quoteModel(decision, post, config, { today }) {
     fixLine: `${money(price.initial)} covers ${covers.text}. Then ${money(price.monthly)} a month, starting month 4, on ${price.planName}.`,
     bonus: bonus.perPlan[plan] ?? 0,
     bonusMultiplier: bonus.multiplier,
-    techName: post.tech?.name || 'your technician',
+    // Unsigned techs (signMessages false): "our technician", "What we found".
+    signed: post.tech?.signMessages !== false,
+    techName: post.tech?.signMessages === false ? 'our technician' : post.tech?.name || 'your technician',
+    foundBy: post.tech?.signMessages === false ? 'What we found' : `What ${post.tech?.name || 'your technician'} found`,
     visitDate,
     visitDay: DAY_NAMES[cal.weekdayOf(visitDate)],
     visitLong: longDate(visitDate),
@@ -203,4 +269,4 @@ function checkedSentence(items, visitPhrase = 'the visit') {
   return `During ${visitPhrase} I didn't see any signs of ${joined}.`;
 }
 
-module.exports = { allFindings, stampWhen, checkMerges, isQuoteRequest, ACTIONS, checkDecision, quoteModel, priceCovers, checkTextPrice, checkTextCovers, checkDayNames, checkedSentence, leadKey, money, longDate, shortDate };
+module.exports = { customerGroups, checkGroupText, checkQuoteMessages, allFindings, stampWhen, checkMerges, isQuoteRequest, ACTIONS, checkDecision, quoteModel, priceCovers, checkTextPrice, checkTextCovers, checkDayNames, checkedSentence, leadKey, money, longDate, shortDate };

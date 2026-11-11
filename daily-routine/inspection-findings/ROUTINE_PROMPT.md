@@ -13,7 +13,7 @@ photos, judge them, and write words. Never type a price the scripts didn't
 give you, never write HTML, never call an API by hand. Never change
 `testMode` in `config.json`.
 
-Runs Mon-Sat at 8:00 AM Eastern. Skip office holidays
+Runs Mon-Sat at 9:00 AM Eastern; quotes go out as soon as they're ready. Skip office holidays
 (`src/callReview/calendar.js` `holidayName`); the next run catches up.
 
 `S` is a fresh scratch folder. Run every command from `daily-routine/`.
@@ -132,6 +132,19 @@ deadline, "wants it before Thanksgiving", "call my wife", "only the back
 deck") goes in `customerNotes`. It shows on the office task; never in the
 customer's messages.
 
+**One text and one email per customer** (Daniel, Nov 11): when a customer
+gets quotes for two plans in one run (siding to ground and an entry
+point), they still get a single text with both quote cards and a single
+email with a section for each quote and both PDFs. Write one decision per
+plan as usual. The customer's first quote decision (in file order) holds
+the message for all of them: its `text.body` names both problems and
+both prices, each with its covers words, ending "(details in the
+pictures)"; its `email.intro` says what you found overall and its
+`email.closing` signs off. The other decision has no `text` and no
+`email.intro`/`email.closing`, only `headline`, `photos`, `found`, `why`
+and `email.body` (its own section). send.js does the grouping; logs,
+tasks and sheet rows stay one per quote.
+
 ## Step 3: write `$S/decisions.json`
 
 ```
@@ -158,18 +171,32 @@ Messages:
   Solutions: "Dustin here, I did your service Friday and noticed ...". Name
   the visit day (`visit.date`'s weekday), never "yesterday". Never mention
   AI or automation.
+- **Techs who don't sign** (`tech.signMessages` false: Sidney, Nov 11):
+  never use their name in the text, email or headline. Write from the
+  company: "Hi Kim, this is Catchy Pest Solutions. When we did your
+  service Tuesday, our technician noticed ...", "we" in the email, and
+  close "The Catchy Pest Solutions team". The card and PDF say "What we
+  found" and the email comes from "Catchy Pest Solutions" automatically.
+- **Say we emailed them** (Daniel, Nov 11): when the customer has an email
+  address, the text ends "... (details in the picture). I also emailed you
+  the photos and details. Reply YES and the office will get you
+  scheduled." ("We also emailed you" for techs who don't sign). No email
+  on file: leave that sentence out. The scripts check it.
 - **Quote request text**: "When I did your service Friday you asked about
   termite protection, so I had the office put together a quote. We can
   protect your home for $718, which covers the soil treatment and bait
-  stations, with a damage warranty (details in the picture). Reply YES and
-  the office will get you scheduled."
+  stations, with a damage warranty (details in the picture). I also
+  emailed you the details. Reply YES and the office will get
+  you scheduled."
 - **Text**: short, confident, assumes the sale. The problem, then the
   initial fee only (`prices.<plan>.initial`, or `prices.critter_no_exclusion`),
   then what it covers in the fixed words, then "(details in the picture)":
   "We can take care of it for $174, which covers foaming the carpenter bee
-  holes and your first 3 treatments (details in the picture)." No 12-month plan, no monthly fee. End: "Reply YES and the
-  office will get you scheduled." The script refuses a text with any other
-  price, the wrong weekday, or without the covers words.
+  holes and your first 3 treatments (details in the picture)." No 12-month plan, no monthly fee. End: "I also emailed you
+  the photos and details. Reply YES and the office will get you
+  scheduled." The script refuses a text with any other price, the wrong
+  weekday, without the covers words, or without the email sentence when
+  there's an email address.
 - **What the price covers** (`config.json` `priceCovers`; Daniel, Nov 10):
   the scripts put the "Price covers" list on the card and the PDF and the
   "How we fix it" paragraphs in the email and PDF, the same words every
@@ -203,12 +230,9 @@ node inspection-findings/send.js --posts $S/posts.json --decisions $S/decisions.
 Both refuse to run on a bad decision and say what to fix; fix it and run
 again. Look at each `quote-card.jpg` under `$S/quotes/` before sending.
 
-Customers get the email and the text at **10:00 AM Eastern** (Daniel,
-Nov 11). Textable's scheduled send (`sendAt`) went out right away, so
-send.js waits until 10:00 itself before sending anything. Before 10, run
-send.js with the Bash tool's `run_in_background` (timeout 7200000) and
-wait for it to finish; after 10 it sends at once. Never pass `--no-wait`
-in the routine.
+The email and the text go out together, right away (the routine starts
+at 9 AM; Daniel, Nov 11). Nothing is scheduled: Textable's `sendAt` sent
+texts early.
 
 `send.js` prints one result per decision (`text`, `email`, `log`, `task`,
 `sheet`). Re-running is safe: logged leads come back `already_sent`.

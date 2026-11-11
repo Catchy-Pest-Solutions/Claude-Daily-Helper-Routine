@@ -1,10 +1,13 @@
 # Inspection findings routine
 
 Techs post findings from customers' homes to the private Slack channel
-#inspection-findings (`C0CF6R073M4`). Every morning (Mon-Sat, 8 AM
+#inspection-findings (`C0CF6R073M4`). Every morning (Mon-Sat, 9 AM
 Eastern) the routine turns each valid post into a quote: a text with a
-quote card picture (scheduled for 10 AM) and an email with the stamped
-photos and a PDF proposal, signed by the tech. It logs both on the
+quote card picture and an email with the stamped photos and a PDF
+proposal, sent together right away and signed by the tech (or from the
+company for techs with `signMessages: false`). A customer with quotes
+for two plans gets one text (both cards) and one email (both quotes). It
+logs both on the
 customer's Briostack Communications tab, creates a `BID_FOLLOWUP` task
 due 1 PM, keeps the Leads sheet (bonuses), and on Thursdays sends Daniel
 the pay-week bonus summary. The spec is `DESIGN.md`; the routine's
@@ -14,7 +17,8 @@ instructions are `ROUTINE_PROMPT.md`.
 collect.js  -> posts.json (posts, photos, Briostack facts, prices)
   routine reads photos + text, writes decisions.json (words only)
 render.js   -> stamped photos, quote card JPG, proposal PDF (Drive links)
-send.js     -> text (10 AM) + email + Briostack log + task + sheet row
+send.js     -> text + email (one each per customer) + Briostack log + task + sheet row
+tech-notes.js -> the Slack reply to each tech (bonus + pay-week total)
 payroll.js  -> Thursday bonus summary (payroll.md, Slacked to Daniel)
 ```
 
@@ -142,7 +146,7 @@ returned `already_sent` for both, and the next collect found no new posts.
    - **Environment**: the one from step 2.
    - **Connectors**: Slack only (tech notes, Daniel's report and the
      Thursday summary go out from Daniel's account).
-   - **Schedule**: Monday-Saturday, 8:00 AM Eastern.
+   - **Schedule**: Monday-Saturday, 9:00 AM Eastern.
 4. **Test**: post a new test finding in #inspection-findings, then **Run
    now**. Already-handled posts are skipped, so an old post won't run again.
 5. **Live since Saturday, Nov 7, 2026** (`"testMode": false`,

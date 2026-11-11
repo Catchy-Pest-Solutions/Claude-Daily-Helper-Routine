@@ -39,7 +39,7 @@
   "technicians": {
     "U0A6N1FUYG3": { "name": "Steve", "fullName": "Steve H", "employeeId": "17047" },
     "U09NRTFNAG2": { "name": "Aaron", "fullName": "Aaron W", "employeeId": "15783" },
-    "U0BCZ2CK6PN": { "name": "Sidney", "fullName": "Sidney M", "employeeId": "15724", "otherEmployeeIds": ["15990"] },
+    "U0BCZ2CK6PN": { "name": "Sidney", "fullName": "Sidney M", "employeeId": "15724", "otherEmployeeIds": ["15990"], "signMessages": false },
     "U0B4DP8PJ59": { "name": "Dustin", "fullName": "Dustin M.", "employeeId": "17829" },
     "U0B73RK14N4": { "name": "Max", "fullName": "Max R.", "employeeId": "17907" },
     "U0C6QBF7491": { "name": "Joey", "fullName": "Joey J", "employeeId": "19570" }

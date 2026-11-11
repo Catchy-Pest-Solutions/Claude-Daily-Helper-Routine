@@ -93,7 +93,7 @@ async function renderQuote(chrome, decision, post, config, today, outDir, allPos
 
   // Quote card.
   const cardHtml = path.join(dir, 'card.html');
-  fs.writeFileSync(cardHtml, fill('card.html', { ...model, headline: decision.headline, photoUrl: cardSrc ? `file://${cardSrc}` : null, logoUrl: `file://${LOGO}`, address: model.address, when: Q.stampWhen(cardSrc ? postOf(chosen[Math.max(0, cardPhoto)].ts) : post), officePhone: config.officePhone, kicker: model.request ? `Your quote from ${model.techName}` : `What ${model.techName} found`, fixLabel: model.request ? 'Your price' : 'Fix it for' }));
+  fs.writeFileSync(cardHtml, fill('card.html', { ...model, headline: decision.headline, photoUrl: cardSrc ? `file://${cardSrc}` : null, logoUrl: `file://${LOGO}`, address: model.address, when: Q.stampWhen(cardSrc ? postOf(chosen[Math.max(0, cardPhoto)].ts) : post), officePhone: config.officePhone, kicker: model.request ? (model.signed ? `Your quote from ${model.techName}` : 'Your quote') : model.foundBy, fixLabel: model.request ? 'Your price' : 'Fix it for' }));
   const card = await chrome.open(cardHtml, CARD);
   // The photo takes whatever height the text leaves; too much text pushes the footer off the card.
   const overflows = () => card.evaluate(`document.querySelector('footer').getBoundingClientRect().bottom > ${CARD.height} + 1`);
@@ -115,8 +115,8 @@ async function renderQuote(chrome, decision, post, config, today, outDir, allPos
   const infographicUrl = infographic && fs.existsSync(path.join(__dirname, infographic)) ? `file://${path.join(__dirname, infographic)}` : null;
   fs.writeFileSync(pdfHtml, fill('proposal.html', {
     ...model,
-    headline: decision.pdfHeadline || (model.request ? `Your quote for ${model.street}` : `What ${model.techName} found at ${model.street}`),
-    foundTitle: model.request ? 'What you asked about' : `What ${model.techName} found`,
+    headline: decision.pdfHeadline || (model.request ? `Your quote for ${model.street}` : `${model.foundBy} at ${model.street}`),
+    foundTitle: model.request ? 'What you asked about' : model.foundBy,
     hasPhotos: stamped.length > 0,
     logoUrl: `file://${LOGO}`,
     date: Q.longDate(today),
@@ -178,14 +178,9 @@ async function main() {
   const quotes = decisions.filter((d) => d.action === 'quote');
   for (const d of quotes) {
     const post = collected.posts.find((p) => p.ts === d.ts);
-    const errs = [...Q.checkDecision(d, post, config, collected.posts), ...Q.checkMerges(d, decisions, config)];
-    if (!errs.length) {
-      const m = Q.quoteModel(d, post, config, { today });
-      const priceErr = Q.checkTextPrice(d.text.body, m) || Q.checkTextCovers(d.text.body, m);
-      if (priceErr) errs.push(priceErr);
-      const dayErr = Q.checkDayNames([d.text.body, ...(d.email.intro || []), ...(d.email.body || []), ...(d.email.closing || [])], m);
-      if (dayErr) errs.push(dayErr);
-    }
+    const secondary = !Q.customerGroups(decisions, collected.posts).get(Q.leadKey(d))?.primary;
+    const errs = [...Q.checkDecision(d, post, config, collected.posts, { secondary }), ...Q.checkMerges(d, decisions, config)];
+    if (!errs.length) errs.push(...Q.checkQuoteMessages(d, post, config, decisions, collected.posts, { today }));
     if (errs.length) problems.push(`${d.ts}${d.plan ? `:${d.plan}` : ''}: ${errs.join('; ')}`);
   }
   if (problems.length) throw new Error(`fix decisions.json first: ${problems.join(' | ')}`);
