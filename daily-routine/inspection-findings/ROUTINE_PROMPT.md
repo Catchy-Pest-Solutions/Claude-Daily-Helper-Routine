@@ -142,8 +142,9 @@ both prices, each with its covers words, ending "(details in the
 pictures)"; its `email.intro` says what you found overall and its
 `email.closing` signs off. The other decision has no `text` and no
 `email.intro`/`email.closing`, only `headline`, `photos`, `found`, `why`
-and `email.body` (its own section). send.js does the grouping; logs,
-tasks and sheet rows stay one per quote.
+and `email.body` (its own section). send.js does the grouping. Steve
+gets one Briostack task per customer covering all of it (Daniel, Nov 11);
+logs and sheet rows stay one per quote.
 
 ## Step 3: write `$S/decisions.json`
 

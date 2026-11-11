@@ -38,7 +38,8 @@ by itself). Office holidays: reuse `src/callReview/calendar.js`.
 5. **Log** both on the customer's Communications tab, starting
    `[INSPECTION FINDINGS]` (or `[INSPECTION FINDINGS — TEST ...]`), with the
    plan, price, credit amount and credit expiry date.
-6. **Task** for Steve B in Briostack (see Tasks). Nothing goes to Steve in
+6. **Task** for Steve B in Briostack (see Tasks): one per customer, even
+   with several quotes or findings (Nov 11). Nothing goes to Steve in
    Slack.
 7. **Tech messages** in Slack (sent from Daniel's account): a one-line note
    when a post didn't count and why, or a clarification question when
