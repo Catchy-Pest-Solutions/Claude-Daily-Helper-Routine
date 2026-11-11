@@ -15,7 +15,7 @@
 //   custom_quote   same, for a custom job on a customer we'd otherwise
 //                  skip (bats on a Critter Control customer: bats aren't
 //                  covered); the tech earns the bonus.
-//   quote_request  task for the office to quote it, sheet row ($0 bonus).
+//   quote_request  task for the office to quote it, sheet row ($2 bonus).
 //   skip / ask     sheet row only ("didn't count" / "waiting"); the routine
 //                  sends the tech's note in Slack itself.
 // Re-running is safe: a lead whose key ("Lead: <ts>:<plan>") is already on
@@ -498,13 +498,13 @@ async function main() {
     if (!taskItems.has(cid)) taskItems.set(cid, []);
     taskItems.get(cid).push({ decision: d, post, model, results: r, action: d.action, sentAtMs: nowMs });
 
-    const bonus = d.action === 'quote' ? model.bonus : ['commercial', 'custom_quote'].includes(d.action) ? require('./lib/pricing').bonusFor(d.findings, { visitCategory: post.visit?.category }, config).total : 0;
+    const bonus = d.action === 'quote' ? model.bonus : require('./lib/pricing').bonusFor(d.action === 'quote_request' ? ['quote_request'] : d.findings, { visitCategory: post.visit?.category }, config).total;
     const missing = (d.missingSteps || []).filter(Boolean);
     rows.push(sheetRow({
       decision: d, post, model,
       status: d.action === 'quote' ? 'quoted' : ['commercial', 'custom_quote'].includes(d.action) ? 'task for office' : 'quote request',
-      counted: d.action !== 'quote_request' && !missing.length,
-      reason: missing.length ? `no bonus: missing ${missing.join(', ')}` : d.reason || (model?.request ? 'quote request (no bonus)' : ''),
+      counted: !missing.length,
+      reason: missing.length ? `no bonus: missing ${missing.join(', ')}` : d.reason || (model?.request || d.action === 'quote_request' ? 'quote request' : ''),
       bonus: missing.length ? 0 : bonus,
       config,
     }));

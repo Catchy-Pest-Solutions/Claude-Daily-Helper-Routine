@@ -43,7 +43,8 @@ action per post per plan:
   or mobile home (from the wide photo or the description); not one of the
   seven findings; already covered (`checks.covered[plan]`, or Catchy Club:
   skip without a quote); already quoted and still open (`priorOffers`; a finding posted after that quote went out earns no extra bonus, Daniel Nov 10); the
-  photos don't show what the tech described; no photos.
+  photos don't show what the tech described. (No photos isn't a skip: see
+  Quote request.)
 - **Photos for the bonus** (Daniel, Nov 11: be lenient): 2 or more photos
   where you can see the problem, at least one far enough back that you can
   tell it's this customer's house (not all super close-ups). A full wide
@@ -62,17 +63,28 @@ action per post per plan:
   Slack and skip it.
 - **commercial**: a business. Task for the office to price it; nothing to
   the customer; the tech still earns the bonus.
-- **Quote request** (the post says "Quote request", nothing to photograph):
+- **Quote request** (the post says "Quote request", **or has no photos**:
+  Daniel, Nov 11, a post with no photos is the tech relaying what the
+  customer told them or asked for, even when the tech found nothing, e.g.
+  "customer keeps finding dead mice in his crawl space; I saw no
+  droppings"). Flat **$2 bonus** for the tech, no 1.5x, no `missingSteps`.
+  Skip it only when there's nothing the customer wants or worries about
+  (the tech just mentions something), or for the usual reasons (covered,
+  open offer, Catchy Club, no visit, wrong name):
   - For one of our three plans (Signature, Critter Control,
     TermiteShield): quote it like a finding, without photos. Use
     `"action": "quote"`, `"findings": ["quote_request"]` and the `plan` they
     asked about. Write `found` as what they asked for and why; pick an
     `infographic` key from config.json if one fits (optional). For Critter
     Control, exclusion is included unless the tech says it isn't needed.
-    Same checks (covered, open offer, Catchy Club, business). $0 bonus.
+    Same checks (covered, open offer, Catchy Club, business). Pick the
+    plan from what the customer said: mice, rats, dead mice, critters ->
+    Critter Control (with exclusion when it's inside the home or crawl
+    space); termites -> TermiteShield; bugs, spiders, wasps ->
+    Signature.
   - For anything else (mosquito, bed bugs, a one-time treatment):
     `"action": "quote_request"`, a task for the office to quote it, nothing
-    to the customer.
+    to the customer. Also $2.
 - **quote**: everything else. One decision per plan (carpenter bees + a
   wasp nest are one Signature quote; termites + droppings are two).
 - **One quote per customer per plan, even across posts** (Daniel, Nov 10):
@@ -188,7 +200,13 @@ Messages:
   protect your home for $718, which covers the soil treatment and bait
   stations, with a damage warranty (details in the picture). I also
   emailed you the details. Reply YES and the office will get
-  you scheduled."
+  you scheduled." For something the customer mentioned: "When I did your
+  service Wednesday you mentioned finding dead mice in your crawl space,
+  so I had the office put together a quote. We can take care of it for
+  $647, which covers sealing the entry points, 7 days of daily visits and
+  a granular repellent (details in the picture). ..." Don't claim the tech
+  saw anything he didn't: if he checked and found nothing, don't say he
+  did.
 - **Text**: short, confident, assumes the sale. The problem, then the
   initial fee only (`prices.<plan>.initial`, or `prices.critter_no_exclusion`),
   then what it covers in the fixed words, then "(details in the picture)":

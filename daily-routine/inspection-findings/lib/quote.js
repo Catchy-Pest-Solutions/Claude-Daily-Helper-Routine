@@ -210,7 +210,7 @@ function quoteModel(decision, post, config, { today }) {
     creditExpiresYmd: creditExpires,
     noAnnualInitial: money(price.noAnnualInitial),
     fixLine: `${money(price.initial)} covers ${covers.text}. Then ${money(price.monthly)} a month, starting month 4, on ${price.planName}.`,
-    bonus: bonus.perPlan[plan] ?? 0,
+    bonus: request ? bonus.perPlan.quote_request ?? 0 : bonus.perPlan[plan] ?? 0,
     bonusMultiplier: bonus.multiplier,
     // Unsigned techs (signMessages false): "our technician", "What we found".
     signed: post.tech?.signMessages !== false,

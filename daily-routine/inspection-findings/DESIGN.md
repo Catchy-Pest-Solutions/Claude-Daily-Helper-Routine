@@ -70,7 +70,8 @@ together for a few days, aiming to go live the week of Nov 9, 2026.
    with `Customer: <name> #<ID>`, then the photos and the description, all
    in one post. Posting on site makes the photo timestamp on the customer's
    quote match the visit. If the customer only asked for a quote and there's
-   nothing to photograph, start with "Quote request" (no bonus).
+   nothing to photograph, start with "Quote request" ($2 bonus; a post
+   with no photos is treated as a quote request too, Nov 11).
 
 ## Checks (in order)
 
@@ -105,7 +106,7 @@ together for a few days, aiming to go live the week of Nov 9, 2026.
 | Wood or siding touching the ground | Carolina TermiteShield | $2 |
 | Wasp, hornet or yellow jacket nest | HomeShield Signature | $1 |
 | Mole, vole or groundhog burrows in the yard | HomeShield Critter Control (no exclusion) | $1 |
-| Quote request with nothing to photograph | (whatever they asked for) | $0 |
+| Quote request: the customer asked or mentioned it, no photos needed (Nov 11) | (whatever they asked for) | $2 flat |
 
 - Leads from an **Inspection / Consultation (12501)** or **One Time Service
   (12504)** visit pay **1.5x** (extra-thorough inspections on those visits).
@@ -333,8 +334,10 @@ leads; set a real minimum after 2-3 weeks of data.
   credit is booked by entering the lower price.
 - **Quote requests** for one of the three plans are priced and sent like
   a finding, just without photos (card shows a plain "Your quote" panel;
-  email subject "Your quote for <street>"). $0 bonus. Requests for other
-  services still become a task for the office.
+  email subject "Your quote for <street>"). $2 bonus, flat (Nov 11; was
+  $0). A post with no photos counts as a quote request: the tech is
+  relaying what the customer said. Requests for other services still
+  become a task for the office ($2 too).
 - **What the price covers** (Nov 10, Daniel): customers who don't read
   email only see the text and the card, so both say what the initial fee
   covers. The words are fixed in `config.json` `priceCovers` (card and
