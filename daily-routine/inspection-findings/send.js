@@ -169,7 +169,7 @@ function logBody({ prefix, kind, key, model, post, status, recipient, whenMs, se
 // The Briostack task the office reads before calling: short lines, the
 // customer ID first (to paste into Briostack search), only what the call
 // needs.
-function taskDescription({ decision, post, model, results, action, sentAtMs }) {
+function taskBlocks({ decision, post, model, results, action, sentAtMs }) {
   const name = [post.customer?.firstName, post.customer?.lastName].filter(Boolean).join(' ');
   const phones = (post.customer?.phones || []).map((p) => formatPhone(normalizePhone(p.number))).filter(Boolean);
   const sentences = (decision.found || [post.text]).join(' ').split(/(?<=[.!?])\s+/).map((x) => x.trim()).filter(Boolean);
@@ -204,7 +204,47 @@ function taskDescription({ decision, post, model, results, action, sentAtMs }) {
   } else {
     blocks.push([`They asked about: ${decision.request || 'see above'}.`, 'Nothing was sent to the customer.'], ['Next:', '1. Call and quote it.', '2. Note what happened here and close the task.']);
   }
-  return blocks.map((b) => b.join('\n')).join('\n\n');
+  return blocks;
+}
+
+const joinBlocks = (blocks) => blocks.map((b) => b.join('\n')).join('\n\n');
+
+function taskDescription(item) {
+  return joinBlocks(taskBlocks(item));
+}
+
+// What a task is about, for its title: "TermiteShield quote".
+function taskLabel({ decision, model }) {
+  if (decision.action === 'quote') return `${model.planName} quote`;
+  return { commercial: 'business to price', custom_quote: 'custom quote' }[decision.action] || 'quote request';
+}
+
+// One Briostack task per customer (Daniel, Nov 11): everything the run
+// found or quoted for that customer, under one header and one "Next".
+function groupTask(items, { test }) {
+  const name = items[0].model?.customerName || [items[0].post.customer?.firstName, items[0].post.customer?.lastName].filter(Boolean).join(' ');
+  const t = test ? 'TEST ' : '';
+  if (items.length === 1) {
+    const { decision: d } = items[0];
+    const title = d.action === 'quote'
+      ? `${t}Inspection finding: ${items[0].model.planName} quote — ${name}`
+      : `${t}${{ commercial: 'Price inspection finding (business)', custom_quote: 'Custom quote needed (inspection finding)' }[d.action] || 'Quote request from tech'} — ${name}`;
+    return { title, description: taskDescription(items[0]) };
+  }
+  const all = items.map((it) => taskBlocks(it));
+  const nextOf = (blocks) => blocks.find((b) => b[0] === 'Next:');
+  const quoted = items.findIndex((it) => it.decision.action === 'quote');
+  const next = nextOf(all[quoted >= 0 ? quoted : 0]);
+  const blocks = [all[0][0]];
+  items.forEach((it, i) => {
+    const body = all[i].slice(1).filter((b) => b !== nextOf(all[i]));
+    body[0] = [`${i + 1}. ${taskLabel(it)[0].toUpperCase()}${taskLabel(it).slice(1)}`, ...body[0]];
+    blocks.push(...body);
+  });
+  const names = items.filter((it) => it.decision.action === 'quote').map((it) => it.model.planName);
+  if (names.length > 1) blocks.push([`Sent as one text and one email with ${names.length} quotes.`]);
+  blocks.push(next);
+  return { title: `${t}Inspection findings: ${items.map(taskLabel).join(' + ')} — ${name}`, description: joinBlocks(blocks) };
 }
 
 // The sheet's Post ID always has a ":" so Google Sheets keeps it as text:
@@ -317,6 +357,7 @@ async function main() {
 
   const results = [];
   const rows = [];
+  const taskItems = new Map(); // customer ID -> [task items]
   for (const d of decisions) {
     const post = collected.posts.find((p) => p.ts === d.ts);
     const key = Q.leadKey(d);
@@ -378,6 +419,9 @@ async function main() {
           fs.writeFileSync(path.join(dir, `${safe}-email.html`), prev);
         }
         r.text = r.email = key === primaryKey ? 'preview' : `preview (with ${primaryKey})`;
+        const pc = String(post.customer.id);
+        if (!taskItems.has(pc)) taskItems.set(pc, []);
+        taskItems.get(pc).push({ decision: d, post, model, results: { ...r, text: 'sent', email: 'sent' }, action: d.action, sentAtMs: nowMs, previewOf: r });
         continue;
       }
 
@@ -449,29 +493,10 @@ async function main() {
       }
     }
 
-    // Task.
-    if (args.preview) {
-      r.task = 'preview';
-    } else {
-      try {
-        const title = d.action === 'quote'
-          ? `${test ? 'TEST ' : ''}Inspection finding: ${model.planName} quote — ${model.customerName}`
-          : `${test ? 'TEST ' : ''}${{ commercial: 'Price inspection finding (business)', custom_quote: 'Custom quote needed (inspection finding)' }[d.action] || 'Quote request from tech'} — ${[post.customer?.firstName, post.customer?.lastName].filter(Boolean).join(' ')}`;
-        const created = await brio.createTask({
-          title: title.slice(0, 120),
-          taskTypeId: config.taskTypeId,
-          statusId: 'ORDER_REQMNT_CREATED',
-          description: taskDescription({ decision: d, post, model, results: r, action: d.action, sentAtMs: nowMs }),
-          employeeId: String(assignee.employeeId),
-          partyId: String(post.customer.id),
-          startDate: cal.easternIso(nowMs),
-          dueDate: taskDue(nowMs, config),
-        });
-        r.task = `created ${created?.taskId || ''} for ${assignee.name}`.trim();
-      } catch (err) {
-        r.task = `failed: ${err.message}`;
-      }
-    }
+    // Task: one per customer, created after the loop.
+    const cid = String(post.customer?.id || post.customerIdPosted || d.ts);
+    if (!taskItems.has(cid)) taskItems.set(cid, []);
+    taskItems.get(cid).push({ decision: d, post, model, results: r, action: d.action, sentAtMs: nowMs });
 
     const bonus = d.action === 'quote' ? model.bonus : ['commercial', 'custom_quote'].includes(d.action) ? require('./lib/pricing').bonusFor(d.findings, { visitCategory: post.visit?.category }, config).total : 0;
     const missing = (d.missingSteps || []).filter(Boolean);
@@ -485,6 +510,34 @@ async function main() {
     }));
 
     rows.push(...mergedRows({ decision: d, model, posts: collected.posts, config }));
+  }
+
+  // One Briostack task per customer for Steve, covering all their quotes.
+  for (const items of taskItems.values()) {
+    if (args.preview) {
+      const { title, description } = groupTask(items, { test });
+      fs.mkdirSync(path.join(outDir, 'preview'), { recursive: true });
+      fs.writeFileSync(path.join(outDir, 'preview', `customer_${items[0].post.customer?.id || items[0].decision.ts}-task.txt`), `${title}\n\n${description}\n`);
+      items.forEach((it) => ((it.previewOf || it.results).task = 'preview'));
+      continue;
+    }
+    try {
+      const { title, description } = groupTask(items, { test });
+      const created = await brio.createTask({
+        title: title.slice(0, 120),
+        taskTypeId: config.taskTypeId,
+        statusId: 'ORDER_REQMNT_CREATED',
+        description,
+        employeeId: String(assignee.employeeId),
+        partyId: String(items[0].post.customer.id),
+        startDate: cal.easternIso(nowMs),
+        dueDate: taskDue(nowMs, config),
+      });
+      const done = `created ${created?.taskId || ''} for ${assignee.name}`.trim();
+      items.forEach((it, i) => (it.results.task = i === 0 ? done : `${done} (same task as ${items[0].results.key})`));
+    } catch (err) {
+      items.forEach((it) => (it.results.task = `failed: ${err.message}`));
+    }
   }
 
   if (!args.preview && !args['no-sheet'] && sheetId && rows.length) {
@@ -506,4 +559,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { textSendAt, taskDue, textNumbers, logBody, taskDescription, mergedRows, sheetPostId };
+module.exports = { groupTask, textSendAt, taskDue, textNumbers, logBody, taskDescription, mergedRows, sheetPostId };

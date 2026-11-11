@@ -356,3 +356,21 @@ test('tech notes: thank you with the bonus and the pay-week total, read from the
   assert.equal(notes[1].text, 'Quote sent to Jim Kerley (Critter Control, $324). Next time add a second photo. Your bonuses this pay week (Nov 5 - Nov 11): $4.');
   assert.equal(notes[2].text, "Didn't count: they already have Critter Control.");
 });
+
+test('one Briostack task per customer: both quotes under one header and one Next', () => {
+  const { groupTask } = require('../send');
+  const termite = { ts: '1.2', action: 'quote', findings: ['wood_to_ground'], plan: 'termite', headline: 'Siding to ground', found: ['Siding touches the soil.'], email: { body: ['x'] } };
+  const results = { email: 'sent', text: 'sent', textAtMs: Date.parse('2026-11-06T15:00:00Z') };
+  const items = [
+    { decision, post, model: Q.quoteModel(decision, post, config, { today: '2026-11-06' }), results, action: 'quote', sentAtMs: results.textAtMs },
+    { decision: termite, post, model: Q.quoteModel(termite, post, config, { today: '2026-11-06' }), results, action: 'quote', sentAtMs: results.textAtMs },
+  ];
+  const one = groupTask(items.slice(0, 1), { test: false });
+  assert.equal(one.title, 'Inspection finding: HomeShield Critter Control quote — Pat Sample');
+  const both = groupTask(items, { test: false });
+  assert.equal(both.title, 'Inspection findings: HomeShield Critter Control quote + Carolina TermiteShield quote — Pat Sample');
+  assert.equal(both.description.match(/Customer ID: 99999/g).length, 1);
+  assert.equal(both.description.match(/^Next:/gm).length, 1);
+  assert.match(both.description, /1\. HomeShield Critter Control quote\nFound by Dustin/);
+  assert.match(both.description, /2\. Carolina TermiteShield quote\nFound by Dustin/);
+});
