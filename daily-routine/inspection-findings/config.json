@@ -39,7 +39,7 @@
   "technicians": {
     "U0A6N1FUYG3": { "name": "Steve", "fullName": "Steve H", "employeeId": "17047" },
     "U09NRTFNAG2": { "name": "Aaron", "fullName": "Aaron W", "employeeId": "15783" },
-    "U0BCZ2CK6PN": { "name": "Sidney", "fullName": "Sidney M", "employeeId": "15724", "otherEmployeeIds": ["15990"] },
+    "U0BCZ2CK6PN": { "name": "Sidney", "fullName": "Sidney M", "employeeId": "15724", "otherEmployeeIds": ["15990"], "signMessages": false },
     "U0B4DP8PJ59": { "name": "Dustin", "fullName": "Dustin M.", "employeeId": "17829" },
     "U0B73RK14N4": { "name": "Max", "fullName": "Max R.", "employeeId": "17907" },
     "U0C6QBF7491": { "name": "Joey", "fullName": "Joey J", "employeeId": "19570" }
@@ -81,14 +81,14 @@
   "otherPlanCategories": ["GPCONETIME", "RODENT", "TERMSRV", "11001", "GPCMONTHLY", "GPCBIMON", "GPCQTR", "GPCANNUAL", "10502", "11002"],
 
   "findings": [
-    { "key": "termites", "label": "Signs of termites (damage or activity)", "plan": "termite", "bonus": 4, "infographic": "signs-of-termites" },
-    { "key": "rodent_droppings", "label": "Rodent or wildlife droppings in the attic, crawl space or home", "plan": "critter", "bonus": 3, "infographic": "rodent-droppings", "exclusionDefault": true },
-    { "key": "carpenter_bees", "label": "Carpenter bee burrows", "plan": "signature", "bonus": 2, "infographic": "carpenter-bee-damage" },
-    { "key": "exclusion_needed", "label": "Exclusion needed (a specific gap a mouse could fit through that our exclusion work can fix)", "plan": "critter", "bonus": 2, "infographic": "exclusion-needed", "exclusionDefault": true },
-    { "key": "wood_to_ground", "label": "Wood or siding touching the ground", "plan": "termite", "bonus": 2, "infographic": "termite-entry-points" },
-    { "key": "stinging_nest", "label": "Wasp, hornet or yellow jacket nest", "plan": "signature", "bonus": 1, "infographic": "stinging-insects" },
-    { "key": "yard_burrows", "label": "Mole, vole or groundhog burrows in the yard", "plan": "critter", "bonus": 1, "infographic": "yard-burrowing", "exclusionDefault": false },
-    { "key": "quote_request", "label": "Quote request with nothing to photograph", "plan": null, "bonus": 0 }
+    { "key": "termites", "sheetLabel": "Termites", "label": "Signs of termites (damage or activity)", "plan": "termite", "bonus": 4, "infographic": "signs-of-termites" },
+    { "key": "rodent_droppings", "sheetLabel": "Rodent/wildlife droppings", "label": "Rodent or wildlife droppings in the attic, crawl space or home", "plan": "critter", "bonus": 3, "infographic": "rodent-droppings", "exclusionDefault": true },
+    { "key": "carpenter_bees", "sheetLabel": "Carpenter bees", "label": "Carpenter bee burrows", "plan": "signature", "bonus": 2, "infographic": "carpenter-bee-damage" },
+    { "key": "exclusion_needed", "sheetLabel": "Exclusion needed", "label": "Exclusion needed (a specific gap a mouse could fit through that our exclusion work can fix)", "plan": "critter", "bonus": 2, "infographic": "exclusion-needed", "exclusionDefault": true },
+    { "key": "wood_to_ground", "sheetLabel": "Wood/siding to ground", "label": "Wood or siding touching the ground", "plan": "termite", "bonus": 2, "infographic": "termite-entry-points" },
+    { "key": "stinging_nest", "sheetLabel": "Stinging nest", "label": "Wasp, hornet or yellow jacket nest", "plan": "signature", "bonus": 1, "infographic": "stinging-insects" },
+    { "key": "yard_burrows", "sheetLabel": "Yard burrows", "label": "Mole, vole or groundhog burrows in the yard", "plan": "critter", "bonus": 1, "infographic": "yard-burrowing", "exclusionDefault": false },
+    { "key": "quote_request", "sheetLabel": "Quote request", "label": "Quote request with nothing to photograph", "plan": null, "bonus": 0 }
   ],
   "priceCovers": {
     "_doc": "What the initial fee covers, filled in by the scripts (lib/quote.js priceCovers). lines: the card's and the PDF's \"Price covers\" list; the script adds \"Then $X a month, starting month 4\" at the end. text: the pieces of the customer's text (\"...$174, which covers <pieces joined: a, b and c> (details in the picture)\"). details: the \"How we fix it\" paragraphs in the email and PDF. finePrint: under the fix in the email and PDF. An item with findings shows only for those findings (one quote can merge several) and goes to the top; exclusion true/false shows only on the price with/without exclusion; topFor moves it to the top for those findings.",

@@ -130,6 +130,39 @@ test('decisions that must not go out are refused', () => {
   assert.match(Q.checkDecision({ ...decision, findings: ['termites', 'rodent_droppings'] }, post, config).join(), /one plan/);
 });
 
+test('one text and one email per customer: the first quote carries the text for all of them', () => {
+  const termite = { ts: '1.2', action: 'quote', findings: ['wood_to_ground'], plan: 'termite', headline: 'Siding to ground', found: ['x'], email: { body: ['Siding touches the ground.'] } };
+  const other = { ...post, ts: '1.2' };
+  const posts = [post, other, { ...post, ts: '2.1', customer: { ...post.customer, id: '11111' } }];
+  const decisions = [decision, termite, { ...decision, ts: '2.1' }];
+  const groups = Q.customerGroups(decisions, posts);
+  assert.equal(groups.get('1.1:critter').primary, true);
+  assert.equal(groups.get('1.2:termite').primary, false);
+  assert.equal(groups.get('1.2:termite').group.length, 2);
+  assert.equal(groups.get('2.1:critter').group.length, 1);
+  // The second quote has no text of its own; it needs its email section.
+  assert.deepEqual(Q.checkDecision(termite, other, config, posts, { secondary: true }), []);
+  assert.match(Q.checkDecision({ ...termite, text: { body: 'x' } }, other, config, posts, { secondary: true }).join(), /leave text\.body off/);
+  // The one text quotes both prices, each in its covers words, and the email.
+  const models = [Q.quoteModel(decision, post, config, { today: '2026-11-06' }), Q.quoteModel(termite, other, config, { today: '2026-11-06' })];
+  const good = `We can take care of the mice for ${models[0].initial}, which covers ${models[0].coversText}, and protect your home for ${models[1].initial}, which covers ${models[1].coversText} (details in the pictures). I also emailed you the photos and details. Reply YES`;
+  assert.deepEqual(Q.checkGroupText(good, models, { hasEmail: true }), []);
+  assert.match(Q.checkGroupText(good.replace(models[1].initial, '$1'), models, { hasEmail: true }).join(), /TermiteShield initial fee/);
+  assert.match(Q.checkGroupText(good.replace(' I also emailed you the photos and details.', ''), models, { hasEmail: true }).join(), /emailed them/);
+  assert.match(Q.checkGroupText(good, models, { hasEmail: false }).join(), /no email address/);
+});
+
+test("techs who don't sign: no name in the customer's messages, cards say 'What we found'", () => {
+  const unsigned = { ...post, tech: { ...post.tech, signMessages: false } };
+  assert.match(Q.checkDecision(decision, unsigned, config).join(), /Dustin doesn't sign/);
+  const plain = { ...decision, text: { body: decision.text.body.replace("it's Dustin", 'this is Catchy Pest Solutions') } };
+  assert.deepEqual(Q.checkDecision(plain, unsigned, config), []);
+  const m = Q.quoteModel(plain, unsigned, config, { today: '2026-11-06' });
+  assert.equal(m.foundBy, 'What we found');
+  assert.equal(m.signed, false);
+  assert.equal(Q.quoteModel(decision, post, config, { today: '2026-11-06' }).foundBy, 'What Dustin found');
+});
+
 test('texts go at 10 AM; tasks are due 1 PM, Saturday runs move to Monday', () => {
   const sat8 = cal.easternToMs('2026-11-07', '08:00');
   assert.equal(taskDue(sat8, config), cal.easternIso(cal.easternToMs('2026-11-09', '13:00')));
@@ -156,7 +189,7 @@ test('sheet CSV round-trips commas, quotes and newlines', () => {
   assert.deepEqual(sheet.parseCsv(sheet.toCsv(rows)), rows);
 });
 
-test('sheet layout: pay weeks newest first, a SUMIFS total per tech and for the week', () => {
+test('sheet layout: pay weeks newest first, each tech followed by a SUMIFS total, then the week', () => {
   assert.equal(sheet.payWeekOf('2026-11-06'), 'Nov 5 - Nov 11, 2026');
   assert.equal(sheet.payWeekOf('11/12/2026'), 'Nov 12 - Nov 18, 2026');
   const out = sheet.layout([
@@ -167,11 +200,14 @@ test('sheet layout: pay weeks newest first, a SUMIFS total per tech and for the 
   const col = (name) => sheet.COLUMNS.indexOf(name);
   assert.equal(out[1][col('Pay week')], 'Nov 12 - Nov 18, 2026');
   assert.equal(out[2][col('Tech')], 'Aaron W - week total');
-  assert.equal(out[2][col('Bonus')], '=DOLLAR(SUMIFS(J:J,A:A,A2,C:C,"Aaron W"))');
+  assert.equal(out[2][col('Bonus')], '=DOLLAR(SUMIFS(F:F,A:A,A2,B:B,"Aaron W"))');
   assert.equal(out[3][col('Tech')], 'ALL TECHS - week total');
   assert.equal(out[5][col('Tech')], 'Aaron W'); // older week, sorted by tech
-  assert.equal(out[6][col('Bonus')], '$4.50');
-  assert.equal(out[6][col('Quote')], '$200');
+  assert.equal(out[6][col('Tech')], 'Aaron W - week total'); // right under Aaron's leads
+  assert.equal(out[7][col('Bonus')], '$4.50');
+  assert.equal(out[7][col('Quote')], '$200');
+  assert.equal(out[8][col('Tech')], 'Dustin M. - week total');
+  assert.equal(out[9][col('Tech')], 'ALL TECHS - week total');
   // Reading it back skips the total rows.
   const back = sheet.rowsToObjects(sheet.parseCsv(sheet.toCsv(out))).items;
   assert.deepEqual(back.map((r) => r['Post ID']), ['2:termite', '3:signature', '1:critter']);
@@ -296,4 +332,27 @@ test('bats on a Critter Control customer: custom_quote, a task for the office, n
   const bats = { ts: '1.1', action: 'custom_quote', findings: ['rodent_droppings'], plan: 'critter', officeAlert: 'Possible bats.' };
   assert.deepEqual(Q.checkDecision(bats, covered, config), []);
   assert.match(Q.checkDecision({ ...bats, action: 'quote' }, covered, config).join(), /already covered/);
+});
+
+test('tech notes: thank you with the bonus and the pay-week total, read from the sheet', () => {
+  const { notesFor } = require('../tech-notes');
+  const week = 'Nov 5 - Nov 11, 2026';
+  const rows = [
+    { 'Pay week': week, Tech: 'Aaron W', Customer: 'Karen Gerry', Quote: '$399', Plan: 'Carolina TermiteShield', Bonus: '$2', Counted: 'yes', 'Post ID': '1.1:termite' },
+    { 'Pay week': week, Tech: 'Aaron W', Customer: 'Jim Kerley', Quote: '$324', Bonus: '$0', Counted: 'no', 'Post ID': '2.2:critter' },
+    { 'Pay week': week, Tech: 'Aaron W', Customer: 'Susan Justus', Quote: '$399', Bonus: '$2', Counted: 'yes', 'Post ID': '3.3:termite' },
+  ];
+  const posts = ['1.1', '2.2', '3.3', '4.4'].map((ts) => ({ ts, tech: { name: 'Aaron', fullName: 'Aaron W' } }));
+  const notes = notesFor({
+    rows,
+    posts,
+    decisions: [
+      { ts: '1.1', action: 'quote', plan: 'termite' },
+      { ts: '2.2', action: 'quote', plan: 'critter', techMessage: 'Next time add a second photo.' },
+      { ts: '4.4', action: 'skip', techMessage: "Didn't count: they already have Critter Control." },
+    ],
+  });
+  assert.equal(notes[0].text, 'Quote sent to Karen Gerry (TermiteShield, $399). $2 bonus added, thank you Aaron! Your bonuses this pay week (Nov 5 - Nov 11): $4.');
+  assert.equal(notes[1].text, 'Quote sent to Jim Kerley (Critter Control, $324). Next time add a second photo. Your bonuses this pay week (Nov 5 - Nov 11): $4.');
+  assert.equal(notes[2].text, "Didn't count: they already have Critter Control.");
 });
