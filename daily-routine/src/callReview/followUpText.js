@@ -4,7 +4,7 @@
 // they didn't get through, nobody texted them), Briostack was checked and
 // has no customer with that number (so current and former customers are
 // never texted), it isn't a likely robocall or a number that already had an
-// open callback task, and Textable shows no text to or from the number in
+// open callback task, the caller ID doesn't name a business, and Textable shows no text to or from the number in
 // the last `skipIfTextedWithinDays` days. One text per caller per run.
 //
 // Modes (config.textFollowUp.mode):
@@ -17,6 +17,9 @@ const cal = require('./calendar');
 const { formatPhone } = require('./callAnalysis');
 
 const TOLL_FREE = /^8(00|33|44|55|66|77|88)/;
+// Caller IDs that name a business (vendors, sales calls), e.g. "Best Pro
+// Servic". ATS cuts caller IDs at 15 characters, hence the word stems.
+const BUSINESS_NAME = /\b(servic|llc|inc|corp|compan|solar|insur|roofing|marketing|group|pest|extermin|plumb|hvac|electric|construct|realt|bank|pharm|clinic|hospital|school|county|city of|telemark|wireless|enterprise)/i;
 
 // "this morning" / "earlier today" / "yesterday" / "on Friday".
 function whenPhrase(missMs, nowMs) {
@@ -43,6 +46,7 @@ function skipReason(task, { lookedUp, lastTextMs, nowMs, settings }) {
   if (!lookedUp) return "Briostack couldn't be checked";
   if (!/^\d{10}$/.test(task.phone || '')) return 'not a US phone number';
   if (TOLL_FREE.test(task.phone)) return 'toll-free number (a business)';
+  if (BUSINESS_NAME.test(task.displayName || '')) return 'caller ID looks like a business';
   if (lastTextMs && nowMs - lastTextMs < settings.skipIfTextedWithinDays * 86400000) {
     return `texts with us in ATS Texting on ${cal.formatDay(lastTextMs)}`;
   }

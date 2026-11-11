@@ -49,7 +49,7 @@ module.exports = {
   // them in Daniel's report, send nothing) | 'test' (send each text to
   // testPhone instead of the caller) | 'live'.
   textFollowUp: {
-    mode: 'test',
+    mode: 'live',
     from: '+18282634804',
     testPhone: '+12708737343', // same test phone as lead-followup/config.json
     officePhone: '(828) 263-4804',

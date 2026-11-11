@@ -249,7 +249,7 @@ test('runner: builds tasks and messages, creating tasks through Briostack', asyn
   assert.equal(created.length, 1);
   assert.equal(created[0].assigneeName, 'Steve');
   assert.equal(r.tasks[0].created, true);
-  assert.match(r.officeOnlyMessage, /Still need a callback\*\n\n👤 \*Steve\* \(1\)\n_Left a voicemail_\n• 🆕 .*\(828\) 555-0102 — Wed, Sep 30 9:30 AM$/m);
+  assert.match(r.officeOnlyMessage, /Still need a callback\*\n\n👤 \*Steve\* \(1\)\n_Left a voicemail_\n• 🆕 .*\(828\) 555-0102 — Wed, Sep 30 9:30 AM 💬$/m);
   assert.doesNotMatch(r.officeOnlyMessage, /Shelley\* \(/);
   assert.match(r.ownerMessage, /ran cleanly/);
   assert.match(r.ownerMessage, /^<@U09LQDUPQTC>/);
@@ -614,4 +614,14 @@ test('textable client: reads contacts, maps 451 to opted_out', async () => {
   assert.equal(await c.send({ to: '+18285550102', from: '+18282634804', message: 'hi' }), 'opted_out');
   assert.equal(calls[0].opts.headers.Authorization, 'Bearer u:t');
   assert.equal(c.requestCount(), 2);
+});
+
+test('follow-up text: no text to business caller IDs or toll-free numbers', () => {
+  const { skipReason } = require('../src/callReview/followUpText');
+  const opts = { lookedUp: true, lastTextMs: 0, nowMs: 0, settings: config.textFollowUp };
+  assert.equal(skipReason({ phone: '4438733663', displayName: 'Best Pro Servic' }, opts), 'caller ID looks like a business');
+  assert.equal(skipReason({ phone: '8885550100', displayName: 'Unknown caller' }, opts), 'toll-free number (a business)');
+  assert.equal(skipReason({ phone: '8285550102', displayName: 'Vincent Coleman' }, opts), null);
+  assert.equal(skipReason({ phone: '8285717591', displayName: 'Unknown caller (Swannanoa NC)' }, opts), null);
+  assert.equal(skipReason({ phone: '8285550102', displayName: 'Brenda Wilson', customerId: '19437' }, opts), 'in Briostack');
 });

@@ -106,7 +106,7 @@ Briostack callback task for each caller, and builds two Slack messages (the
 
 - Follow-up texts: a missed caller who isn't in Briostack (so never a
   current or former customer), still owed a callback, not a likely
-  robocall, with no open callback task and no ATS Texting conversation in
+  robocall or a business caller ID ("Best Pro Servic"), with no open callback task and no ATS Texting conversation in
   the last 14 days gets one text from 828-263-4804:
   "Hi! We got your call yesterday and haven't been able to connect with you
   yet. Just reply here with a good time to reach you and we'll give you a
@@ -116,7 +116,7 @@ Briostack callback task for each caller, and builds two Slack messages (the
   texted. Only sent 8 AM–7 PM Eastern on business days. `textFollowUp.mode`
   in `config.js`: `off`, `preview` (listed in Daniel's report, nothing
   sent), `test` (each text goes to `testPhone` with "TEST for <number>:"
-  on top) or `live`. `--dry-run` always previews. Code:
+  on top) or `live` (the default since Nov 11). `--dry-run` always previews. Code:
   `src/callReview/followUpText.js` and `textable.js`; needs
   `TEXTABLE_ACCOUNT_UID` and `TEXTABLE_API_TOKEN`.
 
