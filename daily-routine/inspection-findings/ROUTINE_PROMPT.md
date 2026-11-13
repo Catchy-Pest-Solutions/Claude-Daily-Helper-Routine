@@ -33,6 +33,24 @@ customer, the matching visit, the plans (`plans`, `checks.covered`,
 (`priorOffers`), `problems`, and the price of every plan (`prices`). N = 0:
 stop (on Thursday, still do Step 5).
 
+**Fixing the customer** (Daniel, Nov 13): don't skip or ask over these;
+find the account and run collect.js again with
+`--customer "<ts>=<id>[:<Name>],..."` (only those posts change):
+
+- No ID in the text but a Briostack screenshot in the photos: read the ID
+  and name from the screenshot.
+- ID doesn't match the name (a typo): look the customer up among the
+  tech's appointments that day (`listAppointmentsOn` in
+  `lead-followup/lib/briostack.js`, matched by name), use the right ID,
+  and quote as normal. The `techMessage` tells the tech the ID was wrong
+  ("the customer ID was 17466, but Gary is 17446") and to copy and paste
+  it from Briostack.
+- Two posts in a row from the same tech, the second with photos and no
+  customer: it's the same home. Use that customer for it and merge it
+  (`alsoPosts`), or skip it if that customer's quote already went out.
+  Either way, its note reminds the tech to write "same home" on the
+  second message.
+
 ## Step 2: judge each post
 
 Open every photo (Read the file) and read the text and thread. Decide one

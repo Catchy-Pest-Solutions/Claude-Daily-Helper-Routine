@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Step 1-2 of the inspection findings routine (ROUTINE_PROMPT.md).
 //
-//   node collect.js --out $S [--now ISO] [--post TS[,TS...]] [--no-sheet]
+//   node collect.js --out $S [--now ISO] [--post TS[,TS...]] [--customer TS=ID[:Name][,...]] [--no-sheet]
 //
 // Reads #inspection-findings posts from the last config.lookbackDays days
 // that the Leads sheet hasn't settled yet (no row, or a "waiting" row whose
@@ -11,7 +11,11 @@
 // with the customer's phone number, what's already covered, earlier
 // [INSPECTION FINDINGS] offers still open, and the price of every plan.
 // Writes $S/posts.json and prints one JSON line: {"posts": N, "path": ...}.
-// --post limits it to those Slack ts values (testing). Sends nothing.
+// --post limits it to those Slack ts values (testing). --customer sets the
+// customer for a post whose ID is missing or wrong (Daniel, Nov 13: the ID
+// read from a Briostack screenshot in the photos, or a typo the routine
+// looked up); the post keeps `customerIdOverride` so the sheet shows it.
+// Sends nothing.
 require('../lead-followup/lib/proxy');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -85,8 +89,14 @@ function parseOfferLog(entry) {
 }
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2), { values: ['out', 'now', 'post'], flags: ['no-sheet'] });
-  if (!args.out) throw new Error('usage: collect.js --out DIR [--now ISO] [--post TS,...] [--no-sheet]');
+  const args = parseArgs(process.argv.slice(2), { values: ['out', 'now', 'post', 'customer'], flags: ['no-sheet'] });
+  if (!args.out) throw new Error('usage: collect.js --out DIR [--now ISO] [--post TS,...] [--customer TS=ID[:Name],...] [--no-sheet]');
+  const overrides = new Map();
+  for (const item of String(args.customer || '').split(',').filter(Boolean)) {
+    const m = item.trim().match(/^(\d+\.\d+)=(\d+)(?::(.+))?$/);
+    if (!m) throw new Error(`--customer: expected TS=ID[:Name], got "${item}"`);
+    overrides.set(m[1], { id: m[2], name: m[3] ? m[3].trim() : null });
+  }
   const config = loadConfig();
   const test = config.testMode !== false;
   const nowMs = args.now ? Date.parse(args.now) : Date.now();
@@ -119,6 +129,12 @@ async function main() {
   const posts = [];
   for (const m of messages) {
     const parsed = parsePost(m.text);
+    const override = overrides.get(m.ts);
+    if (override) {
+      parsed.customerIdPosted = parsed.customerId || null;
+      parsed.customerId = override.id;
+      if (override.name) parsed.name = override.name;
+    }
     const postMs = Math.round(Number(m.ts) * 1000);
     const postDate = cal.toEastern(postMs).date;
     const dir = path.join(out, 'posts', m.ts.replace('.', '_'));
@@ -143,7 +159,8 @@ async function main() {
       postedByDaniel: m.user === config.danielSlackUserId,
       tech: poster,
       text: parsed.text,
-      customerIdPosted: parsed.customerId,
+      customerIdPosted: override ? parsed.customerIdPosted : parsed.customerId,
+      customerIdOverride: override ? override.id : undefined,
       namePosted: parsed.name,
       quoteRequest: parsed.quoteRequest,
       photos,
