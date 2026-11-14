@@ -249,7 +249,11 @@ function groupTask(items, { test }) {
   const names = items.filter((it) => it.decision.action === 'quote').map((it) => it.model.planName);
   if (names.length > 1) blocks.push([`Sent as one text and one email with ${names.length} quotes.`]);
   blocks.push(next);
-  return { title: `${t}Inspection findings: ${items.map(taskLabel).join(' + ')} — ${name}`, description: joinBlocks(blocks) };
+  // Briostack caps task titles at 100 characters; three plans plus a long
+  // name runs over, so fall back to a count.
+  let title = `${t}Inspection findings: ${items.map(taskLabel).join(' + ')} — ${name}`;
+  if (title.length > 100) title = `${t}Inspection findings: ${items.length} items — ${name}`;
+  return { title: title.slice(0, 100), description: joinBlocks(blocks) };
 }
 
 // The Slack reply (in the bat post's thread) that shows Daniel a bat quote
@@ -556,7 +560,7 @@ async function main() {
     try {
       const { title, description } = groupTask(items, { test });
       const created = await brio.createTask({
-        title: title.slice(0, 120),
+        title: title.slice(0, 100),
         taskTypeId: config.taskTypeId,
         statusId: 'ORDER_REQMNT_CREATED',
         description,
