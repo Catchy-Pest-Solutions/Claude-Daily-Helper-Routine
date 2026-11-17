@@ -556,7 +556,7 @@ async function main() {
     try {
       const { title, description } = groupTask(items, { test });
       const created = await brio.createTask({
-        title: title.slice(0, 120),
+        title: title.slice(0, 100), // Briostack rejects titles over 100 characters
         taskTypeId: config.taskTypeId,
         statusId: 'ORDER_REQMNT_CREATED',
         description,
