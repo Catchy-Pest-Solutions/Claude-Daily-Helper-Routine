@@ -224,6 +224,22 @@ function taskLabel({ decision, model }) {
   return { commercial: 'business to price', custom_quote: 'custom quote' }[decision.action] || 'quote request';
 }
 
+// Briostack rejects a task title over 100 characters (400 "title size must
+// be between 1 and 100", Costello, Nov 12). Fit the title by dropping the
+// plan brand names first ("Carolina TermiteShield" -> "TermiteShield"),
+// then cutting the middle, always keeping the customer's name at the end.
+const TASK_TITLE_MAX = 100;
+function fitTaskTitle(head, name) {
+  const tail = ` — ${name}`;
+  const fits = (h) => `${h}${tail}`.length <= TASK_TITLE_MAX;
+  if (fits(head)) return `${head}${tail}`;
+  const short = head.replace(/\b(HomeShield|Carolina) /g, '');
+  if (fits(short)) return `${short}${tail}`;
+  const room = TASK_TITLE_MAX - tail.length - 1;
+  if (room < 10) return `${short}${tail}`.slice(0, TASK_TITLE_MAX);
+  return `${short.slice(0, room).trimEnd()}…${tail}`;
+}
+
 // One Briostack task per customer (Daniel, Nov 11): everything the run
 // found or quoted for that customer, under one header and one "Next".
 function groupTask(items, { test }) {
@@ -231,9 +247,9 @@ function groupTask(items, { test }) {
   const t = test ? 'TEST ' : '';
   if (items.length === 1) {
     const { decision: d } = items[0];
-    const title = d.action === 'quote'
-      ? `${t}Inspection finding: ${items[0].model.planName} quote — ${name}`
-      : `${t}${{ commercial: 'Price inspection finding (business)', custom_quote: 'Custom quote needed (inspection finding)' }[d.action] || 'Quote request from tech'} — ${name}`;
+    const title = fitTaskTitle(d.action === 'quote'
+      ? `${t}Inspection finding: ${items[0].model.planName} quote`
+      : `${t}${{ commercial: 'Price inspection finding (business)', custom_quote: 'Custom quote needed (inspection finding)' }[d.action] || 'Quote request from tech'}`, name);
     return { title, description: taskDescription(items[0]) };
   }
   const all = items.map((it) => taskBlocks(it));
@@ -249,7 +265,7 @@ function groupTask(items, { test }) {
   const names = items.filter((it) => it.decision.action === 'quote').map((it) => it.model.planName);
   if (names.length > 1) blocks.push([`Sent as one text and one email with ${names.length} quotes.`]);
   blocks.push(next);
-  return { title: `${t}Inspection findings: ${items.map(taskLabel).join(' + ')} — ${name}`, description: joinBlocks(blocks) };
+  return { title: fitTaskTitle(`${t}Inspection findings: ${items.map(taskLabel).join(' + ')}`, name), description: joinBlocks(blocks) };
 }
 
 // The Slack reply (in the bat post's thread) that shows Daniel a bat quote
@@ -556,7 +572,7 @@ async function main() {
     try {
       const { title, description } = groupTask(items, { test });
       const created = await brio.createTask({
-        title: title.slice(0, 120),
+        title: title.slice(0, TASK_TITLE_MAX),
         taskTypeId: config.taskTypeId,
         statusId: 'ORDER_REQMNT_CREATED',
         description,
@@ -592,4 +608,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { batDraftMessage, groupTask, textSendAt, taskDue, textNumbers, logBody, taskDescription, mergedRows, sheetPostId };
+module.exports = { batDraftMessage, groupTask, fitTaskTitle, textSendAt, taskDue, textNumbers, logBody, taskDescription, mergedRows, sheetPostId };
