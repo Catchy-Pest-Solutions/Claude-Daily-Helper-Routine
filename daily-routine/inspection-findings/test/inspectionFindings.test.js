@@ -375,6 +375,17 @@ test('one Briostack task per customer: both quotes under one header and one Next
   assert.match(both.description, /2\. Carolina TermiteShield quote\nFound by Dustin/);
 });
 
+test('task titles fit Briostack\'s 100-character limit and keep the customer name', () => {
+  const { fitTaskTitle } = require('../send');
+  // Nov 12: this one was 101 characters and Briostack refused the task.
+  const costello = fitTaskTitle('Inspection findings: Carolina TermiteShield quote + HomeShield Critter Control quote', 'Andrew Costello');
+  assert.equal(costello, 'Inspection findings: TermiteShield quote + Critter Control quote — Andrew Costello');
+  assert.equal(fitTaskTitle('Inspection finding: HomeShield Critter Control quote', 'Pat Sample'), 'Inspection finding: HomeShield Critter Control quote — Pat Sample');
+  const long = fitTaskTitle('Inspection findings: Carolina TermiteShield quote + HomeShield Critter Control quote + HomeShield Signature quote + business to price', 'Jimmy & Angel Brown');
+  assert.ok(long.length <= 100, long);
+  assert.match(long, /… — Jimmy & Angel Brown$/);
+});
+
 test('quote requests pay a flat $2 (no 1.5x), on the quote and as an office task', () => {
   assert.equal(pricing.bonusFor(['quote_request'], { visitCategory: '12501' }, config).total, 2);
   const request = { ...decision, findings: ['quote_request'], plan: 'critter', techSaysNoExclusion: false };
