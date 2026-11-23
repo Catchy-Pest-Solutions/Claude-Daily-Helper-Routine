@@ -61,10 +61,14 @@ function analyzeServices(services, config, { todayDate } = {}) {
   };
 }
 
-// The quote for one plan. exclusion only matters for critter.
-function priceFor(planKey, analysis, config, { exclusion = true } = {}) {
+// The quote for one plan. exclusion only matters for critter. largeHome
+// (a home above average size, plans with config largeHome: TermiteShield)
+// adds largeHome.add to what the customer pays, after the discount, so the
+// credit stays the same (Daniel, Nov 23: "+$100 more").
+function priceFor(planKey, analysis, config, { exclusion = true, largeHome = false } = {}) {
   const plan = config.plans[planKey];
   if (!plan) throw new Error(`unknown plan ${planKey}`);
+  if (largeHome && !plan.largeHome) throw new Error(`${plan.name} has no large-home price`);
   const base = planKey === 'critter' && !exclusion ? plan.prices.noExclusion : plan.prices.standard;
   const regular = { initial: base.initial, monthly: base.monthly };
   let tier;
@@ -85,9 +89,13 @@ function priceFor(planKey, analysis, config, { exclusion = true } = {}) {
     initial = Math.ceil((regular.initial * (100 - config.returningDiscountPercent)) / 100);
     reason = `${config.returningDiscountPercent}% returning-customer discount on the initial fee`;
   }
+  const extra = largeHome ? plan.largeHome.add : 0;
+  regular.initial += extra;
+  initial += extra;
   return {
     plan: planKey,
     planName: plan.name,
+    largeHome: Boolean(largeHome),
     exclusion: planKey === 'critter' ? Boolean(exclusion) : null,
     tier,
     reason,
@@ -106,6 +114,7 @@ function allPrices(analysis, config) {
   for (const key of Object.keys(config.plans)) {
     out[key] = priceFor(key, analysis, config);
     if (key === 'critter') out.critter_no_exclusion = priceFor(key, analysis, config, { exclusion: false });
+    if (config.plans[key].largeHome) out[`${key}_large_home`] = priceFor(key, analysis, config, { largeHome: true });
   }
   return out;
 }

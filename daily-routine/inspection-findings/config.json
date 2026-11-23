@@ -73,7 +73,8 @@
       "video": "https://youtube.com/shorts/S2_D-WmwC9s",
       "covers": "subterranean termites",
       "prices": { "standard": { "initial": 797, "monthly": 29 }, "withOtherPlan": { "monthly": 19 } },
-      "sizeNote": "1,200-3,000 sq ft"
+      "sizeNote": "1,200-3,000 sq ft",
+      "largeHome": { "_doc": "Homes above average size (over 3,000 sq ft; Daniel, Nov 23): $100 more on the initial fee the customer pays, after any discount. Same monthly. The decision sets \"largeHome\": true.", "over": 3000, "add": 100 }
     }
   },
   "catchyClubCategories": ["11001"],

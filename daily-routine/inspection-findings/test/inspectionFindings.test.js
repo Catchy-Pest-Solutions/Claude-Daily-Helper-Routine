@@ -426,3 +426,13 @@ test('bat quotes are drafts until Daniel replies "approve" in the thread', () =>
   assert.deepEqual([m.initial, m.credit, m.recurring, m.bonus], ['$1,495', '$250', false, 4.5]); // $3, 1.5x on a One Time Service visit
   assert.match(Q.checkDecision({ ...d, bat: { stories: 2 } }, batPost, config).join(), /bat\.sqft/);
 });
+
+test('large home TermiteShield: $100 more on what the customer pays, same credit and monthly (Daniel, Nov 23)', () => {
+  const a = pricing.analyzeServices([svc('GPCONETIME', 'CSC_ACTIVE')], config, { todayDate: '2026-11-23' });
+  const normal = pricing.priceFor('termite', a, config);
+  const large = pricing.priceFor('termite', a, config, { largeHome: true });
+  assert.deepEqual([normal.initial, large.initial], [399, 499]);
+  assert.deepEqual([large.credit, large.monthly, large.noAnnualInitial], [normal.credit, normal.monthly, 549]);
+  assert.equal(pricing.allPrices(a, config).termite_large_home.initial, 499);
+  assert.throws(() => pricing.priceFor('critter', a, config, { largeHome: true }), /no large-home price/);
+});

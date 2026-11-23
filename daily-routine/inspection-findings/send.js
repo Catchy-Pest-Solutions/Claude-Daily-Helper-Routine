@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Steps 4-8 of the inspection findings routine (ROUTINE_PROMPT.md).
 //
-//   node send.js --posts $S/posts.json --decisions $S/decisions.json [--preview] [--no-sheet]
+//   node send.js --posts $S/posts.json --decisions $S/decisions.json [--preview] [--no-sheet] [--no-task]
 //
 // For each decision:
 //   quote          one email and one text per customer, sent right away
@@ -190,7 +190,7 @@ function taskBlocks({ decision, post, model, results, action, sentAtMs }) {
     blocks.push(
       [
         'Quote:',
-        `${model.planName}${model.exclusion === false ? ' (no exclusion)' : model.exclusion ? ' (with exclusion)' : ''}`,
+        `${model.planName}${model.exclusion === false ? ' (no exclusion)' : model.exclusion ? ' (with exclusion)' : ''}${model.largeHome ? ' (large home)' : ''}`,
         `${model.initial} to start, then ${model.monthly} a month.`,
         `No annual commitment: ${model.noAnnualInitial} to start.`,
       ],
@@ -340,7 +340,7 @@ function mergedRows({ decision: d, model, posts, config }) {
 }
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2), { values: ['posts', 'decisions', 'now'], flags: ['preview', 'no-sheet', 'resend'] });
+  const args = parseArgs(process.argv.slice(2), { values: ['posts', 'decisions', 'now'], flags: ['preview', 'no-sheet', 'resend', 'no-task'] });
   if (args.resend && loadConfig().testMode === false) throw new Error('--resend only works in test mode');
   if (!args.posts || !args.decisions) throw new Error('usage: send.js --posts posts.json --decisions decisions.json [--preview] [--no-sheet]');
   const config = loadConfig();
@@ -524,10 +524,16 @@ async function main() {
         const emailId = customer.primaryEmail?.contactMethodId;
         const date = cal.easternIso(nowMs);
         const common = { prefix, key, model, post, today, together, pdfUrl: rend.pdfUrl, alsoLinks: (d.alsoPosts || []).map((a) => collected.posts.find((x) => x.ts === a.ts)?.link).filter(Boolean) };
+        let entry = null;
         if (targets.length || numbers.length) {
-          await createLogEntry(brio, post.customer.id, { subject: `${prefix} Text`, communicationTypeId: 'SMS', date, content: logBody({ ...common, kind: 'Text', status: r.text, recipient: numbers.map(formatPhone).join(', '), whenMs: nowMs, sendAtMs, message: textBody }) }, phoneId || emailId);
+          entry = await createLogEntry(brio, post.customer.id, { subject: `${prefix} Text`, communicationTypeId: 'SMS', date, content: logBody({ ...common, kind: 'Text', status: r.text, recipient: numbers.map(formatPhone).join(', '), whenMs: nowMs, sendAtMs, message: textBody }) }, phoneId || emailId);
         }
-        const entry = await createLogEntry(brio, post.customer.id, { subject: `${prefix} Email`, communicationTypeId: 'EMAIL_COMMUNICATION', date, content: logBody({ ...common, kind: 'Email', status: r.email, recipient: emailTo || 'no email', whenMs: nowMs, message: plain, subject: subjectBase }) }, emailId || phoneId);
+        // No email address: Briostack refuses an email entry on a phone
+        // contact method (400, Griffith Nov 21), so the PDF goes on the text
+        // entry, which already has the quote and the lead key.
+        if (emailId || !entry) {
+          entry = await createLogEntry(brio, post.customer.id, { subject: `${prefix} Email`, communicationTypeId: 'EMAIL_COMMUNICATION', date, content: logBody({ ...common, kind: 'Email', status: r.email, recipient: emailTo || 'no email', whenMs: nowMs, message: plain, subject: subjectBase }) }, emailId || unknownId || undefined);
+        }
         r.log = 'logged';
         if (entry?.communicationId) {
           try {
@@ -562,6 +568,12 @@ async function main() {
 
   // One Briostack task per customer for Steve, covering all their quotes.
   for (const items of taskItems.values()) {
+    // --no-task: the customer already has an open task from an earlier
+    // run; the routine updates that one by hand instead (Daniel, Nov 23).
+    if (args['no-task']) {
+      items.forEach((it) => (it.results.task = 'skipped (--no-task)'));
+      continue;
+    }
     if (args.preview) {
       const { title, description } = groupTask(items, { test });
       fs.mkdirSync(path.join(outDir, 'preview'), { recursive: true });

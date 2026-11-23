@@ -64,6 +64,7 @@ function checkDecision(decision, post, config, allPosts = [], { secondary = fals
 
   // Hard stops the routine should already have caught.
   const plan = decision.plan || plans[0];
+  if (decision.largeHome && !config.plans[plan]?.largeHome) errs.push(`largeHome: ${config.plans[plan]?.name || plan} has no large-home price (only ${Object.keys(config.plans).filter((k) => config.plans[k].largeHome).join(', ')})`);
   if (plan === 'bat') {
     errs.push(...bat.checkBatInputs(decision.bat));
     if (decision.bat?.approved) {
@@ -202,7 +203,7 @@ function quoteModel(decision, post, config, { today }) {
   const exclusion = plan !== 'critter' ? null : request ? !decision.techSaysNoExclusion : pricing.exclusionFor(findings, { techSaysNoExclusion: Boolean(decision.techSaysNoExclusion) }, config);
   const isBat = plan === 'bat';
   const batQuote = isBat ? bat.batPrice({ ...(decision.bat || {}), existingCustomer: isExistingCustomer(post) }, config, { approvedPrice: decision.bat?.approved ? decision.bat.approvedPrice ?? null : null }) : null;
-  const price = isBat ? batPriceObject(batQuote, config) : pricing.priceFor(plan, post.plans, config, { exclusion: exclusion ?? true });
+  const price = isBat ? batPriceObject(batQuote, config) : pricing.priceFor(plan, post.plans, config, { exclusion: exclusion ?? true, largeHome: Boolean(decision.largeHome) });
   const creditExpires = pricing.creditExpiry(today, config);
   const bonus = pricing.bonusFor(decision.findings, { visitCategory: post.visit?.category }, config);
   const visitDate = post.visit?.date || post.postDate;
@@ -213,6 +214,7 @@ function quoteModel(decision, post, config, { today }) {
     plan,
     planName: price.planName,
     exclusion,
+    largeHome: Boolean(decision.largeHome),
     price,
     initial: money(price.initial),
     monthly: money(price.monthly),
