@@ -122,6 +122,12 @@ Findings keys (config.json `findings`): `termites`, `rodent_droppings`,
 `carpenter_bees`, `exclusion_needed`, `wood_to_ground`, `stinging_nest`,
 `yard_burrows`, `bats`, `quote_request`.
 
+**Large homes** (TermiteShield; Daniel, Nov 23): when the tech says the
+home is large ("large home category"), or it's clearly over 3,000 sq ft,
+quote it as usual with `"largeHome": true`. The customer pays $100 more
+(`prices.termite_large_home.initial`; same credit and monthly). Don't send
+it to the office to price.
+
 **Exclusion** (Critter Control): rodent signs inside the home, crawl space
 or attic mean exclusion unless the tech says it isn't needed. "No entry
 points" counts as saying it isn't needed: set `"techSaysNoExclusion": true`.
