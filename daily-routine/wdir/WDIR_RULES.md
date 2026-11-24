@@ -15,8 +15,10 @@ guesses at a measurement, and never judges how bad something is.
 
 - **Where the info comes from:** the technician posts the WDIR inspection
   in the inspection findings Slack channel like any other finding, with
-  the customer ID and his photos, and "WDIR" (or "wood destroying") in
-  the text. Any technician can do these.
+  the customer ID and his photos. It's a WDIR post when the text says
+  "WDIR" (or "wood destroying"), or when the tech's visit that day is a
+  WDIR appointment in Briostack (category 10000 "WDIR"). Any technician
+  can do these.
 - **The report PDF:** form pages 1-2 (front and "Conditions Governing This
   Report"), filled, with Daniel's signature on "Signature of Authorized
   Company Rep" (a private file in the office Drive, never in the repo).

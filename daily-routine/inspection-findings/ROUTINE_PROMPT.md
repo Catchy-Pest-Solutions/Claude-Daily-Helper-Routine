@@ -200,7 +200,8 @@ out (not for the draft), e.g. "Bat quote sent to Jane Smith #12345
 droppings and where they get in, and a wide shot of that side.
 
 **WDIR posts** (wood-destroying insect reports; Daniel, Nov 24): a post
-with `wdir: true` (the tech wrote "WDIR", "WDI" or "wood destroying"), or
+with `wdir: true` (the tech wrote "WDIR", "WDI" or "wood destroying", or
+the matched visit is a WDIR appointment, Briostack category 10000), or
 one that's clearly a real estate termite inspection, is not a finding to
 quote. Read `wdir/WDIR_RULES.md` first and follow it exactly: it's an
 official North Carolina form signed with Daniel's name, so only what the

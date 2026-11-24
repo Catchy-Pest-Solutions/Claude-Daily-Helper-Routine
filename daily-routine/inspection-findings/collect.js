@@ -246,6 +246,9 @@ async function main() {
       otherRecords,
     };
     post.visit = visit;
+    // A WDIR appointment (Briostack category "WDIR") makes it a WDIR post
+    // even when the tech didn't write "WDIR" (Daniel, Nov 24).
+    if (visit && (config.wdir?.categories || []).includes(String(visit.category))) post.wdir = true;
     post.plans = analysis;
     post.priorOffers = priorOffers;
     post.prices = pricing.allPrices(analysis, config);

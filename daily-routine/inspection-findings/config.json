@@ -195,6 +195,7 @@
   "wdir": {
     "_doc": "Official NC Wood-Destroying Insect Information Report (WDIR 100), wdir/WDIR_RULES.md. Techs post WDIR inspections in this channel; the routine fills the form and emails the signed PDF to the office (emailTo), who forwards it. The signature is a private file in the office Drive (never in the repo).",
     "emailTo": "office@catchypestsolutions.com",
+    "categories": ["10000"],
     "signatureDriveFileId": "1Q_tKLBzr_D_FboxpoXbbN8a6LVwx4hat",
     "firm": { "name": "Catchy Pest Solutions", "license": "2592PW", "street": "1854 Hendersonville Rd, Suite A8", "city": "Asheville", "state": "NC", "zip": "28803", "phone": "(828) 263-4804", "title": "General Manager" },
     "inaccessibleStandard": "Attic not inspected. Areas concealed by finished walls, ceilings, floor coverings, insulation, furniture or stored items; areas requiring ladders, drills or removal of materials; and areas deemed unsafe or not readily accessible (see Conditions 2 & 3 on reverse).",
