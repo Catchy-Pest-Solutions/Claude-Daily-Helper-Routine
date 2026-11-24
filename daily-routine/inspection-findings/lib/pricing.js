@@ -11,7 +11,10 @@
 //                    everything they paid for those visits, regular monthly.
 //   3. returning   - anyone else (a completed plan, nothing active): 10% off
 //                    the initial fee (price rounds up), regular monthly.
-// No-annual-commitment version: $50 more on the initial fee, same monthly.
+// Commitment (Daniel, Nov 24): a customer who already has an active plan
+// (other_plan) gets no 12-month commitment at all: no contract, cancel
+// anytime, same price. Everyone else gets the 12-month price, and the
+// no-annual-commitment version costs $50 more on the initial fee.
 // The discount is always shown as a dollar credit good for 90 days.
 const cal = require('../../src/callReview/calendar');
 
@@ -104,7 +107,9 @@ function priceFor(planKey, analysis, config, { exclusion = true, largeHome = fal
     initial,
     monthly,
     credit: regular.initial - initial,
-    noAnnualInitial: initial + config.noAnnualExtra,
+    // 'none': no contract, cancel anytime (they already have an active plan).
+    commitment: tier === 'other_plan' ? 'none' : '12-month',
+    noAnnualInitial: tier === 'other_plan' ? initial : initial + config.noAnnualExtra,
   };
 }
 

@@ -170,11 +170,11 @@ draft and a later run sends it:
    `oneWayDoors` and `attic` off unless the tech says (the defaults: about
    200 ft, about 30-50 ft in multiple areas, 1-3, "see technician notes").
    The price comes from the scripts (`lib/bat.js`); render.js prints the
-   price to use in the text if yours is wrong. Text: "...found signs of
-   bats getting in along your roofline. We can take care of it for
-   $1,595 after your $250 consultation credit, which covers <covers
-   words> (details in the picture). I also emailed you the photos and
-   details. Reply YES ...". The email says we'll need to get inside on the
+   price to use in the text if yours is wrong. Text: "...your technician,
+   Dustin, found signs of bats getting in along your roofline. We can take
+   care of it for $1,595 after your $250 consultation credit, which covers
+   <covers words> (details in the picture). We also emailed you the photos
+   and details. Would you like us to schedule this? Reply YES ...". The email says we'll need to get inside on the
    first visit to check the attic and any voids. Year-round: May-July
    jobs are quoted the same (the PDF explains the August 1 door).
 3. **Draft.** Without `bat.approved`, send.js sends nothing to the
@@ -217,7 +217,7 @@ plan as usual. The customer's first quote decision (in file order) holds
 the message for all of them: its `text.body` names both problems and
 both prices, each with its covers words, ending "(details in the
 pictures)"; its `email.intro` says what you found overall and its
-`email.closing` signs off. The other decision has no `text` and no
+`email.closing` asks for the YES and signs off. The other decision has no `text` and no
 `email.intro`/`email.closing`, only `headline`, `photos`, `found`, `why`
 and `email.body` (its own section). send.js does the grouping. Steve
 gets one Briostack task per customer covering all of it (Daniel, Nov 11);
@@ -231,56 +231,101 @@ logs and sheet rows stay one per quote.
     "techSaysNoExclusion": false,
     "headline": "Rodent droppings in your crawl space",          // card, <= 70 chars
     "photos": [{ "index": 2, "caption": "..." }, { "index": 1, "caption": "..." }],  // 1-based, best first; { "ts", "index" } for an alsoPosts photo
-    "cardPhoto": 2,                                               // the close-up
+    "cardPhoto": 2,                                               // the photo that shows the problem best (see Card photos)
+    "cardInset": 3,                                               // optional: the step-back photo, shown small in the card's corner
     "found": ["What was found and exactly where, how much, active or old."],
     "why": ["Claims from KNOWLEDGE_BASE.md only, with the source in brackets."],
     "checkedOk": ["things the tech says he checked and didn't see"],
     "text": { "body": "..." },
-    "email": { "intro": ["Hi Jane,", "..."], "body": ["..."], "closing": ["...", "Dustin"] },
+    "email": { "intro": ["Hi Jane,", "..."], "body": ["..."], "closing": ["...", "The Catchy Pest Solutions team"] },
     "customerNotes": "", "officeAlert": "",
     "missingSteps": [], "techMessage": "", "reason": "" },
   { "ts": "...", "action": "skip", "reason": "already has Critter Control", "techMessage": "..." }
 ] }
 ```
 
-Messages:
+**Card photos** (Daniel, Nov 24): the text carries one picture per
+quote, the card, so pick its photos on purpose, never just the first one.
+`cardPhoto` is the photo that shows the problem most clearly to a
+homeowner: the problem fills the frame and is obvious without
+explanation, in focus and well lit. Prefer a sharp close-up over a blurry
+one, but a blurry photo is better than none: every quote card has a photo
+when the post has one. `cardInset` (optional) is a second photo shown
+small in the top corner: the step-back shot that shows it's their house
+(the wall, corner or porch around the problem). Use it whenever there's a
+second photo that adds that; leave it off when there's only one photo or
+the others show the same thing. Either one can come from an `alsoPosts`
+post (`{ "ts", "index" }`).
 
-- **Signed by the tech** (first name from `tech.name`), from Catchy Pest
-  Solutions: "Dustin here, I did your service Friday and noticed ...". Name
-  the visit day (`visit.date`'s weekday), never "yesterday". Never mention
-  AI or automation.
+Messages (Daniel, Nov 24): **every text and email comes from Catchy
+Pest Solutions, never from the technician.** Customers who thought the
+tech was texting them asked to speak to him and were surprised when the
+office called. Name the tech in the third person, "your technician,
+Joey", and say plainly that the office will schedule it.
+
+- **From the company**: start the text "Hi Laura, this is Catchy Pest
+  Solutions." Write "we" and "our office", never "I". The email intro
+  says "During your service on Monday, your technician, Joey, found ..."
+  and the email closes with "The Catchy Pest Solutions team". Name the
+  visit day (`visit.date`'s weekday), never "yesterday" (Monday runs
+  cover Saturday). Never mention AI or automation. The scripts refuse
+  "I"/"my"/"me" in the text or email, a text without "Catchy Pest
+  Solutions" and an email not signed by the company.
 - **Techs who don't sign** (`tech.signMessages` false: Sidney, Nov 11):
-  never use their name in the text, email or headline. Write from the
-  company: "Hi Kim, this is Catchy Pest Solutions. When we did your
-  service Tuesday, our technician noticed ...", "we" in the email, and
-  close "The Catchy Pest Solutions team". The card and PDF say "What we
-  found" and the email comes from "Catchy Pest Solutions" automatically.
+  never use their name in the text, email or headline: "our technician"
+  instead. The card and PDF say "What we found".
+- **Ask for a YES or NO** (Daniel, Nov 24: too many customers don't
+  reply). End the text with a direct question on its own line, offering
+  both answers: "Would you like us to schedule this? Reply YES and our
+  office will get you on the schedule, or NO if not right now." Then
+  "Questions? Just call or text us here." (they can call or text the
+  number the text came from; don't type the number). The scripts refuse
+  a text without the question and the NO.
 - **Say we emailed them** (Daniel, Nov 11): when the customer has an email
-  address, the text ends "... (details in the picture). I also emailed you
-  the photos and details. Reply YES and the office will get you
-  scheduled." ("We also emailed you" for techs who don't sign). No email
-  on file: leave that sentence out. The scripts check it.
-- **Quote request text**: "When I did your service Friday you asked about
-  termite protection, so I had the office put together a quote. We can
-  protect your home for $718, which covers the soil treatment and bait
-  stations, with a damage warranty (details in the picture). I also
-  emailed you the details. Reply YES and the office will get
-  you scheduled." For something the customer mentioned: "When I did your
-  service Wednesday you mentioned finding dead mice in your crawl space,
-  so I had the office put together a quote. We can take care of it for
-  $647, which covers sealing the entry points, 7 days of daily visits and
-  a granular repellent (details in the picture). ..." Don't claim the tech
-  saw anything he didn't: if he checked and found nothing, don't say he
-  did.
+  address, say so before the question: "(details in the picture). We
+  also emailed you the photos and details." No email on file: leave that
+  sentence out. The scripts check it.
+- **Credit deadline**: when there's a credit (`prices.<plan>.credit`),
+  give a reason to answer now: "Your $323 credit is good through Feb 22."
+  Use the credit and date render.js shows on the card (90 days from
+  today); the scripts check the date.
+- **Text example**:
+  "Hi Laura, this is Catchy Pest Solutions. During your service on Monday,
+  your technician, Joey, found vole activity in your mulch beds and a gap
+  under your siding where mice can get in. We can take care of it for
+  $324, which covers sealing the entry points, 7 days of daily visits and
+  a granular repellent (details in the picture). Your $323 credit is good
+  through Feb 22, and we also emailed you the photos and details.
+
+  Would you like us to schedule this? Reply YES and our office will get
+  you on the schedule, or NO if not right now. Questions? Just call or
+  text us here."
+- **Quote request text**: "Hi Pat, this is Catchy Pest Solutions. During
+  your service on Friday you asked your technician, Dustin, about termite
+  protection, so we put together a quote. We can protect your home for
+  $718, which covers the soil treatment and bait stations, with a damage
+  warranty (details in the picture). ..." For something the customer
+  mentioned: "During your service on Wednesday you mentioned finding dead
+  mice in your crawl space, so we put together a quote. We can take care
+  of it for $647, which covers sealing the entry points, 7 days of daily
+  visits and a granular repellent (details in the picture). ..." Don't
+  claim the tech saw anything he didn't: if he checked and found nothing,
+  don't say he did.
 - **Text**: short, confident, assumes the sale. The problem, then the
   initial fee only (`prices.<plan>.initial`, or `prices.critter_no_exclusion`),
   then what it covers in the fixed words, then "(details in the picture)":
   "We can take care of it for $174, which covers foaming the carpenter bee
-  holes and your first 3 treatments (details in the picture)." No 12-month plan, no monthly fee. End: "I also emailed you
-  the photos and details. Reply YES and the office will get you
-  scheduled." The script refuses a text with any other price, the wrong
-  weekday, without the covers words, or without the email sentence when
-  there's an email address.
+  holes and your first 3 treatments (details in the picture)." No
+  12-month plan, no monthly fee, no contract talk (the card and email
+  have the terms). The script refuses a text with any other price, the
+  wrong weekday, without the covers words, or without the email sentence
+  when there's an email address.
+- **Contract** (Daniel, Nov 24): customers who already have an active
+  plan (Signature, Critter Control, TermiteShield: the 50%-off tier) get
+  no 12-month commitment and no +$50 no-commitment price; the card,
+  email and PDF say "No contract, cancel anytime" automatically.
+  Inspection-only, one-time and returning customers keep the 12-month
+  plan wording. Don't write either in your words.
 - **What the price covers** (`config.json` `priceCovers`; Daniel, Nov 10):
   the scripts put the "Price covers" list on the card and the PDF and the
   "How we fix it" paragraphs in the email and PDF, the same words every
@@ -291,12 +336,18 @@ Messages:
   service in your own words anywhere else: no list of what's included in
   `email.body`, never promise a payout or coverage of existing termite
   damage.
-- **Email**: intro (greeting + what I found), photos go after the intro
-  automatically, body (where, how much, why it's worth fixing now), then the
-  script adds "Why it matters", the fix box (price, what it covers, how we
-  fix it, credit, terms), closing, the infographic and the video. Subject
-  is automatic: "What I found at <street>".
-- **checkedOk**: only what the tech actually says he checked. Never write
+- **Email**: intro (greeting + what your technician found), photos go
+  after the intro automatically, body (where, how much, why it's worth
+  fixing now), then the script adds "Why it matters", the fix box (price,
+  what it covers, how we fix it, credit, terms), closing, the infographic
+  and the video. The closing asks for the answer: "Would you like us to
+  take care of it? Just reply YES to this email or to our text and our
+  office will get you on the schedule, or reply NO if now isn't a good
+  time. Questions? Just reply here.", then "The Catchy Pest Solutions
+  team". Subject and sender are automatic: "What your technician found at
+  <street>" from "Catchy Pest Solutions".
+- **checkedOk**: only what the tech actually says he checked (the PDF
+  says "During the visit, Joey didn't see any signs of ..."). Never write
   "no termites" or "no wood-boring beetles" unless he says he inspected for
   them.
 - Say "a month", never "every 4 weeks", in your words.

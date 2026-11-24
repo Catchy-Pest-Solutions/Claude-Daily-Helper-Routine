@@ -90,10 +90,20 @@ async function renderQuote(chrome, decision, post, config, today, outDir, allPos
   const cardPhoto = chosen.findIndex((p) => p.index === want.index && p.ts === (want.ts || post.ts));
   // A quote request has no photo: the card shows a plain branded panel.
   const cardSrc = chosen.length ? chosen[Math.max(0, cardPhoto)].photo.path : null;
+  // cardInset (optional): a second photo in the card's corner, the
+  // step-back shot that shows it's their home. Same form as cardPhoto; any
+  // photo of the decision's post or its alsoPosts.
+  let insetSrc = null;
+  if (decision.cardInset != null && cardSrc) {
+    const w = typeof decision.cardInset === 'object' ? decision.cardInset : { index: decision.cardInset };
+    const p = postOf(w.ts)?.photos?.[w.index - 1];
+    if (!p) throw new Error(`${model.key}: cardInset ${JSON.stringify(decision.cardInset)} isn't one of the post's photos`);
+    if (p.path !== cardSrc) insetSrc = p.path;
+  }
 
   // Quote card.
   const cardHtml = path.join(dir, 'card.html');
-  fs.writeFileSync(cardHtml, fill('card.html', { ...model, headline: decision.headline, photoUrl: cardSrc ? `file://${cardSrc}` : null, logoUrl: `file://${LOGO}`, address: model.address, when: Q.stampWhen(cardSrc ? postOf(chosen[Math.max(0, cardPhoto)].ts) : post), officePhone: config.officePhone, kicker: model.request ? (model.signed ? `Your quote from ${model.techName}` : 'Your quote') : model.foundBy, fixLabel: model.request ? 'Your price' : 'Fix it for' }));
+  fs.writeFileSync(cardHtml, fill('card.html', { ...model, headline: decision.headline, photoUrl: cardSrc ? `file://${cardSrc}` : null, insetUrl: insetSrc ? `file://${insetSrc}` : null, logoUrl: `file://${LOGO}`, address: model.address, when: Q.stampWhen(cardSrc ? postOf(chosen[Math.max(0, cardPhoto)].ts) : post), officePhone: config.officePhone, kicker: model.request ? 'Your quote' : model.foundBy, fixLabel: model.request ? 'Your price' : 'Fix it for' }));
   const card = await chrome.open(cardHtml, CARD);
   // The photo takes whatever height the text leaves; too much text pushes the footer off the card.
   const overflows = () => card.evaluate(`document.querySelector('footer').getBoundingClientRect().bottom > ${CARD.height} + 1`);
@@ -135,7 +145,7 @@ async function renderQuote(chrome, decision, post, config, today, outDir, allPos
     found: decision.found,
     why: decision.why || [],
     hasWhy: (decision.why || []).length > 0,
-    checkedSentence: Q.checkedSentence(decision.checkedOk, model.visitPhrase === 'your inspection' ? 'the inspection' : 'the visit'),
+    checkedSentence: Q.checkedSentence(decision.checkedOk, model.visitPhrase === 'your inspection' ? 'the inspection' : 'the visit', model.techName),
     hasChecked: (decision.checkedOk || []).length > 0,
     infographicUrl,
     officePhone: config.officePhone,
