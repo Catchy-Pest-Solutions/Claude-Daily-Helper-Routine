@@ -19,6 +19,9 @@ Reference docs, read the relevant one before touching an integration:
 - `daily-routine/wdir/WDIR_RULES.md`: the Official NC Wood-Destroying
   Insect Information Report (WDIR 100) the inspection findings routine
   fills from a tech's WDIR post, signs and emails to the office.
+- `daily-routine/payroll/README.md`: the Thursday 6 PM commission payroll
+  (technician 6% production split by clock hours, office 4% on initials,
+  Slack DMs after Daniel approves). Instructions: `payroll/ROUTINE_PROMPT.md`.
 - `daily-routine/daily-summary/ROUTINE_PROMPT.md`: the daily technician
   briefing, office check-list, trap counts and same-address add-on tasks
   (Briostack API + Slack). Change the routine by editing this file.
