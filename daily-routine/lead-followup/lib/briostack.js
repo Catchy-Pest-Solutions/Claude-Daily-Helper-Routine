@@ -103,6 +103,13 @@ function createBriostack({ apiKey = requireEnv(['BRIOSTACK_API_KEY']).BRIOSTACK_
     updateTask: (taskId, body) => call('PATCH', `tasks/${taskId}`, { json: body }),
     // filter on appointmentDate works on the top-level list (Nov 6, 2026).
     listAppointmentsOn: (ymd, start = 0) => list(`appointments?limit=100&start=${start}&filter=${encodeURIComponent(`appointmentDate="${ymd}"`)}`),
+    // Used by the weekly payroll commissions (payroll/collect.js). Date-range
+    // filters work on the top-level list (Nov 24, 2026). List records lack
+    // technicianCommissionableAmount / salesCommissionableAmount; only
+    // GET appointments/{id} has them.
+    listAppointmentsBetween: (from, thru, start = 0) =>
+      list(`appointments?limit=100&start=${start}&sort-by=appointmentId&filter=${encodeURIComponent(`appointmentDate>="${from}" and appointmentDate<="${thru}"`)}`),
+    getAppointment: (id) => call('GET', `appointments/${id}`),
     listWebhooks: () => list('webhooks'),
     createWebhook: (body) => call('POST', 'webhooks', { json: body }),
     patchWebhook: (wid, body) => call('PATCH', `webhooks/${wid}`, { json: body }),

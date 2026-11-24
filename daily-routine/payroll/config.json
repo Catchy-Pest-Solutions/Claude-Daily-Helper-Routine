@@ -1,0 +1,28 @@
+{
+  "_comment": "Weekly commission payroll (Daniel, Nov 24, 2026). No secrets here. Techs: production commission on every completed visit, pooled and split by clock hours. Office: commission on completed initial-type visits where they're the service's primary sales rep.",
+  "techRate": 0.06,
+  "officeRate": 0.04,
+  "doneStatuses": ["SVC_TICK_COMPLETED", "SVC_TICK_RESOLVED", "SVC_TICK_SUBMITTED"],
+  "openStatus": "SVC_TICK_ACTIVE",
+  "initialTypes": ["Initial", "Initial / One Time Visit", "Inspection / Consultation"],
+  "ignoreTechIds": {
+    "12883": "Daniel W. (owner, doesn't service visits)",
+    "18677": "Leads Nurture (placeholder for leads)"
+  },
+  "techs": [
+    { "id": "15783", "name": "Aaron W.", "first": "Aaron", "slack": "U09NRTFNAG2", "clock": ["Aaron K. White"] },
+    { "id": "17047", "name": "Steve H.", "first": "Steve", "slack": "U0A6N1FUYG3", "clock": ["Robert S. Hayden"] },
+    { "id": "17829", "name": "Dustin M.", "first": "Dustin", "slack": "U0B4DP8PJ59", "clock": ["Dustin T. McCrystal"] },
+    { "id": "17907", "name": "Max R.", "first": "Max", "slack": "U0B73RK14N4", "clock": ["Maxim W. Rockwell"] },
+    { "id": "15724", "name": "Sidney M.", "first": "Sidney", "slack": "U0BCZ2CK6PN", "clock": ["Sidney C. Martinez"] },
+    { "id": "19570", "name": "Joey J.", "first": "Joey", "slack": "U0C6QBF7491", "clock": ["Joseph R. Jargo"] }
+  ],
+  "officeReps": [
+    { "id": "16635", "name": "Steve B", "first": "Steve", "slack": "U09NNDKSB4M" },
+    { "id": "16195", "name": "Shelley", "first": "Shelley", "slack": "U09NPRFAENS" },
+    { "id": "12883", "name": "Daniel W.", "first": "Daniel", "slack": "U09LQDUPQTC", "noDm": true }
+  ],
+  "officeClockNames": ["Steve Barona", "Shelley E. Heaton"],
+  "danielSlack": "U09LQDUPQTC",
+  "signOff": "– Daniel"
+}
