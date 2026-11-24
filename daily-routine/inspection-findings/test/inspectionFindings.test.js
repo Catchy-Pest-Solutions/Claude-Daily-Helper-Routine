@@ -106,7 +106,7 @@ const post = {
 const decision = {
   ts: '1.1', action: 'quote', findings: ['rodent_droppings'], plan: 'critter', techSaysNoExclusion: true, headline: 'Rodent droppings',
   found: ['x'], email: { intro: ['Hi Pat,'] },
-  text: { body: 'Hi Pat, it\'s Dustin. I did your service Friday and found droppings. We can take care of it for $200 (details in the picture). Reply YES and the office will get you scheduled.' },
+  text: { body: 'Hi Pat, this is Catchy Pest Solutions. During your service Friday, your technician, Dustin, found droppings. We can take care of it for $200 (details in the picture). Would you like us to schedule this? Reply YES and our office will get you on the schedule, or NO if not right now.' },
 };
 
 test('a good decision passes; the text must quote the computed price and the right day', () => {
@@ -145,17 +145,17 @@ test('one text and one email per customer: the first quote carries the text for 
   assert.match(Q.checkDecision({ ...termite, text: { body: 'x' } }, other, config, posts, { secondary: true }).join(), /leave text\.body off/);
   // The one text quotes both prices, each in its covers words, and the email.
   const models = [Q.quoteModel(decision, post, config, { today: '2026-11-06' }), Q.quoteModel(termite, other, config, { today: '2026-11-06' })];
-  const good = `We can take care of the mice for ${models[0].initial}, which covers ${models[0].coversText}, and protect your home for ${models[1].initial}, which covers ${models[1].coversText} (details in the pictures). I also emailed you the photos and details. Reply YES`;
+  const good = `We can take care of the mice for ${models[0].initial}, which covers ${models[0].coversText}, and protect your home for ${models[1].initial}, which covers ${models[1].coversText} (details in the pictures). We also emailed you the photos and details. Reply YES`;
   assert.deepEqual(Q.checkGroupText(good, models, { hasEmail: true }), []);
   assert.match(Q.checkGroupText(good.replace(models[1].initial, '$1'), models, { hasEmail: true }).join(), /TermiteShield initial fee/);
-  assert.match(Q.checkGroupText(good.replace(' I also emailed you the photos and details.', ''), models, { hasEmail: true }).join(), /emailed them/);
+  assert.match(Q.checkGroupText(good.replace(' We also emailed you the photos and details.', ''), models, { hasEmail: true }).join(), /emailed them/);
   assert.match(Q.checkGroupText(good, models, { hasEmail: false }).join(), /no email address/);
 });
 
 test("techs who don't sign: no name in the customer's messages, cards say 'What we found'", () => {
   const unsigned = { ...post, tech: { ...post.tech, signMessages: false } };
   assert.match(Q.checkDecision(decision, unsigned, config).join(), /Dustin doesn't sign/);
-  const plain = { ...decision, text: { body: decision.text.body.replace("it's Dustin", 'this is Catchy Pest Solutions') } };
+  const plain = { ...decision, text: { body: decision.text.body.replace('your technician, Dustin,', 'our technician') } };
   assert.deepEqual(Q.checkDecision(plain, unsigned, config), []);
   const m = Q.quoteModel(plain, unsigned, config, { today: '2026-11-06' });
   assert.equal(m.foundBy, 'What we found');
@@ -228,7 +228,7 @@ test('quote request for one of our plans is priced like a finding, without photo
   const req = {
     ts: '1.1', action: 'quote', findings: ['quote_request'], plan: 'termite', headline: 'Termite protection',
     found: ['Asked about termite protection.'], email: { intro: ['Hi Pat,'] },
-    text: { body: 'Hi Pat, it\'s Dustin. When I did your service Friday you asked about termite protection. We can protect your home for $550 (details in the picture). Reply YES and the office will get you scheduled.' },
+    text: { body: 'Hi Pat, this is Catchy Pest Solutions. During your service Friday you asked your technician, Dustin, about termite protection, so we put together a quote. We can protect your home for $550 (details in the picture). Would you like us to schedule this? Reply YES and our office will get you on the schedule, or NO if not right now.' },
   };
   const noPhotos = { ...post, photos: [] };
   assert.deepEqual(Q.checkDecision(req, noPhotos, config), []);
@@ -413,7 +413,7 @@ test('bat remediation price: base by stories, size, activity, access, $1,000-$2,
 
 test('bat quotes are drafts until Daniel replies "approve" in the thread', () => {
   const batPost = { ...post, thread: [{ fromDaniel: true, text: 'Bat quote draft ... Reply *approve* to send it' }], customer: { ...post.customer, status: 'CUSTOMER_ACTIVE', email: 'x@y.z' } };
-  const d = { ...decision, findings: ['bats'], plan: 'bat', techSaysNoExclusion: undefined, bat: { sqft: 2200, sqftSource: 'Zillow', stories: 2, heavyActivity: true, hardAccess: false, exterior: 'vinyl' }, text: { body: 'x. Reply YES' } };
+  const d = { ...decision, findings: ['bats'], plan: 'bat', techSaysNoExclusion: undefined, bat: { sqft: 2200, sqftSource: 'Zillow', stories: 2, heavyActivity: true, hardAccess: false, exterior: 'vinyl' }, text: { body: 'This is Catchy Pest Solutions. Would you like us to schedule this? Reply YES, or NO if not right now.' } };
   assert.equal(Q.isBatDraft(d), true);
   assert.equal(Q.batApproval(batPost), null); // the draft itself doesn't count
   assert.deepEqual(Q.checkDecision(d, batPost, config), []);
@@ -432,7 +432,43 @@ test('large home TermiteShield: $100 more on what the customer pays, same credit
   const normal = pricing.priceFor('termite', a, config);
   const large = pricing.priceFor('termite', a, config, { largeHome: true });
   assert.deepEqual([normal.initial, large.initial], [399, 499]);
-  assert.deepEqual([large.credit, large.monthly, large.noAnnualInitial], [normal.credit, normal.monthly, 549]);
+  assert.deepEqual([large.credit, large.monthly, large.noAnnualInitial], [normal.credit, normal.monthly, 499]); // active plan: no contract, no +$50
   assert.equal(pricing.allPrices(a, config).termite_large_home.initial, 499);
   assert.throws(() => pricing.priceFor('critter', a, config, { largeHome: true }), /no large-home price/);
+});
+
+test('messages come from Catchy Pest Solutions and ask for YES or NO (Daniel, Nov 24)', () => {
+  const asTech = { ...decision, text: { body: decision.text.body.replace('this is Catchy Pest Solutions. During your service Friday, your technician, Dustin, found', "it's Dustin. I did your service Friday and found") } };
+  assert.match(Q.checkDecision(asTech, post, config).join(), /comes from the company/);
+  assert.match(Q.checkDecision(asTech, post, config).join(), /written as the tech \("I"\)/);
+  const noNo = { ...decision, text: { body: decision.text.body.replace(', or NO if not right now', '') } };
+  assert.match(Q.checkDecision(noNo, post, config).join(), /YES or NO/);
+  const techEmail = { ...decision, email: { intro: ['Hi Pat,', 'I found droppings in your crawl space.'], closing: ['Thanks!', 'Dustin'] } };
+  const errs = Q.checkDecision(techEmail, post, config).join();
+  assert.match(errs, /email is written as the tech/);
+  assert.match(errs, /The Catchy Pest Solutions team/);
+  const good = { ...decision, email: { intro: ['Hi Pat,', 'During your service Friday, your technician, Dustin, found droppings.'], closing: ['Just reply YES to this email or our text.', 'The Catchy Pest Solutions team'] } };
+  assert.deepEqual(Q.checkDecision(good, post, config), []);
+  assert.equal(Q.checkedSentence(['termites'], 'the visit', 'Dustin'), "During the visit, Dustin didn't see any signs of termites.");
+});
+
+test('customers with an active plan: no contract and no +$50; others keep the 12-month plan (Daniel, Nov 24)', () => {
+  const active = { ...post, plans: pricing.analyzeServices([svc('GPCONETIME', 'CSC_ACTIVE')], config, { todayDate: '2026-11-24' }) };
+  const m = Q.quoteModel(decision, active, config, { today: '2026-11-24' });
+  assert.equal(m.noCommitment, true);
+  assert.equal(m.price.noAnnualInitial, m.price.initial);
+  for (const line of [m.planLine, m.detailsLine, m.termsLine, m.priceOffice]) {
+    assert.doesNotMatch(line, /12-month|annual/);
+    assert.match(line, /cancel anytime/);
+  }
+  const inspection = Q.quoteModel(decision, post, config, { today: '2026-11-24' });
+  assert.equal(inspection.noCommitment, false);
+  assert.match(inspection.planLine, /12-month plan/);
+  assert.match(inspection.termsLine, /No annual commitment: \$250 initial/);
+  // The credit date in the text has to be the real one.
+  const dated = { ...decision, text: { body: decision.text.body.replace('(details in the picture).', '(details in the picture). Your $447 credit is good through Feb 4.') } };
+  const all = [post];
+  assert.deepEqual(Q.checkQuoteMessages(dated, post, config, [dated], all, { today: '2026-11-06' }).filter((e) => /good through/.test(e)), []);
+  const wrong = { ...dated, text: { body: dated.text.body.replace('Feb 4', 'Feb 9') } };
+  assert.match(Q.checkQuoteMessages(wrong, post, config, [wrong], all, { today: '2026-11-06' }).join(), /it's Feb 4/);
 });

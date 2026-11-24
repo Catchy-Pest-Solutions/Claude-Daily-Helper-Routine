@@ -152,8 +152,13 @@ What each plan covers (for the coverage check):
 | Critter Control, no exclusion | $224 (normally $447) | $34 |
 | TermiteShield (1,200-3,000 sq ft) | $399 (normally $797) | $19 (normally $29) |
 
-No-annual-commitment version: $50 more on the initial fee, same monthly.
-Halves round up to whole dollars.
+Halves round up to whole dollars. **No contract for these customers**
+(Daniel, Nov 24): they already have an active plan, so there's no 12-month
+commitment and no +$50 no-commitment price; the card, email, PDF and
+Briostack log say "No contract, cancel anytime".
+
+Everyone else (below): the 12-month price; the no-annual-commitment version
+is $50 more on the initial fee, same monthly.
 
 **Customer's only service was an Inspection (12501) or One Time Service
 (12504)**, no other active plan: regular 12-month initial price minus what
@@ -170,33 +175,48 @@ honors it at booking from the Communications log.
 
 ## Messages
 
-- **Signed by the tech**, from Catchy Pest Solutions: "Joey here, I did your
-  service Thursday and noticed ... I had the office put together this
-  quote." Name the visit day, not "yesterday." Never mention AI.
+- **From Catchy Pest Solutions, never the tech** (Daniel, Nov 24; it
+  was signed by the tech until then): "Hi Laura, this is Catchy Pest
+  Solutions. During your service on Monday, your technician, Joey, found
+  ...". "We" and "our office", never "I"; the email is from "Catchy Pest
+  Solutions" and signed "The Catchy Pest Solutions team". Customers who
+  thought the tech was texting asked for him and were surprised when the
+  office called. Name the visit day, not "yesterday." Never mention AI.
 - **Pitch the fix, not a plan**: here's the problem, here's what it costs to
   fix (the initial fee). The plan name and monthly fee are secondary.
 - **Text**: short, confident, assumes the sale. Initial fee only and, in a
   few fixed words, what it covers ("$399, which covers the soil treatment
   and bait stations, with a damage warranty"), then "(details in the
-  picture)". Don't mention the 12-month plan in the text.
-  Ends with an easy close: "Reply YES and the office will get you
-  scheduled." One picture: the quote card.
-- **Quote card** (texted picture, 1080x1920, a phone screen): the tech's
-  photo of their home stamped with the address, date and time (from the
-  Slack post), the problem, the price, the credit and its expiry, the
-  "Price covers" list ending "Then $X a month, starting month 4", and the
-  plan name (12-month plan).
-- **Email**: subject **"What I found at <street address>"**. More
+  picture)", the credit deadline ("Your $398 credit is good through Feb
+  22") and that we emailed them. Don't mention the 12-month plan in the
+  text. Ends with a direct yes-or-no question on its own line (Daniel,
+  Nov 24, for the reply rate): "Would you like us to schedule this? Reply
+  YES and our office will get you on the schedule, or NO if not right
+  now. Questions? Just call or text us here." One picture per quote: the
+  quote card.
+- **Quote card** (texted picture, 1080x1920, a phone screen): the photo
+  that shows the problem best (the routine picks it; a blurry photo beats
+  none), optionally a second, step-back photo small in the corner so they
+  see it's their home, stamped with the customer's name, address, date
+  and time (from the Slack post); the problem, the price, the credit and
+  its expiry, the "Price covers" list ending "Then $X a month, starting
+  month 4", and the plan name with its terms ("No contract, cancel
+  anytime" for customers with an active plan, otherwise "12-month plan").
+  Footer: "Reply YES to schedule · NO to pass".
+- **Email**: subject **"What your technician found at <street address>"**,
+  from "Catchy Pest Solutions". More
   explanation: the tech's photos (stamped), what was found and where, why it
   matters (researched, accurate claims), the fix and price with the same
-  covers words as the text, "How we fix it", terms (12-month plan, monthly
-  fee starting month 4) in the details, the infographic for that finding labeled as
-  an example, and the plan's video link at the very bottom.
+  covers words as the text, "How we fix it", terms in the details (no
+  contract for customers with an active plan, otherwise the 12-month plan;
+  monthly fee starting month 4), the infographic for that finding labeled
+  as an example, and the plan's video link at the very bottom. The
+  closing asks them to reply YES or NO.
 - **PDF** attached to the email: the same, laid out as a short proposal,
   with the card's "Price covers" list and "How we fix it". One page plus
   the infographic when it fits; otherwise the fix gets its own page 2.
 - **Credibility ("menu")**: say what the tech checked and didn't see,
-  phrased as "During today's visit I didn't see any signs of ...". Only for
+  phrased as "During the visit, Joey didn't see any signs of ...". Only for
   things the tech actually checked. Never state "no termites" or "no
   wood-boring beetles" in writing unless the tech says they inspected for
   them (liability).

@@ -55,14 +55,20 @@ follow-up routine doesn't call them.
    customer discount on the initial fee only, price rounded up. For
    example: TermiteShield $797 -> $718 ($79 credit).
 
-No annual commitment: +$50 on the initial. The discount is shown as a
-credit good for 90 days; it is not entered in Briostack.
+Customers who already have an active plan (tier 1) get no contract at
+all: no 12-month commitment, cancel anytime, same price (Daniel, Nov 24).
+Everyone else: the 12-month price; no annual commitment is +$50 on the
+initial. The discount is shown as a credit good for 90 days; it is not
+entered in Briostack.
 
 The routine only writes words. `render.js` and `send.js` refuse a decision
 whose text quotes any price other than the computed initial fee (or the
 credit), names the wrong weekday for the visit, mentions the 12-month plan
 in the text, mentions AI, or quotes a covered plan, an open offer or a
-Catchy Club customer.
+Catchy Club customer. Every text and email comes from Catchy Pest
+Solutions, never the tech (Daniel, Nov 24): the scripts refuse "I"/"my",
+a text that doesn't say "Catchy Pest Solutions" or doesn't end by asking
+for YES or NO, and an email not signed by the company.
 
 ## Setup notes (Nov 6, 2026)
 

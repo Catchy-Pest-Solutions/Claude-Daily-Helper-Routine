@@ -21,6 +21,10 @@ const stampWhen = (post) => `${new Date(post.postedAt).toLocaleDateString('en-US
 // it (alsoPosts: same customer, same plan, one quote).
 const allFindings = (d) => [...new Set([...(d.findings || []), ...(d.alsoPosts || []).flatMap((a) => a.findings || [])])];
 
+// The tech speaking in the first person ("I did your service ..."):
+// messages come from Catchy Pest Solutions instead.
+const FIRST_PERSON = /\b(I|I'm|I've|I'd|I'll|me|my)\b/;
+
 const isQuoteRequest = (d) => d.action === 'quote' && (d.findings || []).length === 1 && d.findings[0] === 'quote_request';
 
 function leadKey(decision) {
@@ -94,6 +98,19 @@ function checkDecision(decision, post, config, allPosts = [], { secondary = fals
   }
   if (/12[- ]month|annual|contract/i.test(t)) errs.push("text.body mustn't mention the 12-month plan (it's in the picture)");
   if (!secondary && !/reply yes/i.test(t)) errs.push('text.body should end with the "Reply YES" close');
+  // From Catchy Pest Solutions, never the tech speaking (Daniel, Nov 24:
+  // customers asked for the tech, then were surprised when the office
+  // called), and a clear yes-or-no question to answer.
+  if (!secondary && t.trim()) {
+    if (!/Catchy Pest Solutions/.test(t)) errs.push('text.body comes from the company: start "Hi Laura, this is Catchy Pest Solutions."');
+    if (!/\?/.test(t) || !/\bNO\b/.test(t)) errs.push('text.body must end by asking for YES or NO: "Would you like us to schedule this? Reply YES and our office will get you on the schedule, or NO if not right now."');
+  }
+  const emailWords = [...(decision.email?.intro || []), ...(decision.email?.body || []), ...(decision.email?.closing || [])].join(' ');
+  for (const [label, s] of [['text.body', t], ['email', emailWords]]) {
+    if (FIRST_PERSON.test(s)) errs.push(`${label} is written as the tech ("${s.match(FIRST_PERSON)[0]}"): write from Catchy Pest Solutions ("we"), naming the tech as "your technician, ${post.tech?.name || 'Joey'}"`);
+  }
+  const closing = decision.email?.closing || [];
+  if (!secondary && closing.length && !/Catchy Pest Solutions/.test(closing[closing.length - 1])) errs.push('email.closing signs off from the company: "The Catchy Pest Solutions team"');
   // Techs who don't want their name on customer messages (signMessages
   // false in config.technicians): everything comes from Catchy Pest.
   const first = post.tech?.name;
@@ -168,6 +185,11 @@ function checkQuoteMessages(decision, post, config, decisions, posts, { today })
     const models = info.group.map((d) => quoteModel(d, posts.find((p) => p.ts === d.ts), config, { today }));
     errs.push(...checkGroupText(decision.text.body, models, { hasEmail: Boolean(post.customer?.email) }));
   }
+  // "Your $323 credit is good through Feb 22": the real expiry date.
+  for (const m of String(decision.text?.body || '').matchAll(/good through ([A-Z][a-z]{2,8}\.? \d{1,2})/g)) {
+    const said = m[1].replace('.', '');
+    if (said !== model.creditExpires && !model.creditExpiresLong.startsWith(`${said},`)) errs.push(`text.body says the credit is good through ${m[1]}, but it's ${model.creditExpires}`);
+  }
   const dayErr = checkDayNames([decision.text?.body, ...(decision.email?.intro || []), ...(decision.email?.body || []), ...(decision.email?.closing || [])], model);
   if (dayErr) errs.push(dayErr);
   return errs;
@@ -208,6 +230,7 @@ function quoteModel(decision, post, config, { today }) {
   const bonus = pricing.bonusFor(decision.findings, { visitCategory: post.visit?.category }, config);
   const visitDate = post.visit?.date || post.postDate;
   const covers = priceCovers(plan, findings, exclusion, money(price.monthly), config);
+  const noCommitment = !isBat && price.commitment === 'none';
   return {
     key: leadKey({ ...decision, plan }),
     request,
@@ -225,10 +248,23 @@ function quoteModel(decision, post, config, { today }) {
     bat: batQuote,
     batDraft: isBat && !decision.bat?.approved,
     creditLabel: isBat ? 'consultation credit' : 'credit',
-    planLine: isBat ? `${price.planName}: one charge, no monthly fee` : `${price.planName}, 12-month plan`,
+    // Customers who already have an active plan: no contract, cancel
+    // anytime, never "12-month" (Daniel, Nov 24).
+    noCommitment,
+    planLine: isBat ? `${price.planName}: one charge, no monthly fee` : noCommitment ? `${price.planName} · No contract, cancel anytime` : `${price.planName}, 12-month plan`,
     detailsLine: isBat
       ? `Details: ${price.planName}, one charge due when the initial installation and exclusion are done, no monthly fee. The full quote and agreement are attached as a PDF.`
-      : `Details: ${price.planName}, 12-month plan, billed every 4 weeks. No annual commitment: ${money(price.noAnnualInitial)} initial, same monthly fee. The full quote is attached as a PDF.`,
+      : noCommitment
+        ? `Details: ${price.planName}, billed every 4 weeks. No contract: cancel anytime. The full quote is attached as a PDF.`
+        : `Details: ${price.planName}, 12-month plan, billed every 4 weeks. No annual commitment: ${money(price.noAnnualInitial)} initial, same monthly fee. The full quote is attached as a PDF.`,
+    termsLine: noCommitment
+      ? 'No contract: billed every 4 weeks, cancel anytime.'
+      : `12-month plan, billed every 4 weeks. No annual commitment: ${money(price.noAnnualInitial)} initial, same monthly fee.`,
+    priceOffice: isBat
+      ? `${money(price.initial)}, one charge, no monthly fee.`
+      : noCommitment
+      ? `${money(price.initial)} to start, then ${money(price.monthly)} a month. No contract (they have an active plan): cancel anytime.`
+      : `${money(price.initial)} to start (12-month plan), then ${money(price.monthly)} a month. No annual commitment: ${money(price.noAnnualInitial)} to start.`,
     creditReason: isBat ? 'your consultation credit' : { other_plan: `50% off with your ${post.plans.otherPlans[0] || 'current plan'}`, visit_credit: 'what you paid for your inspection visit', returning: 'returning-customer discount' }[price.tier],
     creditReasonOffice: isBat ? `${isExistingCustomer(post) ? 'existing-customer' : 'new-customer'} consultation credit` : { other_plan: `50% off because they have ${post.plans.otherPlans[0] || 'another plan'}`, visit_credit: 'what they paid for their inspection visits', returning: '10% returning-customer discount' }[price.tier],
     creditExpires: shortDate(creditExpires),
@@ -238,9 +274,12 @@ function quoteModel(decision, post, config, { today }) {
     fixLine: isBat ? `${money(price.initial)} covers ${covers.text}. One charge, no monthly fee.` : `${money(price.initial)} covers ${covers.text}. Then ${money(price.monthly)} a month, starting month 4, on ${price.planName}.`,
     bonus: request ? bonus.perPlan.quote_request ?? 0 : bonus.perPlan[plan] ?? 0,
     bonusMultiplier: bonus.multiplier,
-    // Unsigned techs (signMessages false): "our technician", "What we found".
+    // Every message comes from Catchy Pest Solutions; the tech is named in
+    // the third person ("your technician, Joey"). Unsigned techs
+    // (signMessages false): "our technician", "What we found".
     signed: post.tech?.signMessages !== false,
     techName: post.tech?.signMessages === false ? 'our technician' : post.tech?.name || 'your technician',
+    techPhrase: post.tech?.signMessages === false || !post.tech?.name ? 'our technician' : `your technician, ${post.tech.name}`,
     foundBy: post.tech?.signMessages === false ? 'What we found' : `What ${post.tech?.name || 'your technician'} found`,
     visitDate,
     visitDay: DAY_NAMES[cal.weekdayOf(visitDate)],
@@ -312,11 +351,11 @@ function checkDayNames(texts, model) {
 }
 
 // "I didn't see any signs of A, B or C" from the tech's checked-ok list.
-function checkedSentence(items, visitPhrase = 'the visit') {
+function checkedSentence(items, visitPhrase = 'the visit', techName = 'our technician') {
   const list = (items || []).map((s) => String(s).trim()).filter(Boolean);
   if (!list.length) return null;
   const joined = list.length > 1 ? `${list.slice(0, -1).join(', ')} or ${list[list.length - 1]}` : list[0];
-  return `During ${visitPhrase} I didn't see any signs of ${joined}.`;
+  return `During ${visitPhrase}, ${techName} didn't see any signs of ${joined}.`;
 }
 
 module.exports = { isBatDraft, batApproval, isExistingCustomer, customerGroups, checkGroupText, checkQuoteMessages, allFindings, stampWhen, checkMerges, isQuoteRequest, ACTIONS, checkDecision, quoteModel, priceCovers, checkTextPrice, checkTextCovers, checkDayNames, checkedSentence, leadKey, money, longDate, shortDate };

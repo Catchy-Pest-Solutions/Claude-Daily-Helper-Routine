@@ -158,7 +158,7 @@ function logBody({ prefix, kind, key, model, post, status, recipient, whenMs, se
     `Found by: ${post.tech?.name || model.techName} (Slack post ${post.link}${alsoLinks.length ? `, also ${alsoLinks.join(', ')}` : ''})`,
     `Plan: ${model.planName}${model.exclusion === false ? ' (no exclusion)' : model.exclusion ? ' (with exclusion)' : ''}`,
     `Plan key: ${model.plan}`,
-    `Price: ${model.initial} initial (12-month plan), then ${model.monthly} a month. No annual commitment: ${model.noAnnualInitial}.`,
+    `Price: ${model.priceOffice}`,
     `Credit: ${model.credit || 'none'}${model.credit ? ` (${model.price.reason})` : ''}`,
     `Credit good through: ${model.creditExpiresYmd}`,
     `Quote date: ${today}`,
@@ -191,8 +191,7 @@ function taskBlocks({ decision, post, model, results, action, sentAtMs }) {
       [
         'Quote:',
         `${model.planName}${model.exclusion === false ? ' (no exclusion)' : model.exclusion ? ' (with exclusion)' : ''}${model.largeHome ? ' (large home)' : ''}`,
-        `${model.initial} to start, then ${model.monthly} a month.`,
-        `No annual commitment: ${model.noAnnualInitial} to start.`,
+        model.priceOffice,
       ],
       model.credit ? [`Credit: ${model.credit}, good through ${model.creditExpires}.`, `(${model.creditReasonOffice[0].toUpperCase()}${model.creditReasonOffice.slice(1)}.)`] : ['No credit on this one.'],
       [
@@ -432,7 +431,8 @@ async function main() {
       const { group } = groups.get(key);
       const primaryKey = Q.leadKey(group[0]);
       const together = group.map((x) => Q.leadKey(x)).filter((k) => k !== key);
-      const subjectBase = model.request && group.length === 1 ? `Your quote for ${model.street}` : `${model.signed ? 'What I found' : 'What we found'} at ${model.street}`;
+      // From Catchy Pest Solutions, never the tech (Daniel, Nov 24).
+      const subjectBase = model.request && group.length === 1 ? `Your quote for ${model.street}` : `What your technician found at ${model.street}`;
       const subject = test ? `[TEST for ${who}] ${subjectBase}` : subjectBase;
       const emailTo = post.customer.email;
       const textBody = group[0].text.body.trim();
@@ -493,7 +493,7 @@ async function main() {
               if (p.infographic) inline.push({ cid: p.infographicCid, filename: `${p.infographicCid}.jpg`, mimeType: p.infographic.endsWith('.png') ? 'image/png' : 'image/jpeg', data: fs.readFileSync(p.infographic) });
             }
             await google.sendMail({
-              fromName: model.signed ? `${model.techName} at ${config.company.name}` : config.company.name,
+              fromName: config.company.name,
               fromEmail: config.senderEmail,
               to,
               subject,
