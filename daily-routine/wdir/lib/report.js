@@ -15,7 +15,8 @@ const INSECTS = [
 // Our own words never call anything damage, active, inactive, live or
 // dead (Daniel, Nov 24: an insect report, not a damage report). The form's
 // printed box labels say "inactive"; that's the form, not us.
-const BANNED = /\b(damaged?|damages|damaging|active|inactive|activity|activities|alive|live|dead|infested|severe|extensive|minor|structural)\b/i;
+// No recommendations either: a checked box says treatment is needed.
+const BANNED = /\b(damaged?|damages|damaging|active|inactive|activity|activities|alive|live|dead|infested|severe|extensive|minor|structural|recommend|recommends|recommended|recommendation)\b/i;
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const longDate = (ymd) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric' });
@@ -105,7 +106,7 @@ function checkWdir(decision, post, config, allPosts = []) {
     if (f.box === 1 && !w.treatedByUs) errs.push(`${def.letter}: box 1 (control measures performed) only when we treated this property (set "treatedByUs": true with the Briostack service)`);
     if (def.key === 'others') {
       if (!allowedTypes.includes(f.type)) errs.push(`D (Others) is only ${allowedTypes.join(', ')}; got "${f.type || ''}"`);
-      if (f.box === 3) errs.push('D (carpenter bees/ants) is never box 3: carpenter bees are always box 2 and treatment is recommended');
+      if (f.box === 3) errs.push('D (carpenter bees/ants) is never box 3: carpenter bees and ants are always box 2');
     }
   }
   if (w.termites && String(w.termitesNote || '').trim()) errs.push('termitesNote is only for a previous treatment with no signs of termites (A unchecked)');
@@ -136,7 +137,7 @@ function checkWdir(decision, post, config, allPosts = []) {
   ];
   for (const [label, t] of texts) {
     const m = BANNED.exec(String(t || ''));
-    if (m) errs.push(`${label} says "${m[0]}": describe what was seen and where ("signs of termites observed at the sill plate"), never damage, active/inactive, live/dead or how bad`);
+    if (m) errs.push(`${label} says "${m[0]}": describe what was seen and where ("signs of termites observed at the sill plate"), never damage, active/inactive, live/dead, how bad or a recommendation`);
     for (const n of photoRefs(t)) if (n < 1 || n > photos.length) errs.push(`${label} refers to photo ${n}, but the report has ${photos.length} photo${photos.length === 1 ? '' : 's'}`);
   }
   return errs;

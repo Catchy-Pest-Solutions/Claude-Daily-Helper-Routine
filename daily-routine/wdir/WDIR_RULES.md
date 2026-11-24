@@ -100,6 +100,8 @@ General:
   so it's almost never checked.
 - Box 4 only when A-D are all unchecked. Box 5 stands on its own (it can
   go with box 4).
+- Never write "treatment recommended" or any recommendation (Daniel,
+  Nov 24): a checked box tells the reader treatment is needed.
 - Words: describe what was seen and where. Never "damage", "active",
   "live", "dead", "activity", "inactive" in our own words (the form's
   printed box labels are fine), and never how bad, how old or how
@@ -168,11 +170,10 @@ Write the insect on the "Others" line ("Carpenter bees", "Carpenter
 ants", or "Carpenter bees and carpenter ants").
 
 - **Carpenter bees** (the most common finding on these reports): "Signs
-  of carpenter bee burrows observed at the front porch fascia. Treatment
-  is recommended. See photo 5." Always D2: carpenter bees can't be judged
-  inactive (they're seasonal and eggs and larvae stay in the burrows
-  year round), so we never call them inactive and always recommend
-  treatment.
+  of carpenter bee burrows observed at the front porch fascia. See photo
+  5." Always D2: carpenter bees can't be judged inactive (they're
+  seasonal and eggs and larvae stay in the burrows year round), so we
+  never call them inactive.
 - **Carpenter ants:** galleries in wood like termites but with no mud
   tubes, and the galleries are very smooth. D2 unless we treated (D1).
   Never D3 unless Daniel says otherwise.
@@ -217,7 +218,7 @@ attached." Anything else only when it clarifies a statement above.
     "termitesNote": "",                               // only with termites null: previous treatment / spot drill holes
     "powderPostBeetles": null,                        // { "box": 2|3, "location": "..." }
     "oldHouseBorers": null,
-    "others": { "type": "Carpenter bees", "box": 2, "location": "Signs of carpenter bee burrows observed in the front porch fascia. Treatment is recommended. See photo 3." },
+    "others": { "type": "Carpenter bees", "box": 2, "location": "Signs of carpenter bee burrows observed in the front porch fascia. See photo 3." },
     "conducive": ["Wood-to-ground contact at the back porch steps (photo 4).", "Siding-to-ground contact along the left side of the home."],
     "remarks": ["Inspection requested by Blue Ridge Home Inspections."],
     "treatedByUs": false                              // true only to allow box 1 (we treated, in Briostack)
@@ -232,8 +233,8 @@ the script from A-D and `conducive`. The scripts refuse: a box other than
 1-3, box 1 without `treatedByUs`, D other than carpenter bees/ants or D
 box 3, `termitesNote` next to a checked A, a missing photo or caption, a
 "photo N" that doesn't exist, and the words damage, active, inactive,
-activity, live, dead, infested, minor, extensive, severe or structural in
-our text.
+activity, live, dead, infested, minor, extensive, severe, structural or
+recommend(ed) in our text.
 
 When something needed isn't in the post (powder post beetles or old house
 borers without active/inactive, which building, where in the house):

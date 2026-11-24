@@ -18,7 +18,7 @@ const base = {
   ts: '5.1', action: 'wdir',
   wdir: {
     termites: null, powderPostBeetles: null, oldHouseBorers: null,
-    others: { type: 'Carpenter bees', box: 2, location: 'Signs of carpenter bee burrows observed in the front porch fascia. Treatment is recommended. See photo 1.' },
+    others: { type: 'Carpenter bees', box: 2, location: 'Signs of carpenter bee burrows observed in the front porch fascia. See photo 1.' },
     conducive: ['Wood-to-ground contact at the back porch steps (photo 2).'],
     remarks: [],
   },
@@ -51,7 +51,7 @@ test('box rules: D is only carpenter bees/ants and never box 3; box 1 only when 
 });
 
 test("our words never say damage, active/inactive, live/dead or how bad (Daniel, Nov 24)", () => {
-  for (const word of ['damage', 'active', 'inactive', 'live', 'dead', 'activity', 'extensive']) {
+  for (const word of ['damage', 'active', 'inactive', 'live', 'dead', 'activity', 'extensive', 'treatment recommended']) {
     const d = withW({ termites: { box: 2, location: `Termite ${word} observed at the sill plate.` } });
     assert.match(W.checkWdir(d, post, config).join(), /never damage/, word);
   }
