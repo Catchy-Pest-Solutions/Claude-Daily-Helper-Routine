@@ -7,7 +7,8 @@ const pricing = require('./pricing');
 const bat = require('./bat');
 const cal = require('../../src/callReview/calendar');
 
-const ACTIONS = ['quote', 'commercial', 'custom_quote', 'quote_request', 'skip', 'ask'];
+const ACTIONS = ['quote', 'commercial', 'custom_quote', 'quote_request', 'wdir', 'skip', 'ask'];
+const W = require('../../wdir/lib/report');
 const money = (n) => `$${Number(n).toLocaleString('en-US')}`;
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -28,6 +29,7 @@ const FIRST_PERSON = /\b(I|I'm|I've|I'd|I'll|me|my)\b/;
 const isQuoteRequest = (d) => d.action === 'quote' && (d.findings || []).length === 1 && d.findings[0] === 'quote_request';
 
 function leadKey(decision) {
+  if (decision.action === 'wdir') return `${decision.ts}:wdir`;
   return decision.plan ? `${decision.ts}:${decision.plan}` : String(decision.ts);
 }
 
@@ -37,6 +39,8 @@ function checkDecision(decision, post, config, allPosts = [], { secondary = fals
   const errs = [];
   if (!ACTIONS.includes(decision.action)) errs.push(`action must be one of ${ACTIONS.join(', ')}`);
   if (!post) return [`no collected post with ts ${decision.ts}`];
+  // A wood-destroying insect report: its own rules (wdir/WDIR_RULES.md).
+  if (decision.action === 'wdir') return W.checkWdir(decision, post, config, allPosts);
   const findings = allFindings(decision);
   for (const a of decision.alsoPosts || []) {
     const other = allPosts.find((p) => p.ts === a.ts);

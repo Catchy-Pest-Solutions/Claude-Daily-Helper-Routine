@@ -163,6 +163,7 @@ async function main() {
       customerIdOverride: override ? override.id : undefined,
       namePosted: parsed.name,
       quoteRequest: parsed.quoteRequest,
+      wdir: parsed.wdir,
       photos,
       thread,
       sheetRows: sheetRows.filter((r) => postOf(r['Post ID']) === m.ts),
@@ -245,6 +246,9 @@ async function main() {
       otherRecords,
     };
     post.visit = visit;
+    // A WDIR appointment (Briostack category "WDIR") makes it a WDIR post
+    // even when the tech didn't write "WDIR" (Daniel, Nov 24).
+    if (visit && (config.wdir?.categories || []).includes(String(visit.category))) post.wdir = true;
     post.plans = analysis;
     post.priorOffers = priorOffers;
     post.prices = pricing.allPrices(analysis, config);

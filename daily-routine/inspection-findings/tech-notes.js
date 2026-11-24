@@ -11,6 +11,8 @@
 //   no bonus  the same "Quote sent" line, then the decision's techMessage
 //              (what was missing) and the week total.
 //   skip/ask  the decision's techMessage as written.
+//   wdir      "WDIR report for Jane Smith is done and emailed to the office
+//              to send out. Thanks Joey!" (no bonus)
 // Posts nothing: the routine replies in each post's thread with Slack.
 require('../lead-followup/lib/proxy');
 const fs = require('node:fs');
@@ -34,6 +36,11 @@ function notesFor({ decisions, posts, rows }) {
     const first = post.tech?.name || 'there';
     if (d.action === 'skip' || d.action === 'ask') {
       if (d.techMessage) notes.push({ ts, tech: post.tech?.fullName, text: d.techMessage });
+      return;
+    }
+    if (d.action === 'wdir') {
+      const cust = [post.customer?.firstName, post.customer?.lastName].filter(Boolean).join(' ') || 'the customer';
+      notes.push({ ts, tech: post.tech?.fullName, text: merged ? `Thanks ${first}! These photos are on the same WDIR report.` : `WDIR report for ${cust} is done and emailed to the office to send out. Thanks ${first}!` });
       return;
     }
     if (d.action === 'quote' && d.plan === 'bat' && !d.bat?.approved) {

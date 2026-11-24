@@ -1,0 +1,935 @@
+{
+ "_doc": "WDIR 100 field positions in PDF points (612x792, origin bottom-left), from the official fillable PDF. Fields starting with _ have no widget on the form: they sit on the printed label.",
+ "fields": {
+  "SellersNames": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    123.98,
+    634.56,
+    584.47,
+    646.16
+   ]
+  },
+  "BuyersNames": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    123.75,
+    611.93,
+    583.88,
+    623.53
+   ]
+  },
+  "StructuresInspectedMainResidenceOnly": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    249.34,
+    577.61,
+    260.14,
+    587.75
+   ]
+  },
+  "PropertyAreasDeemedObstructedorInaccessible2": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    31.91,
+    533.64,
+    587.16,
+    545.25
+   ]
+  },
+  "PropertyAreasDeemedObstructedorInaccessible3": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    31.88,
+    522.72,
+    577.96,
+    534.32
+   ]
+  },
+  "StructuresInspectedOther": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    300.83,
+    577.61,
+    311.63,
+    587.75
+   ]
+  },
+  "SubterraneanTermites": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    18.7,
+    409.06,
+    29.5,
+    419.21
+   ]
+  },
+  "PowderPostBeetles": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    18.48,
+    345.52,
+    29.28,
+    355.66
+   ]
+  },
+  "OldHouseBorers": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    18.66,
+    294.83,
+    29.46,
+    304.97
+   ]
+  },
+  "Others": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    18.85,
+    243.7,
+    29.65,
+    253.84
+   ]
+  },
+  "NoVisibleEvidence": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    19.39,
+    192.81,
+    30.19,
+    202.95
+   ]
+  },
+  "PowderPostBeetlesControlMeasuresPerformed": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    36.85,
+    334.13,
+    45.36,
+    342.09
+   ]
+  },
+  "PowderPostBeetlesNoControlMeasuresPerformed": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    37.29,
+    321.44,
+    45.8,
+    329.41
+   ]
+  },
+  "PowderPostBeetlesInactiveInfestation": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    37.5,
+    308.53,
+    46.01,
+    316.49
+   ]
+  },
+  "OldHouseBorersControlMeasuresPerformed": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    36.98,
+    283.23,
+    45.49,
+    291.19
+   ]
+  },
+  "OldHouseBorersNoControlMeasuresPerformed": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    37.2,
+    270.54,
+    45.71,
+    278.73
+   ]
+  },
+  "OldHouseBorersInactiveInfestation": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    36.75,
+    257.62,
+    45.26,
+    266.03
+   ]
+  },
+  "OthersControlMeasuresPerformed": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    37.29,
+    232.12,
+    45.8,
+    240.52
+   ]
+  },
+  "OthersNoControlMeasuresPerformed": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    37.29,
+    219.43,
+    45.8,
+    228.05
+   ]
+  },
+  "OthersInactiveInfestation": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    37.5,
+    206.95,
+    46.01,
+    215.57
+   ]
+  },
+  "SubterraneanTermitesVisibleEvidenceLocation": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    314.53,
+    360.5,
+    594.0,
+    422.28
+   ]
+  },
+  "PowderPostBeetlesVisibleEvidenceLocation": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    314.82,
+    308.66,
+    593.85,
+    358.88
+   ]
+  },
+  "OldHouseBorersVisibleEvidenceLocation": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    314.75,
+    258.72,
+    593.78,
+    308.06
+   ]
+  },
+  "OthersVisibleEvidenceLocation": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    315.04,
+    206.88,
+    594.07,
+    257.32
+   ]
+  },
+  "OthersType": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    83.22,
+    241.09,
+    286.54,
+    252.69
+   ]
+  },
+  "ConduciveConditions1": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    19.22,
+    164.63,
+    586.03,
+    176.23
+   ]
+  },
+  "ConduciveConditions2": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    19.11,
+    151.05,
+    586.0,
+    163.08
+   ]
+  },
+  "companyName": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    46.29,
+    112.59,
+    316.55,
+    124.19
+   ]
+  },
+  "companyAddress": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    54.73,
+    89.88,
+    152.6,
+    101.48
+   ]
+  },
+  "customerServiceNumber": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    380.02,
+    94.41,
+    454.28,
+    106.01
+   ]
+  },
+  "companyCity": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    153.64,
+    89.9,
+    223.01,
+    101.5
+   ]
+  },
+  "AuthorizedCompanyRepSignatureDate": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    453.82,
+    112.85,
+    525.9,
+    124.45
+   ]
+  },
+  "companyLicenseNumber": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    384.61,
+    113.03,
+    434.57,
+    124.63
+   ]
+  },
+  "companyState": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    224.09,
+    89.96,
+    248.83,
+    101.56
+   ]
+  },
+  "companyZip": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    249.78,
+    90.11,
+    300.09,
+    101.71
+   ]
+  },
+  "SubterraneanTermitesControlMeasuresPerformed": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    36.36,
+    397.61,
+    44.87,
+    405.79
+   ]
+  },
+  "SubterraneanTermitesNoControlMeasuresPerformed": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    36.14,
+    385.15,
+    44.65,
+    393.33
+   ]
+  },
+  "SubterraneanTermitesVisibleEvidence": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    36.13,
+    372.01,
+    44.64,
+    380.19
+   ]
+  },
+  "serviceAddress": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    44.71,
+    656.82,
+    169.84,
+    668.17
+   ]
+  },
+  "serviceCity": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    170.85,
+    656.79,
+    272.59,
+    668.13
+   ]
+  },
+  "serviceState": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    273.65,
+    656.78,
+    306.01,
+    668.13
+   ]
+  },
+  "serviceZip": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    307.15,
+    656.78,
+    349.85,
+    668.13
+   ]
+  },
+  "AuthorizedCompanyRepTitle": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    353.83,
+    71.59,
+    518.16,
+    83.19
+   ]
+  },
+  "StructuresInspectedOtherType": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    349.05,
+    576.74,
+    534.4,
+    587.44
+   ]
+  },
+  "ConduciveConditions": {
+   "page": "page1",
+   "type": "check",
+   "rect": [
+    19.36,
+    179.73,
+    30.16,
+    189.87
+   ]
+  },
+  "PropertyAreasDeemedObstructedorInaccessible1": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    330.33,
+    545.29,
+    586.01,
+    556.89
+   ]
+  },
+  "Remarks": {
+   "page": "page2",
+   "type": "text",
+   "rect": [
+    64.1,
+    148.14,
+    542.09,
+    487.01
+   ]
+  },
+  "PurchasersSignaturesAcknowledgedDate": {
+   "page": "page2",
+   "type": "text",
+   "rect": [
+    478.09,
+    110.78,
+    559.68,
+    122.38
+   ]
+  },
+  "InspectionReportAddendumDate": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    488.99,
+    688.41,
+    570.59,
+    700.01
+   ]
+  },
+  "InspectionReportAddendumFinding1": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    47.03,
+    620.96,
+    566.15,
+    632.56
+   ]
+  },
+  "InspectionReportAddendumFinding2": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    47.03,
+    607.35,
+    566.15,
+    618.95
+   ]
+  },
+  "InspectionReportAddendumFinding3": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    47.16,
+    593.36,
+    566.15,
+    604.96
+   ]
+  },
+  "InspectionReportAddendumFinding4": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    47.03,
+    579.23,
+    566.15,
+    590.83
+   ]
+  },
+  "InspectionReportAddendumFinding5": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    47.03,
+    565.34,
+    566.15,
+    576.94
+   ]
+  },
+  "InspectionReportAddendumFinding6": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    47.03,
+    551.42,
+    566.15,
+    563.02
+   ]
+  },
+  "InspectionReportAddendumFinding7": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    47.03,
+    537.38,
+    566.15,
+    548.98
+   ]
+  },
+  "InspectionReportAddendumFinding8": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    47.03,
+    523.35,
+    566.15,
+    534.95
+   ]
+  },
+  "InspectionReportAddendumFinding9": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    509.36,
+    566.1,
+    520.97
+   ]
+  },
+  "InspectionReportAddendumFinding10": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.93,
+    495.27,
+    566.05,
+    506.87
+   ]
+  },
+  "InspectionReportAddendumFinding11": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.95,
+    481.36,
+    565.93,
+    492.96
+   ]
+  },
+  "InspectionReportAddendumFinding12": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    467.47,
+    566.1,
+    479.07
+   ]
+  },
+  "InspectionReportAddendumFinding13": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    453.25,
+    566.1,
+    464.85
+   ]
+  },
+  "InspectionReportAddendumFinding14": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    439.42,
+    566.1,
+    451.02
+   ]
+  },
+  "InspectionReportAddendumFinding15": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    425.38,
+    566.1,
+    436.98
+   ]
+  },
+  "InspectionReportAddendumFinding16": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    411.18,
+    566.1,
+    422.78
+   ]
+  },
+  "InspectionReportAddendumFinding17": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.97,
+    397.47,
+    566.08,
+    409.07
+   ]
+  },
+  "InspectionReportAddendumFinding18": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.97,
+    383.29,
+    566.08,
+    394.89
+   ]
+  },
+  "InspectionReportAddendumFinding19": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.93,
+    369.3,
+    565.92,
+    380.9
+   ]
+  },
+  "InspectionReportAddendumFinding20": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.97,
+    355.33,
+    566.08,
+    366.93
+   ]
+  },
+  "InspectionReportAddendumFinding21": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.97,
+    341.36,
+    566.08,
+    352.96
+   ]
+  },
+  "InspectionReportAddendumFinding22": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.97,
+    327.28,
+    566.08,
+    338.88
+   ]
+  },
+  "InspectionReportAddendumFinding23": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.97,
+    313.4,
+    566.08,
+    325.0
+   ]
+  },
+  "InspectionReportAddendumFinding24": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.97,
+    299.53,
+    566.08,
+    311.13
+   ]
+  },
+  "InspectionReportAddendumFinding25": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    285.26,
+    566.1,
+    296.87
+   ]
+  },
+  "InspectionReportAddendumFinding26": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    271.33,
+    566.1,
+    282.93
+   ]
+  },
+  "InspectionReportAddendumFinding27": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.95,
+    257.42,
+    565.93,
+    269.02
+   ]
+  },
+  "InspectionReportAddendumFinding28": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    243.29,
+    566.1,
+    254.89
+   ]
+  },
+  "InspectionReportAddendumFinding29": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    229.4,
+    566.1,
+    241.0
+   ]
+  },
+  "InspectionReportAddendumFinding30": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    215.48,
+    566.1,
+    227.08
+   ]
+  },
+  "InspectionReportAddendumFinding31": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    201.28,
+    566.1,
+    212.88
+   ]
+  },
+  "InspectionReportAddendumFinding32": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    187.41,
+    566.1,
+    199.01
+   ]
+  },
+  "InspectionReportAddendumFinding33": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    173.4,
+    566.1,
+    185.0
+   ]
+  },
+  "InspectionReportAddendumFinding34": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    159.23,
+    566.1,
+    170.83
+   ]
+  },
+  "InspectionReportAddendumFinding35": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.95,
+    145.39,
+    565.93,
+    156.99
+   ]
+  },
+  "InspectionReportAddendumFinding36": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    131.43,
+    566.1,
+    143.03
+   ]
+  },
+  "InspectionReportAddendumFinding37": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    117.29,
+    566.1,
+    128.89
+   ]
+  },
+  "InspectionReportAddendumFinding38": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    103.3,
+    566.1,
+    114.9
+   ]
+  },
+  "InspectionReportAddendumFinding39": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    89.49,
+    566.1,
+    101.09
+   ]
+  },
+  "InspectionReportAddendumFinding40": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    46.98,
+    75.22,
+    566.1,
+    86.82
+   ]
+  },
+  "techName": {
+   "page": "addendum",
+   "type": "text",
+   "rect": [
+    45.22,
+    687.03,
+    150.82,
+    698.64
+   ]
+  },
+  "_propertyAddress": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    143,
+    589.4,
+    584,
+    599.4
+   ]
+  },
+  "_signature": {
+   "page": "page1",
+   "type": "image",
+   "rect": [
+    183,
+    64,
+    262,
+    93
+   ]
+  },
+  "_companyAddressCity": {
+   "page": "page1",
+   "type": "text",
+   "rect": [
+    54.73,
+    89.88,
+    223.01,
+    101.48
+   ]
+  }
+ }
+}

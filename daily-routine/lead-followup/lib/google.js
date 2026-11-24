@@ -71,6 +71,30 @@ async function uploadShared({ folderId, name, mimeType, data }) {
   return file.id;
 }
 
+// Uploads a file that stays private (no sharing): only this OAuth client
+// and the office account can read it. Used for Daniel's signature (WDIR).
+async function uploadPrivate({ folderId, name, mimeType, data }) {
+  const boundary = `b${crypto.randomBytes(12).toString('hex')}`;
+  const meta = JSON.stringify({ name, mimeType, ...(folderId ? { parents: [folderId] } : {}) });
+  const body = Buffer.concat([
+    Buffer.from(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`),
+    data,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
+  const file = await google('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+    body,
+    headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
+  });
+  return file.id;
+}
+
+// A Drive file's bytes (only files this OAuth client created: drive.file).
+async function downloadFile(id) {
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?alt=media`, { headers: { Authorization: `Bearer ${await accessToken()}` } });
+  if (!res.ok) throw new Error(`Drive file ${id} -> ${res.status} ${(await res.text()).slice(0, 120)}`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
 // Direct image link Textable can fetch: returns the JPG itself, no redirect.
 const imageUrl = (id) => `https://lh3.googleusercontent.com/d/${id}`;
 // Normal share link (opens Drive's viewer). Fine as a link in a message.
@@ -194,4 +218,4 @@ async function getMessage(id, { subjectOnly = false } = {}) {
   return { id, internalDate: Number(msg.internalDate), subject: header('subject'), html: body('text/html') || body('text/plain') };
 }
 
-module.exports = { listMessages, getMessage, accessToken, uploadShared, imageUrl, shareUrl, checkPublicImage, randomName, buildMime, sendMail, encodeHeader };
+module.exports = { listMessages, getMessage, accessToken, uploadShared, uploadPrivate, downloadFile, imageUrl, shareUrl, checkPublicImage, randomName, buildMime, sendMail, encodeHeader };

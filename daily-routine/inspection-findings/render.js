@@ -20,6 +20,8 @@ const google = require('../lead-followup/lib/google');
 const cal = require('../src/callReview/calendar');
 const { loadConfig } = require('./lib/common');
 const Q = require('./lib/quote');
+const W = require('../wdir/lib/report');
+const { renderWdir } = require('../wdir/lib/render');
 
 const TEMPLATES = path.join(__dirname, 'templates');
 const LOGO = path.join(__dirname, '..', 'lead-followup', 'assets', 'logo-print.png');
@@ -257,16 +259,31 @@ async function main() {
     if (!errs.length) errs.push(...Q.checkQuoteMessages(d, post, config, decisions, collected.posts, { today }));
     if (errs.length) problems.push(`${d.ts}${d.plan ? `:${d.plan}` : ''}: ${errs.join('; ')}`);
   }
+  // Wood-destroying insect reports (wdir/WDIR_RULES.md).
+  const wdirs = decisions.filter((d) => d.action === 'wdir');
+  for (const d of wdirs) {
+    const errs = Q.checkDecision(d, collected.posts.find((p) => p.ts === d.ts), config, collected.posts);
+    if (errs.length) problems.push(`${d.ts}:wdir: ${errs.join('; ')}`);
+  }
   if (problems.length) throw new Error(`fix decisions.json first: ${problems.join(' | ')}`);
+  // Signed with Daniel's signature (a private Drive file). Test mode and
+  // design checks (--no-upload) are stamped so they can't pass as real.
+  const watermark = config.testMode !== false ? 'TEST - NOT AN OFFICIAL REPORT' : args['no-upload'] ? 'SAMPLE - NOT AN OFFICIAL REPORT' : null;
+  const signature = wdirs.length ? await google.downloadFile(config.wdir.signatureDriveFileId) : null;
 
   const rendered = [];
   const chrome = await launch();
   try {
     for (const d of quotes) rendered.push(await renderQuote(chrome, d, collected.posts.find((p) => p.ts === d.ts), config, today, outDir, collected.posts));
+    for (const d of wdirs) {
+      const m = W.reportModel(d, collected.posts.find((p) => p.ts === d.ts), config, collected.posts);
+      const r = await renderWdir(chrome, m, { dir: path.join(outDir, 'wdir', d.ts.replace('.', '_')), signature, watermark });
+      rendered.push({ key: m.key, ts: d.ts, kind: 'wdir', pdfPath: r.pdfPath, pdfPages: r.pages, addendum: r.addendum, watermark });
+    }
   } finally {
     await chrome.close();
   }
-  if (!args['no-upload']) for (const r of rendered) Object.assign(r, await upload(r, config));
+  if (!args['no-upload']) for (const r of rendered.filter((x) => x.kind !== 'wdir')) Object.assign(r, await upload(r, config));
   const file = path.join(outDir, 'rendered.json');
   fs.writeFileSync(file, JSON.stringify({ rendered }, null, 2));
   process.stdout.write(`${JSON.stringify({ rendered: rendered.length, path: file, items: rendered.map((r) => ({ key: r.key, cardUrl: r.cardUrl || null, pdfUrl: r.pdfUrl || null, pdfPages: r.pdfPages })) })}\n`);
