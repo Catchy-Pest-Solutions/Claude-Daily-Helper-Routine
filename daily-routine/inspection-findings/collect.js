@@ -163,6 +163,7 @@ async function main() {
       customerIdOverride: override ? override.id : undefined,
       namePosted: parsed.name,
       quoteRequest: parsed.quoteRequest,
+      wdir: parsed.wdir,
       photos,
       thread,
       sheetRows: sheetRows.filter((r) => postOf(r['Post ID']) === m.ts),

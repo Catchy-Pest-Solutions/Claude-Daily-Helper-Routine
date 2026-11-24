@@ -16,6 +16,9 @@ Reference docs, read the relevant one before touching an integration:
   in the ATS phone API.
 - `daily-routine/lead-followup/README.md`: the new-customer follow-up
   routine (prepare/render/send scripts, the Apps Script relay, test mode).
+- `daily-routine/wdir/WDIR_RULES.md`: the Official NC Wood-Destroying
+  Insect Information Report (WDIR 100) the inspection findings routine
+  fills from a tech's WDIR post, signs and emails to the office.
 - `daily-routine/daily-summary/ROUTINE_PROMPT.md`: the daily technician
   briefing, office check-list, trap counts and same-address add-on tasks
   (Briostack API + Slack). Change the routine by editing this file.

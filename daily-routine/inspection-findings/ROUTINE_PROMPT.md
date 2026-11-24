@@ -199,6 +199,22 @@ out (not for the draft), e.g. "Bat quote sent to Jane Smith #12345
 `missingSteps`), but the `techMessage` asks for close-ups of the
 droppings and where they get in, and a wide shot of that side.
 
+**WDIR posts** (wood-destroying insect reports; Daniel, Nov 24): a post
+with `wdir: true` (the tech wrote "WDIR", "WDI" or "wood destroying"), or
+one that's clearly a real estate termite inspection, is not a finding to
+quote. Read `wdir/WDIR_RULES.md` first and follow it exactly: it's an
+official North Carolina form signed with Daniel's name, so only what the
+tech reported and photographed goes on it, in his findings rewritten as
+clear sentences. Write `"action": "wdir"` with the `wdir` object and every
+photo, captioned (the format is in WDIR_RULES.md). No bonus, no quote, no
+text to the customer: send.js emails the signed report to the office,
+who forward it. When something the form needs isn't in the post (powder
+post beetles or old house borers without active/inactive, where in the
+house, which building), `"action": "ask"` with one short question
+instead; the report goes out on the run after he answers. More photos in
+the tech's next post for the same home: `alsoPosts`. A regular findings
+post for the same visit is still quoted as usual.
+
 **Covered yard burrows**: mole, vole or groundhog burrows on a Critter
 Control customer are skipped (no bonus), but the `techMessage` tells the
 tech they're covered and to treat them as part of the Critter Control
@@ -372,6 +388,11 @@ texts early.
 `send.js` prints one result per decision (`text`, `email`, `log`, `task`,
 `sheet`). Re-running is safe: logged leads come back `already_sent`.
 
+WDIR decisions: render.js makes the signed report (`$S/wdir/`, look at
+page 1 and the photo pages before sending) and send.js emails it to the
+office (`email: "sent to office@..."`), logs it on the customer with the
+PDF and writes its sheet row.
+
 Post each decision's `officeAlert` (if any) to #office-only
 (`C09LNB93MQW`) as one message. Post each new bat draft from
 `$S/bat-drafts.json` in its post's thread and push-notify Daniel (see
@@ -404,5 +425,6 @@ DM Daniel (`U09LQDUPQTC`) the contents of `$S/payroll.md`.
 ## Step 6: report
 
 DM Daniel one short summary: posts read, quoted (customer, plan, price),
+WDIR reports emailed to the office (customer, address),
 skipped and why, questions asked, bat drafts waiting for him, anything
 that failed.

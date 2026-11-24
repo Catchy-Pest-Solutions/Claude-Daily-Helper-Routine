@@ -1,6 +1,9 @@
 # NC Wood-Destroying Insect Report (WDIR 100): rules
 
-**Status: DRAFT, collecting Daniel's parameters (Nov 24, 2026). Not approved yet.**
+**Status: Daniel's parameters, Nov 24, 2026.** Built into the inspection
+findings routine (`ROUTINE_PROMPT.md`, "WDIR posts"): decisions with
+`"action": "wdir"`, rendered by `wdir/lib/render.js`, checked by
+`wdir/lib/report.js`.
 
 How the routine fills the Official North Carolina Wood-Destroying Insect
 Information Report (form WDIR 100, NCPCA / NCDA&CS) from a technician's
@@ -10,23 +13,39 @@ guesses at a measurement, and never judges how bad something is.
 
 ## Output
 
+- **Where the info comes from:** the technician posts the WDIR inspection
+  in the inspection findings Slack channel like any other finding, with
+  the customer ID and his photos, and "WDIR" (or "wood destroying") in
+  the text. Any technician can do these.
 - **The report PDF:** form pages 1-2 (front and "Conditions Governing This
-  Report"), filled and flattened (it can't be edited), with Daniel's
-  signature on "Signature of Authorized Company Rep". Then the
-  technician's photos on added pages ("Photographs", numbered and
-  captioned, with the property address and inspection date on each
-  page). The addendum page ("Wood Destroying Organism Inspection Report
-  Addendum") is added only when a description doesn't fit its box. The
-  graph page is not used (we provide photos, not a graph).
-- **A Gmail draft** from office@catchypestsolutions.com with no
-  recipients: the office adds them and sends it. Subject: "Wood-Destroying
-  Insect Report – <service address>". The body is a short, plain summary
-  of the findings. When something needs a quote: "If you'd like a quote to
-  address this, reply to this email or give us a call and we'll be glad to
-  put one together." No prices and no sales pitch (agents and closing
-  attorneys read these). The report PDF is attached.
+  Report"), filled, with Daniel's signature on "Signature of Authorized
+  Company Rep" (a private file in the office Drive, never in the repo).
+  Then the technician's photos on added pages ("Photographs", two per
+  page, numbered and captioned, with the address, inspection date and file
+  number). The addendum page ("Wood Destroying Organism Inspection Report
+  Addendum") is added only when a description doesn't fit its box (its
+  box then says "See addendum."). The graph page is not used: we provide
+  photos, not a graph. Remarks always says which pages the photos are on.
+- **An email to the office** (office@catchypestsolutions.com, from
+  "Catchy Pest Solutions") with the PDF attached: the office forwards it
+  to the agent / customer. Subject: "Wood-Destroying Insect Report –
+  <address>". The body is written for the person it's forwarded to: a
+  one-line intro, a short summary of the findings (the report's own
+  words), and, when anything was found (A-D or conducive conditions):
+  "If you'd like a quote to address these findings, reply to this email
+  or give us a call and we'll be glad to put one together." No prices and
+  no sales pitch.
+- **Logged** on the customer's Briostack Communications tab ("[WDIR
+  REPORT] <address>") with the PDF attached, and a row on the Leads sheet
+  ("WDIR report sent", no bonus). The tech's thread gets "WDIR report for
+  Jane Smith is done and emailed to the office to send out. Thanks Joey!"
+- **Test mode / samples:** every page is stamped "TEST" or "SAMPLE - NOT AN
+  OFFICIAL REPORT"; the live send refuses a stamped report.
 - The purchaser's signature and "Date Acknowledged" (page 2) stay blank:
   the closing agent gets those signatures.
+- **No quote goes to the customer** from a WDIR post (the email offers
+  one). A separate regular findings post for the same visit is quoted as
+  usual.
 
 ## Every report
 
@@ -35,9 +54,9 @@ guesses at a measurement, and never judges how bad something is.
 | Firm | Catchy Pest Solutions |
 | PCO Lic No. | 2592PW |
 | Address | 1854 Hendersonville Rd, Suite A8, Asheville, NC 28803 |
-| Telephone | (828) 263-4804 (to confirm) |
+| Telephone | (828) 263-4804 |
 | Title | General Manager |
-| Signature | Daniel Wilde's e-signature (kept as a protected environment setting, never in the repo) |
+| Signature | Daniel Wilde's e-signature: a private file in the office Google Drive (config `wdir.signatureDriveFileId`), never in the repo |
 | Date (every date field) | The inspection date (the technician's visit), not the day the report is written |
 | File Number | The Briostack appointment number |
 
@@ -185,13 +204,42 @@ addendum.
 Mostly unused. "Inspection requested by <name>." when known, and "Photos
 attached." Anything else only when it clarifies a statement above.
 
+## The decision (decisions.json)
+
+```
+{ "ts": "<post ts>", "action": "wdir",
+  "wdir": {
+    "sellers": "", "buyers": "",                      // "" prints "Not provided"
+    "otherStructures": "",                            // "Main residence and detached garage" checks B instead of A
+    "atticInspected": false,                          // true only when the tech says he inspected it
+    "inaccessibleExtra": "Crawl space partially obstructed by ductwork at the rear.",
+    "termites": { "box": 2, "location": "Signs of termites observed: mud tubes on the foundation wall, right rear crawl space. See photos 1-2." },
+    "termitesNote": "",                               // only with termites null: previous treatment / spot drill holes
+    "powderPostBeetles": null,                        // { "box": 2|3, "location": "..." }
+    "oldHouseBorers": null,
+    "others": { "type": "Carpenter bees", "box": 2, "location": "Signs of carpenter bee burrows observed in the front porch fascia. Treatment is recommended. See photo 3." },
+    "conducive": ["Wood-to-ground contact at the back porch steps (photo 4).", "Siding-to-ground contact along the left side of the home."],
+    "remarks": ["Inspection requested by Blue Ridge Home Inspections."],
+    "treatedByUs": false                              // true only to allow box 1 (we treated, in Briostack)
+  },
+  "photos": [{ "index": 1, "caption": "Mud tubes on the foundation wall, right rear crawl space." }, ...],   // every photo, in order: Photo 1, 2, ...
+  "alsoPosts": [{ "ts": "<the tech's next post with more photos>" }],                                      // optional; photos from it: { "ts", "index", "caption" }
+  "reason": "" }
+```
+
+Box 4 (no visible evidence) and box 5 (conducive conditions) are set by
+the script from A-D and `conducive`. The scripts refuse: a box other than
+1-3, box 1 without `treatedByUs`, D other than carpenter bees/ants or D
+box 3, `termitesNote` next to a checked A, a missing photo or caption, a
+"photo N" that doesn't exist, and the words damage, active, inactive,
+activity, live, dead, infested, minor, extensive, severe or structural in
+our text.
+
+When something needed isn't in the post (powder post beetles or old house
+borers without active/inactive, which building, where in the house):
+`"action": "ask"` with one short question in the thread, as with any
+finding. The report goes out on the run after he answers.
+
 ## Still to decide
 
-- How technicians submit WDIR inspections (a Slack template, Briostack
-  notes) and which Briostack service category marks a WDIR job.
-- Which technicians may perform WDIR inspections (the routine only
-  drafts reports for techs on that list).
-- Company telephone for the form.
-- Gmail: the office account's connection needs the "create drafts"
-  permission (gmail.compose) added once.
 - South Carolina (CL-100) after NC works.

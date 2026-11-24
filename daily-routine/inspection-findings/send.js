@@ -49,6 +49,7 @@ const { normalizePhone, formatPhone } = require('../src/callReview/callAnalysis'
 const { loadConfig, LOG_PREFIX, TEST_LOG_PREFIX } = require('./lib/common');
 const Q = require('./lib/quote');
 const sheet = require('./lib/sheet');
+const W = require('../wdir/lib/report');
 
 const LOGO = path.join(__dirname, '..', 'lead-followup', 'assets', 'logo-email.png');
 const TEXTABLE = 'https://atscall-txb.textable.app/api/send';
@@ -338,6 +339,77 @@ function mergedRows({ decision: d, model, posts, config }) {
   });
 }
 
+const WDIR_LOG = '[WDIR REPORT]';
+const WDIR_TEST_LOG = '[WDIR REPORT — TEST, not an official report]';
+
+async function sendWdir({ d, post, key, r, rows, rendered, collected, config, test, args, brio, outDir, nowMs }) {
+  const m = W.reportModel(d, post, config, collected.posts);
+  const rw = rendered.find((x) => x.key === key);
+  const mail = W.emailContent(m, config);
+  const subject = test ? `[TEST] ${mail.subject}` : mail.subject;
+  const to = test ? config.testEmail : config.wdir.emailTo;
+  const prefix = test ? WDIR_TEST_LOG : WDIR_LOG;
+  const row = (decision, p, note) => ({ ...sheetRow({ decision, post: p, status: 'WDIR report sent', counted: false, reason: note, bonus: 0, config }), Finding: 'WDIR report', Plan: 'WDIR' });
+  if (args.preview) {
+    const dir = path.join(outDir, 'preview');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, `wdir_${post.customer.id}-email.html`), `<p><b>To:</b> ${escapeHtml(to)}<br><b>Subject:</b> ${escapeHtml(subject)}<br><b>Attached:</b> ${escapeHtml(mail.filename)} (${rw.pdfPath})</p><hr>${mail.html}`);
+    r.email = 'preview';
+    return;
+  }
+  // Already emailed (logged on the customer with this lead key)?
+  if (!args.resend) {
+    const comms = await brio.listCommunications(post.customer.id);
+    for (const c of comms.filter((x) => String(x.subject || '').startsWith('[WDIR REPORT'))) {
+      const full = await brio.getCommunication(post.customer.id, c.communicationId);
+      if (String(full?.content || '').includes(`Lead: ${key}\n`)) {
+        r.email = r.log = 'already_sent';
+        return;
+      }
+    }
+  }
+  const pdf = fs.readFileSync(rw.pdfPath);
+  try {
+    await google.sendMail({ fromName: config.company.name, fromEmail: config.senderEmail, to, subject, text: mail.text, html: mail.html, attachments: [{ filename: mail.filename, mimeType: 'application/pdf', data: pdf }] });
+    r.email = `sent to ${to}`;
+  } catch (err) {
+    r.email = `failed: ${err.message}`;
+  }
+  try {
+    const customer = await brio.getCustomer(post.customer.id);
+    const unknownId = await findUnknownContactMethod(brio, post.customer.id);
+    const content = [
+      `${prefix} ${r.email.startsWith('sent') ? 'Emailed to the office' : `Email ${r.email}`}`,
+      `To: ${to} (the office forwards it to the agent / customer)`,
+      `When: ${cal.formatDay(nowMs)} ${cal.formatTime(nowMs)}`,
+      `Inspection: ${m.dateLong} by ${post.tech?.fullName || post.tech?.name || 'tech'} (Slack post ${post.link})`,
+      `Property: ${m.address}`,
+      `Lead: ${key}`,
+      '',
+      'Findings:',
+      ...W.summaryLines(m).map((l) => `- ${l}`),
+      '',
+      `Subject: ${subject}`,
+    ].join('\n');
+    const entry = await createLogEntry(brio, post.customer.id, { subject: `${prefix} ${m.address}`, communicationTypeId: 'EMAIL_COMMUNICATION', date: cal.easternIso(nowMs), content }, unknownId, customer.primaryEmail?.contactMethodId || customer.primaryPhone?.contactMethodId);
+    r.log = 'logged';
+    if (entry?.communicationId) {
+      try {
+        await brio.uploadDocument(post.customer.id, entry.communicationId, { filename: mail.filename, mimeType: 'application/pdf', data: pdf });
+      } catch (err) {
+        r.log = `logged (PDF not attached: ${err.status || err.message})`;
+      }
+    }
+  } catch (err) {
+    r.log = `failed: ${err.message}`;
+  }
+  rows.push(row(d, post, 'WDIR report emailed to the office'));
+  for (const a of d.alsoPosts || []) {
+    const other = collected.posts.find((x) => x.ts === a.ts);
+    if (other) rows.push(row({ ...d, ts: a.ts }, other, `same WDIR report as post ${d.ts}`));
+  }
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2), { values: ['posts', 'decisions', 'now'], flags: ['preview', 'no-sheet', 'resend', 'no-task'] });
   if (args.resend && loadConfig().testMode === false) throw new Error('--resend only works in test mode');
@@ -367,6 +439,11 @@ async function main() {
       errs.push(...Q.checkQuoteMessages(d, post, config, decisions, collected.posts, { today }));
       if (!rendered.find((r) => r.key === m.key)) errs.push('not rendered yet (run render.js)');
       else if (!args.preview && !rendered.find((r) => r.key === m.key).cardUrl) errs.push('rendered with --no-upload; run render.js again without it');
+    }
+    if (d.action === 'wdir' && !errs.length) {
+      const rw = rendered.find((x) => x.key === Q.leadKey(d));
+      if (!rw) errs.push('not rendered yet (run render.js)');
+      else if (!test && !args.preview && rw.watermark) errs.push('rendered as a sample (--no-upload); run render.js again without it');
     }
     if (errs.length) problems.push(`${Q.leadKey(d)}: ${errs.join('; ')}`);
   }
@@ -405,6 +482,14 @@ async function main() {
 
     if (d.action === 'skip' || d.action === 'ask') {
       rows.push(sheetRow({ decision: d, post, status: d.action === 'ask' ? 'waiting' : 'not counted', counted: false, reason: d.reason || d.techMessage, bonus: 0, config }));
+      continue;
+    }
+
+    // Wood-destroying insect report: the signed PDF to the office (who
+    // forward it), logged on the customer with the PDF, one sheet row per
+    // post (no bonus). Nothing to the customer.
+    if (d.action === 'wdir') {
+      await sendWdir({ d, post, key, r, rows, rendered, collected, config, test, args, brio, outDir, nowMs });
       continue;
     }
 

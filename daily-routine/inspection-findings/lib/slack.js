@@ -75,6 +75,8 @@ function plainText(text) {
 function parsePost(text) {
   const t = plainText(text);
   const quoteRequest = /^\s*quote request\b/i.test(t);
+  // A wood-destroying insect report inspection (WDIR): wdir/WDIR_RULES.md.
+  const wdir = /\b(WDIR|WDI|WDO|WDIIR)\b|wood[- ]destroying|termite letter/i.test(t);
   const idMatch = /(?:#|customer\s*(?:id|#)?\s*[:#]?\s*)(\d{4,6})\b/i.exec(t);
   const customerId = idMatch ? idMatch[1] : null;
   let name = null;
@@ -85,7 +87,7 @@ function parsePost(text) {
     name = before.split('\n').pop().trim() || null;
   }
   if (name) name = name.replace(/[,:;\-]+$/, '').trim() || null;
-  return { customerId, name, quoteRequest, text: t };
+  return { customerId, name, quoteRequest, wdir, text: t };
 }
 
 module.exports = { createSlack, plainText, parsePost };
