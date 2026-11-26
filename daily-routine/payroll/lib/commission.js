@@ -34,6 +34,15 @@ const custName = (a) =>
     .replace(/\s+/g, ' ')
     .trim() || `customer ${a.customerId}`;
 
+// Office commission counts one appointment type per service category
+// (config.commissionTypes, Daniel Nov 26, 2026): Treatment for TermiteShield,
+// WDIR Inspection for WDIR, Initial for most. Category names are trimmed.
+const category = (a) => String(a.serviceCategoryName || '').trim();
+const isSale = (a, config) => {
+  const t = config.commissionTypes[category(a)];
+  return !!t && t === a.appointmentTypeName;
+};
+
 // visits: list records for the period, each merged with its detail record's
 // technicianCommissionableAmount / salesCommissionableAmount (as tca / sca)
 // and, for initial types, the service's primary sales rep (salesRepId,
@@ -42,7 +51,8 @@ function summarize(visits, config, period) {
   const techById = Object.fromEntries(config.techs.map((t) => [t.id, t]));
   const repById = Object.fromEntries(config.officeReps.map((r) => [r.id, r]));
   const done = new Set(config.doneStatuses);
-  const initial = new Set(config.initialTypes);
+  const noCommission = new Set(config.noCommissionCategories || []);
+  const unknownCategories = {};
   const flags = [];
 
   const techs = Object.fromEntries(config.techs.map((t) => [t.id, { id: t.id, name: t.name, production: 0, visits: 0, byDay: {} }]));
@@ -79,7 +89,13 @@ function summarize(visits, config, period) {
       u.visits++;
     }
 
-    if (initial.has(a.appointmentTypeName)) {
+    if (!config.commissionTypes[category(a)] && !noCommission.has(category(a)) && sca > 0) {
+      const u = (unknownCategories[category(a) || '(no category)'] ||= { visits: 0, sca: 0, types: new Set() });
+      u.visits++;
+      u.sca += sca;
+      u.types.add(a.appointmentTypeName);
+    }
+    if (isSale(a, config)) {
       const line = { date: a.appointmentDate, appointmentId: a.appointmentId, customer: custName(a), type: a.appointmentTypeName, category: (a.serviceCategoryName || '').trim(), sca };
       if (repById[a.salesRepId]) {
         office[a.salesRepId].sales += sca;
@@ -110,6 +126,7 @@ function summarize(visits, config, period) {
   }
   const zeroNoRep = noRep.filter((l) => !(l.sca > 0)).length;
   if (zeroNoRep) flags.push(`${zeroNoRep} initial visit(s) with $0 sales commissionable have no sales rep (no effect on pay).`);
+  for (const [c, u] of Object.entries(unknownCategories)) flags.push(`Service category "${c}" isn't in commissionTypes in payroll/config.json: ${u.visits} completed visit(s) (${[...u.types].join(', ')}) with ${money(u.sca)} sales commissionable NOT paid to anyone. Ask Daniel which appointment type is the sale for it.`);
   for (const l of otherRep) flags.push(`Sales rep ${l.rep} isn't an office rep: ${shortDate(l.date)} ${l.customer}, ${l.category} ${l.type}, ${money(l.sca)} (appt ${l.appointmentId}). Not paid.`);
 
   return { period, teamProduction, techs: config.techs.map((t) => techs[t.id]), office: config.officeReps.map((r) => office[r.id]), ignoredVisits: ignored, flags };
@@ -274,4 +291,4 @@ function report(summary, s, hours, config) {
   return { markdown: md.join('\n'), dms, flags };
 }
 
-module.exports = { round2, money, payPeriod, summarize, parseDuration, parseClock, sumHours, split, techDm, officeDm, report, dayDate, hoursText };
+module.exports = { isSale, round2, money, payPeriod, summarize, parseDuration, parseClock, sumHours, split, techDm, officeDm, report, dayDate, hoursText };

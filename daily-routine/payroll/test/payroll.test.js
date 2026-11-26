@@ -35,8 +35,8 @@ const v = (o) => ({ statusId: 'SVC_TICK_COMPLETED', appointmentTypeName: 'Regula
 const visits = [
   v({ appointmentId: '1', appointmentDate: '2026-11-13', primaryTechnicianId: '17907', tca: 442 }),
   v({ appointmentId: '2', appointmentDate: '2026-11-13', primaryTechnicianId: '15724', tca: 960, appointmentTypeName: 'Initial', sca: 341.8, salesRepId: '16195' }),
-  v({ appointmentId: '3', appointmentDate: '2026-11-13', primaryTechnicianId: '12883', tca: 85, appointmentTypeName: 'Inspection / Consultation', sca: 146.76, salesRepId: '16635' }),
-  v({ appointmentId: '4', appointmentDate: '2026-11-16', primaryTechnicianId: '15724', tca: 100, appointmentTypeName: 'Initial / One Time Visit', sca: 147.75, salesRepId: '16635' }),
+  v({ appointmentId: '3', appointmentDate: '2026-11-13', primaryTechnicianId: '12883', tca: 85, appointmentTypeName: 'Inspection / Consultation', serviceCategoryName: 'Inspection / Consultation', sca: 146.76, salesRepId: '16635' }),
+  v({ appointmentId: '4', appointmentDate: '2026-11-16', primaryTechnicianId: '15724', tca: 100, appointmentTypeName: 'Initial / One Time Visit', serviceCategoryName: 'One Time Service ', sca: 147.75, salesRepId: '16635' }),
   v({ appointmentId: '5', appointmentDate: '2026-11-16', primaryTechnicianId: '15724', tca: 500, statusId: 'SVC_TICK_CANCELLED' }),
   v({ appointmentId: '6', appointmentDate: '2026-11-16', primaryTechnicianId: '17907', statusId: 'SVC_TICK_ACTIVE' }),
   v({ appointmentId: '7', appointmentDate: '2026-11-16', primaryTechnicianId: '18677', statusId: 'SVC_TICK_ACTIVE', appointmentTypeName: 'Place Holder' }),
@@ -65,6 +65,28 @@ test('summarize: office commission is 4% of sales commissionable on initial type
   assert.equal(by['Steve B'].sales, 294.51);
   assert.equal(by['Steve B'].commission, 11.78);
   assert.deepEqual(by['Steve B'].initials.map((l) => l.appointmentId), ['3', '4']);
+});
+
+test('summarize: office commission counts the one sale type per service category (Nov 26, 2026)', () => {
+  const sales = [
+    v({ appointmentId: 't1', appointmentDate: '2026-11-23', primaryTechnicianId: '15724', tca: 210, appointmentTypeName: 'Treatment', serviceCategoryName: 'Carolina TermiteShield', sca: 640.25, salesRepId: '16635' }),
+    v({ appointmentId: 't2', appointmentDate: '2026-11-23', primaryTechnicianId: '15724', appointmentTypeName: 'Maintenance & Inspection', serviceCategoryName: 'Carolina TermiteShield', sca: 50, salesRepId: '16635' }),
+    v({ appointmentId: 'w1', appointmentDate: '2026-11-20', primaryTechnicianId: '17907', tca: 175, appointmentTypeName: 'WDIR Inspection', serviceCategoryName: 'WDIR', sca: 270.88, salesRepId: '16635' }),
+    v({ appointmentId: 'r1', appointmentDate: '2026-11-24', primaryTechnicianId: '19570', tca: 125, appointmentTypeName: 'Regular', serviceCategoryName: 'Commercial - General Pest Control', sca: 99, salesRepId: '16635' }),
+    v({ appointmentId: 'i1', appointmentDate: '2026-11-24', primaryTechnicianId: '19570', appointmentTypeName: 'Initial', serviceCategoryName: 'Treatment', sca: 0 }),
+    v({ appointmentId: 'q1', appointmentDate: '2026-11-24', primaryTechnicianId: '19570', appointmentTypeName: 'Initial', serviceCategoryName: 'Leads Marketing', sca: 20, salesRepId: '16635' }),
+    v({ appointmentId: 'n1', appointmentDate: '2026-11-24', primaryTechnicianId: '19570', appointmentTypeName: 'Initial', serviceCategoryName: 'Gutter Guard', sca: 300, salesRepId: '16195' }),
+  ];
+  assert.equal(C.isSale(sales[0], config), true);
+  assert.equal(C.isSale(sales[1], config), false);
+  assert.equal(C.isSale(v({ appointmentTypeName: 'Treatment' }), config), false);
+  const s = C.summarize(sales, config, period);
+  const steve = s.office.find((r) => r.name === 'Steve B');
+  assert.deepEqual(steve.initials.map((l) => l.appointmentId), ['w1', 't1']);
+  assert.equal(steve.sales, 911.13);
+  assert.equal(s.office.find((r) => r.name === 'Shelley').sales, 0);
+  assert.ok(s.flags.some((f) => /"Gutter Guard" isn't in commissionTypes.*\$300\.00/.test(f)));
+  assert.ok(!s.flags.some((f) => /Leads Marketing/.test(f)));
 });
 
 test('hours split: pooled production shared by clock hours (last week: $28,799 over 241.15 h)', () => {
@@ -121,6 +143,6 @@ test('DMs: tech DM has no own-production line; office DM lists every initial', (
   const steve = s.office.find((r) => r.name === 'Steve B');
   const o = C.officeDm({ ...steve, first: 'Steve' }, config, period);
   assert.match(o, /2 completed initial visits/);
-  assert.match(o, /Nov 13 — Pat Lee — HomeShield - Signature Pest Control \(Inspection \/ Consultation\) — \$146\.76/);
+  assert.match(o, /Nov 13 — Pat Lee — Inspection \/ Consultation \(Inspection \/ Consultation\) — \$146\.76/);
   assert.match(o, /4% × \$294\.51 = \*\$11\.78\*/);
 });

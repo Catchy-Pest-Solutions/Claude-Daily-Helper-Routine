@@ -4,7 +4,21 @@
   "officeRate": 0.04,
   "doneStatuses": ["SVC_TICK_COMPLETED", "SVC_TICK_RESOLVED", "SVC_TICK_SUBMITTED"],
   "openStatus": "SVC_TICK_ACTIVE",
-  "initialTypes": ["Initial", "Initial / One Time Visit", "Inspection / Consultation"],
+  "_commissionTypes": "Office commission: per Briostack service category, the one appointment type that is the sale (Daniel, Nov 26, 2026). Only that type, completed, counts; Regular and other visits never do. A category in neither list with sales commissionable $ is flagged.",
+  "commissionTypes": {
+    "Bed Bug Service": "Initial",
+    "Carolina TermiteShield": "Treatment",
+    "Catchy Club": "Initial",
+    "Commercial - General Pest Control": "Initial",
+    "HomeShield - Critter Control": "Initial",
+    "HomeShield - Signature Pest Control": "Initial",
+    "Inspection / Consultation": "Inspection / Consultation",
+    "Mosquito Plus": "Initial",
+    "One Time Service": "Initial / One Time Visit",
+    "WDIR": "WDIR Inspection",
+    "Wildlife / Rodent Trapping Service": "Initial"
+  },
+  "noCommissionCategories": ["Leads Marketing", "Quote - Critter Control", "Quote - Signature Pest", "Quote - TermiteShield"],
   "ignoreTechIds": {
     "12883": "Daniel W. (owner, doesn't service visits)",
     "18677": "Leads Nurture (placeholder for leads)"
