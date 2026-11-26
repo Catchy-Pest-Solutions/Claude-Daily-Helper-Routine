@@ -4,7 +4,7 @@
   "officeRate": 0.04,
   "doneStatuses": ["SVC_TICK_COMPLETED", "SVC_TICK_RESOLVED", "SVC_TICK_SUBMITTED"],
   "openStatus": "SVC_TICK_ACTIVE",
-  "initialTypes": ["Initial", "Initial / One Time Visit", "Inspection / Consultation"],
+  "initialTypes": ["Initial", "Initial / One Time Visit", "Inspection / Consultation", "Treatment", "WDIR Inspection"],
   "ignoreTechIds": {
     "12883": "Daniel W. (owner, doesn't service visits)",
     "18677": "Leads Nurture (placeholder for leads)"

@@ -28,8 +28,9 @@ write customer data or credentials into the repo.
   `6% × (team production ÷ team hours) × the tech's hours`. Daniel's own
   visits and Leads Nurture placeholders don't count.
 - **Office, 4% sales commission:** completed visits whose appointment
-  type is Initial, Initial / One Time Visit or Inspection / Consultation
-  (new or existing customer, the type is all that matters), valued at
+  type is Initial, Initial / One Time Visit, Inspection / Consultation,
+  Treatment (termite pretreatments, treatments, station takeovers) or WDIR
+  Inspection (new or existing customer, the type is all that matters), valued at
   `salesCommissionableAmount`, paid to the service's primary sales rep:
   Steve B or Shelley. Daniel can be the rep too; his is shown but not DMed.
 - Only completed visits count. Visits still open are flagged, not counted.
