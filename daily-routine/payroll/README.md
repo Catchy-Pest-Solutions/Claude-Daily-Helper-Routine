@@ -7,18 +7,24 @@ approves) DMs each person their number in Slack.
 - **Technicians, 6%:** every completed visit's
   `technicianCommissionableAmount`, pooled across the six field techs and
   split by time clock hours: `6% × (team production ÷ team hours) × hours`.
-- **Office, 4%:** `salesCommissionableAmount` on completed Initial,
-  Initial / One Time Visit, Inspection / Consultation, Treatment (termite
-  jobs: pretreatments, treatments, station takeovers) and WDIR Inspection
-  visits (Daniel, Nov 26), to the
-  service's primary sales rep (Steve B, Shelley; Daniel shown, not DMed).
+- **Office, 4%:** `salesCommissionableAmount` on the completed sale visit
+  of each service category, to the service's primary sales rep (Steve B,
+  Shelley; Daniel shown, not DMed). The sale visit is one appointment type
+  per category, set in `config.json` `commissionTypes` (Daniel, Nov 26,
+  2026): Treatment for Carolina TermiteShield, WDIR Inspection for WDIR,
+  Initial / One Time Visit for One Time Service, Inspection / Consultation
+  for Inspection / Consultation, Initial for the rest. Leads Marketing and
+  the Quote categories never count; Regular visits never count. A category
+  in neither list with sales commissionable dollars is flagged. (Week of
+  Nov 20, 2026 paid only Initial types and missed TermiteShield and WDIR
+  sales; corrected with a separate check.)
 - **Pay period:** Friday–Thursday. Run early for a holiday and it ends
   that day (`--thru`).
 
 | File | What it is |
 |---|---|
 | `ROUTINE_PROMPT.md` | The routine's instructions |
-| `config.json` | Rates, initial types, techs (Briostack ID, Slack ID, time clock names), office reps |
+| `config.json` | Rates, the commission appointment type per service category, techs (Briostack ID, Slack ID, time clock names), office reps |
 | `collect.js` | Step 1: Briostack → `$S/production.json` |
 | `split.js` | Step 3: `production.json` + `hours.json` (read from the time clock screenshots) → `payroll.md`, `dms.json` |
 | `lib/commission.js` | The math, period and DM text (tested in `test/payroll.test.js`) |
@@ -35,8 +41,8 @@ approves) DMs each person their number in Slack.
   there (billed on the plan).
 - The sales rep isn't on the appointment; it's `primarySalesRepId` on the
   service (`customers/{id}/services`).
-- Trapping (Wildlife / Rodent) initials currently carry $0 for both
-  amounts.
+- Trapping (Wildlife / Rodent) initials usually carry $0 for both
+  amounts; they count if one has sales commissionable dollars.
 - Appointments also have `timeIn`/`timeOut` (time on site), which is not
   clock hours; hours come from the time clock screenshots.
 

@@ -27,10 +27,12 @@ write customer data or credentials into the repo.
   pooled, divided by their total clock hours, and paid back by hours:
   `6% × (team production ÷ team hours) × the tech's hours`. Daniel's own
   visits and Leads Nurture placeholders don't count.
-- **Office, 4% sales commission:** completed visits whose appointment
-  type is Initial, Initial / One Time Visit, Inspection / Consultation,
-  Treatment (termite pretreatments, treatments, station takeovers) or WDIR
-  Inspection (new or existing customer, the type is all that matters), valued at
+- **Office, 4% sales commission:** the completed sale visit of each
+  service category: one appointment type per category, listed in
+  `config.json` `commissionTypes` (Daniel, Nov 26, 2026: Treatment for
+  Carolina TermiteShield, WDIR Inspection for WDIR, Initial for most).
+  New or existing customer, the type is all that matters. Never Regular
+  visits; never Leads Marketing or Quote categories. Valued at
   `salesCommissionableAmount`, paid to the service's primary sales rep:
   Steve B or Shelley. Daniel can be the rep too; his is shown but not DMed.
 - Only completed visits count. Visits still open are flagged, not counted.
@@ -123,4 +125,8 @@ Then tell Daniel which DMs went out.
 
 - Production looks low or a tech is missing: check the flags first (open
   visits, a tech not in `config.json`).
+- A flag says a service category isn't in `commissionTypes`: a new
+  Briostack category with sales dollars. Ask Daniel which appointment type
+  is its sale; adding it to `config.json` is a repo change for another
+  session, so tell him that rep's commission is short this week.
 - Never send a DM with numbers Daniel hasn't seen in Step 4.

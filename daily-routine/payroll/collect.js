@@ -10,7 +10,7 @@
 // Calls: ~4 list pages for the period, one GET appointments/{id} per done
 // visit (only the detail record has technicianCommissionableAmount and
 // salesCommissionableAmount, Nov 24, 2026), and one customers/{id}/services
-// per customer with an initial-type visit (the sales rep is on the service).
+// per customer with a commission-type visit (config.commissionTypes) (the sales rep is on the service).
 // About 350 calls / 3 minutes for a normal week. Writes $S/production.json
 // and prints one JSON line. Sends nothing.
 require('../lead-followup/lib/proxy');
@@ -47,8 +47,7 @@ async function main() {
     a.sca = Number(d.salesCommissionableAmount) || 0;
   }
 
-  const initial = new Set(config.initialTypes);
-  const needRep = visits.filter((a) => done.has(a.statusId) && initial.has(a.appointmentTypeName));
+  const needRep = visits.filter((a) => done.has(a.statusId) && C.isSale(a, config));
   const services = {};
   for (const cid of [...new Set(needRep.map((a) => a.customerId))]) {
     for (const s of await bs.getServices(cid)) services[s.serviceId] = s;
