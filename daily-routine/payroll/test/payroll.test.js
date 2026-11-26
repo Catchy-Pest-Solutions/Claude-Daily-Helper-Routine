@@ -146,3 +146,19 @@ test('DMs: tech DM has no own-production line; office DM lists every initial', (
   assert.match(o, /Nov 13 — Pat Lee — Inspection \/ Consultation \(Inspection \/ Consultation\) — \$146\.76/);
   assert.match(o, /4% × \$294\.51 = \*\$11\.78\*/);
 });
+
+test('office commission: termite Treatment and WDIR Inspection visits count as initial types (Daniel, Nov 26)', () => {
+  const p = C.payPeriod({ today: '2026-11-25' });
+  const s = C.summarize(
+    [
+      v({ appointmentId: '40716', appointmentDate: '2026-11-24', primaryTechnicianId: '17829', tca: 210, appointmentTypeName: 'Treatment', serviceCategoryName: 'Carolina TermiteShield', sca: 433.4, salesRepId: '16195' }),
+      v({ appointmentId: '40207', appointmentDate: '2026-11-20', primaryTechnicianId: '17907', tca: 175, appointmentTypeName: 'WDIR Inspection', serviceCategoryName: 'WDIR', sca: 270.88, salesRepId: '16635' }),
+      v({ appointmentId: '1', appointmentDate: '2026-11-20', primaryTechnicianId: '17907', tca: 100, appointmentTypeName: 'Reservice', sca: 50, salesRepId: '16635' }),
+    ],
+    config,
+    p,
+  );
+  const by = Object.fromEntries(s.office.map((r) => [r.name, r]));
+  assert.equal(by['Shelley'].sales, 433.4);
+  assert.deepEqual(by['Steve B'].initials.map((l) => l.appointmentId), ['40207']);
+});
