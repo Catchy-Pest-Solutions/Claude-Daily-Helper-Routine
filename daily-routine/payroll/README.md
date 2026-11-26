@@ -8,7 +8,9 @@ approves) DMs each person their number in Slack.
   `technicianCommissionableAmount`, pooled across the six field techs and
   split by time clock hours: `6% × (team production ÷ team hours) × hours`.
 - **Office, 4%:** `salesCommissionableAmount` on completed Initial,
-  Initial / One Time Visit and Inspection / Consultation visits, to the
+  Initial / One Time Visit, Inspection / Consultation, Treatment (termite
+  jobs: pretreatments, treatments, station takeovers) and WDIR Inspection
+  visits (Daniel, Nov 26), to the
   service's primary sales rep (Steve B, Shelley; Daniel shown, not DMed).
 - **Pay period:** Friday–Thursday. Run early for a holiday and it ends
   that day (`--thru`).
